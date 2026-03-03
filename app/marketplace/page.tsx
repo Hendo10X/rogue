@@ -29,7 +29,9 @@ export default async function MarketplacePage() {
         walletBalance={walletBalance}
       />
       <main className="container mx-auto px-4 py-8">
-        <p className="text-muted-foreground text-center">Nothing to see here for now.</p>
+        <p className="text-muted-foreground text-center">
+          Nothing to see here for now.
+        </p>
       </main>
     </div>
   );

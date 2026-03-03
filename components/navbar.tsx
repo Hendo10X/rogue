@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { animate } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Menu01Icon } from "@hugeicons/core-free-icons";
 
@@ -82,13 +81,7 @@ const Navbar = ({
       const id = href.slice(1);
       const el = document.getElementById(id);
       if (el) {
-        const top = el.getBoundingClientRect().top + window.scrollY;
-        animate(window.scrollY, top, {
-          type: "tween",
-          ease: [0.32, 0.72, 0, 1],
-          duration: 0.8,
-          onUpdate: (v) => window.scrollTo(0, v),
-        });
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
   };
