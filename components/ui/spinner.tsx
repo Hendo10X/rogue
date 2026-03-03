@@ -3,7 +3,7 @@ import { Loading03Icon } from "@hugeicons/core-free-icons";
 
 import { cn } from "@/lib/utils";
 
-function Spinner({ className, strokeWidth: _strokeWidth, ...props }: React.ComponentProps<"svg">) {
+function Spinner({ className }: { className?: string }) {
   return (
     <HugeiconsIcon
       icon={Loading03Icon}
@@ -11,7 +11,6 @@ function Spinner({ className, strokeWidth: _strokeWidth, ...props }: React.Compo
       role="status"
       aria-label="Loading"
       className={cn("size-4 animate-spin", className)}
-      {...props}
     />
   );
 }
