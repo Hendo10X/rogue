@@ -71,8 +71,8 @@ export function DashboardNavbar({
     walletBalance.find((w) => w.currency === "USDT") ?? walletBalance[0];
 
   return (
-    <header className="bg-background font-display">
-      <div className="container relative flex h-14 items-center justify-between px-4 py-4 md:px-6">
+    <header className="bg-background pt-6 font-display md:pt-8">
+      <div className="container relative flex h-14 items-center justify-between px-4 pb-4 md:px-6">
         {/* Logo - Rogue.svg on mobile, Roguelong.svg on desktop */}
         <Link href={logoUrl} className="flex shrink-0 items-center">
           <img
@@ -112,7 +112,7 @@ export function DashboardNavbar({
         <div className="flex shrink-0 items-center gap-2">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="md:hidden">
+              <Button variant="outline" size="icon" className="hover:bg-muted hover:text-foreground md:hidden">
                 <HugeiconsIcon icon={Menu01Icon} size={16} className="size-4" />
               </Button>
             </SheetTrigger>

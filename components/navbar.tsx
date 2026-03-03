@@ -1,5 +1,9 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { animate } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Menu01Icon } from "@hugeicons/core-free-icons";
 
@@ -58,9 +62,9 @@ const Navbar = ({
     title: "Rogue",
   },
   menu = [
-    { title: "Marketplace", url: "#" },
-    { title: "Services", url: "#" },
-    { title: "How it works", url: "#" },
+    { title: "Marketplace", url: "/login" },
+    { title: "Services", url: "#features" },
+    { title: "How it works", url: "#how-it-works" },
   ],
   auth = {
     login: { title: "Login", url: "/login" },
@@ -68,8 +72,29 @@ const Navbar = ({
   },
   className,
 }: Navbar1Props) => {
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+
+  const scrollToSection = (href: string) => {
+    if (href.startsWith("#")) {
+      setSheetOpen(false);
+      const id = href.slice(1);
+      const el = document.getElementById(id);
+      if (el) {
+        const top = el.getBoundingClientRect().top + window.scrollY;
+        animate(window.scrollY, top, {
+          type: "tween",
+          ease: [0.32, 0.72, 0, 1],
+          duration: 0.8,
+          onUpdate: (v) => window.scrollTo(0, v),
+        });
+      }
+    }
+  };
+
   return (
-    <section className={cn("py-4 px-9 font-display", className)}>
+    <section className={cn("pb-2 pt-4 px-9 font-display", className)}>
       <div className="container">
         {/* Desktop Menu */}
         <nav className="hidden items-center justify-between lg:flex">
@@ -87,7 +112,32 @@ const Navbar = ({
             <div className="flex items-center">
               <NavigationMenu>
                 <NavigationMenuList>
-                  {menu.map((item) => renderMenuItem(item))}
+                  {menu.map((item) => {
+                    const navLinkClass =
+                      "group inline-flex h-10 w-max items-center justify-center rounded-full bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground";
+                    return (
+                      <NavigationMenuItem key={item.title}>
+                        {item.url.startsWith("#") && isHome ? (
+                          <button
+                            type="button"
+                            onClick={() => scrollToSection(item.url)}
+                            className={navLinkClass}>
+                            {item.title}
+                          </button>
+                        ) : (
+                          <Link
+                            href={
+                              item.url.startsWith("#")
+                                ? `/${item.url}`
+                                : item.url
+                            }
+                            className={navLinkClass}>
+                            {item.title}
+                          </Link>
+                        )}
+                      </NavigationMenuItem>
+                    );
+                  })}
                 </NavigationMenuList>
               </NavigationMenu>
             </div>
@@ -113,13 +163,25 @@ const Navbar = ({
                 alt={logo.alt}
               />
             </a>
-            <Sheet>
+            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <HugeiconsIcon icon={Menu01Icon} size={16} className="size-4" />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="hover:bg-muted hover:text-foreground">
+                  <HugeiconsIcon
+                    icon={Menu01Icon}
+                    size={16}
+                    className="size-4"
+                  />
                 </Button>
               </SheetTrigger>
-              <SheetContent className="overflow-y-auto font-display">
+              <SheetContent
+                side="top"
+                motionOpen={sheetOpen}
+                showCloseButton
+                closeButtonSize="lg"
+                className="overflow-y-auto font-display">
                 <SheetHeader>
                   <SheetTitle>
                     <a href={logo.url} className="flex items-center gap-2">
@@ -133,14 +195,29 @@ const Navbar = ({
                 </SheetHeader>
                 <div className="flex flex-col gap-6 p-4">
                   <nav className="flex flex-col gap-4">
-                    {menu.map((item) => (
-                      <a
-                        key={item.title}
-                        href={item.url}
-                        className="text-md font-semibold hover:text-foreground">
-                        {item.title}
-                      </a>
-                    ))}
+                    {menu.map((item) =>
+                      item.url.startsWith("#") && isHome ? (
+                        <button
+                          key={item.title}
+                          type="button"
+                          onClick={() => scrollToSection(item.url)}
+                          className="text-left text-md font-semibold hover:text-green-800 dark:hover:text-green-400">
+                          {item.title}
+                        </button>
+                      ) : (
+                        <Link
+                          key={item.title}
+                          href={
+                            item.url.startsWith("#")
+                              ? `/${item.url}`
+                              : item.url
+                          }
+                          onClick={() => setSheetOpen(false)}
+                          className="text-md font-semibold hover:text-green-800 dark:hover:text-green-400">
+                          {item.title}
+                        </Link>
+                      ),
+                    )}
                   </nav>
 
                   <div className="flex flex-col gap-3">
@@ -160,15 +237,5 @@ const Navbar = ({
     </section>
   );
 };
-
-const renderMenuItem = (item: MenuItem) => (
-  <NavigationMenuItem key={item.title}>
-    <NavigationMenuLink
-      href={item.url}
-      className="group inline-flex h-10 w-max items-center justify-center rounded-full bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground">
-      {item.title}
-    </NavigationMenuLink>
-  </NavigationMenuItem>
-);
 
 export { Navbar };
