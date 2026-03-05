@@ -88,13 +88,13 @@ export function SignupForm({
         password: values.password,
         name: values.name,
       });
-      
+
       if (result.error) {
         toast.error(result.error.message || "Failed to sign up");
         setLoading(false);
         return;
       }
-      
+
       toast.success("Signed up successfully");
       router.push("/login");
     } catch (error: any) {
@@ -105,7 +105,9 @@ export function SignupForm({
   }
 
   return (
-    <div className={cn("flex flex-col gap-4 font-display", className)} {...props}>
+    <div
+      className={cn("flex flex-col gap-4 font-display", className)}
+      {...props}>
       <Card className="shadow-none">
         <CardHeader>
           <CardTitle>Welcome to Roguesocials</CardTitle>
@@ -170,11 +172,19 @@ export function SignupForm({
                               <button
                                 type="button"
                                 onClick={() => setPasswordVisible((v) => !v)}
-                                aria-label={passwordVisible ? "Hide password" : "Show password"}
+                                aria-label={
+                                  passwordVisible
+                                    ? "Hide password"
+                                    : "Show password"
+                                }
                                 aria-pressed={passwordVisible}
                                 className="absolute inset-y-px end-px flex h-full w-9 items-center justify-center rounded-e-lg text-muted-foreground/80 transition-shadow hover:text-foreground focus-visible:border focus-visible:border-ring focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50">
                                 {passwordVisible ? (
-                                  <EyeOff size={16} strokeWidth={2} aria-hidden />
+                                  <EyeOff
+                                    size={16}
+                                    strokeWidth={2}
+                                    aria-hidden
+                                  />
                                 ) : (
                                   <Eye size={16} strokeWidth={2} aria-hidden />
                                 )}
@@ -191,7 +201,8 @@ export function SignupForm({
                             <div
                               className="h-full transition-all duration-500 ease-out"
                               style={{
-                                backgroundColor: getStrengthColor(strengthScore),
+                                backgroundColor:
+                                  getStrengthColor(strengthScore),
                                 width: `${(strengthScore / 4) * 100}%`,
                               }}
                             />
@@ -199,13 +210,25 @@ export function SignupForm({
                           <p className="text-sm font-medium text-foreground">
                             {getStrengthText(strengthScore)}. Must contain:
                           </p>
-                          <ul className="space-y-1.5" aria-label="Password requirements">
+                          <ul
+                            className="space-y-1.5"
+                            aria-label="Password requirements">
                             {PASSWORD_REQUIREMENTS.map((reqText) => (
-                              <li key={reqText} className="flex items-center space-x-2">
+                              <li
+                                key={reqText}
+                                className="flex items-center space-x-2">
                                 {passwordErrors.includes(reqText) ? (
-                                  <X size={16} className="text-muted-foreground/80" aria-hidden />
+                                  <X
+                                    size={16}
+                                    className="text-muted-foreground/80"
+                                    aria-hidden
+                                  />
                                 ) : (
-                                  <Check size={16} className="text-emerald-500" aria-hidden />
+                                  <Check
+                                    size={16}
+                                    className="text-emerald-500"
+                                    aria-hidden
+                                  />
                                 )}
                                 <span
                                   className={cn(
@@ -231,9 +254,16 @@ export function SignupForm({
                   />
                 </Field>
                 <Field>
-                  <Button type="submit" disabled={loading} className="rounded-full">
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="rounded-full">
                     {loading ? (
-                      <HugeiconsIcon icon={Loading03Icon} size={16} className="mr-2 size-4 animate-spin" />
+                      <HugeiconsIcon
+                        icon={Loading03Icon}
+                        size={16}
+                        className="mr-2 size-4 animate-spin"
+                      />
                     ) : (
                       "Sign Up"
                     )}

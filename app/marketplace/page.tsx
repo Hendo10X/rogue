@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { DashboardNavbar } from "@/components/dashboard-navbar";
+import { ListingGrid } from "@/components/marketplace/listing-grid";
 
 export default async function MarketplacePage() {
   const session = await auth.api.getSession({
@@ -29,9 +30,13 @@ export default async function MarketplacePage() {
         walletBalance={walletBalance}
       />
       <main className="container mx-auto px-4 py-8">
-        <p className="text-muted-foreground text-center">
-          Nothing to see here for now.
-        </p>
+        <div className="mb-8">
+          <h1 className="font-display text-2xl font-semibold">Marketplace</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Browse and buy social media accounts and services
+          </p>
+        </div>
+        <ListingGrid walletBalance={walletBalance} />
       </main>
     </div>
   );

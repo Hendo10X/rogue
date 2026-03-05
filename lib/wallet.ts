@@ -8,6 +8,57 @@ function generateId() {
   return crypto.randomUUID();
 }
 
+export async function creditWallet(
+  walletId: string,
+  amount: string,
+  currency: string
+) {
+  const [w] = await db
+    .select()
+    .from(wallet)
+    .where(eq(wallet.id, walletId))
+    .limit(1);
+  if (!w) throw new Error("Wallet not found");
+
+  const current = parseFloat(w.balance);
+  const add = parseFloat(amount);
+  const newBalance = (current + add).toFixed(8);
+
+  await db
+    .update(wallet)
+    .set({ balance: newBalance, updatedAt: new Date() })
+    .where(eq(wallet.id, walletId));
+
+  return newBalance;
+}
+
+export async function debitWallet(
+  walletId: string,
+  amount: string,
+  currency: string
+): Promise<string> {
+  const [w] = await db
+    .select()
+    .from(wallet)
+    .where(eq(wallet.id, walletId))
+    .limit(1);
+  if (!w) throw new Error("Wallet not found");
+
+  const current = parseFloat(w.balance);
+  const debit = parseFloat(amount);
+  if (current < debit) {
+    throw new Error("Insufficient balance");
+  }
+
+  const newBalance = (current - debit).toFixed(8);
+  await db
+    .update(wallet)
+    .set({ balance: newBalance, updatedAt: new Date() })
+    .where(eq(wallet.id, walletId));
+
+  return newBalance;
+}
+
 export async function createWallet(
   userId: string,
   currency: string = DEFAULT_CURRENCY

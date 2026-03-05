@@ -8,6 +8,7 @@ import {
   AccountSetting01Icon,
   Logout01Icon,
   Menu01Icon,
+  Add01Icon,
 } from "@hugeicons/core-free-icons";
 import { authClient } from "@/utils/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -180,6 +181,19 @@ export function DashboardNavbar({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link
+                href="/wallet/deposit"
+                className="flex cursor-pointer items-center gap-2"
+              >
+                <HugeiconsIcon
+                  icon={Add01Icon}
+                  size={16}
+                  className="size-4"
+                />
+                Fund wallet
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link
                 href="/settings"

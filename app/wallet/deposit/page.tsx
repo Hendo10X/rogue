@@ -3,9 +3,9 @@ import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { DashboardNavbar } from "@/components/dashboard-navbar";
-import { ServiceGrid } from "@/components/boosting/service-grid";
+import { DepositForm } from "@/components/deposit-form";
 
-export default async function BoostingPage() {
+export default async function DepositPage() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -29,14 +29,19 @@ export default async function BoostingPage() {
         }}
         walletBalance={walletBalance}
       />
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="font-display text-2xl font-semibold">Boosting</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Get followers, likes, comments and more for your social media
-          </p>
+      <main className="container mx-auto max-w-md px-4 py-12">
+        <div className="space-y-6">
+          <div className="text-center">
+            <h1 className="font-display text-2xl font-semibold">
+              Fund your wallet
+            </h1>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Deposit USDT or other crypto to your wallet. Payments are secure
+              via Plisio.
+            </p>
+          </div>
+          <DepositForm />
         </div>
-        <ServiceGrid walletBalance={walletBalance} />
       </main>
     </div>
   );
