@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Check, Eye, EyeOff, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 // Export for use in forms (e.g. signup)
 export const passwordSchema = z.string().superRefine((val, ctx) => {
@@ -82,7 +82,7 @@ const InputVerification = () => {
   };
 
   return (
-    <motion.div
+    <m.div
       className="size-full center flex-col"
       transition={{ duration: 0.5 }}>
       <div className="max-w-lg w-full">
@@ -142,8 +142,8 @@ const InputVerification = () => {
             "At least 1 number",
             "At least 1 lowercase letter",
             "At least 1 uppercase letter",
-          ].map((reqText, index) => (
-            <li key={index} className="flex items-center space-x-2">
+          ].map((reqText) => (
+            <li key={reqText} className="flex items-center space-x-2">
               {errors.includes(reqText) ? (
                 <X
                   size={16}
@@ -174,7 +174,7 @@ const InputVerification = () => {
           ))}
         </ul>
       </div>
-    </motion.div>
+    </m.div>
   );
 };
 

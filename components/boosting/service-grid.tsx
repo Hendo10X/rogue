@@ -20,12 +20,14 @@ async function fetchServices(params: { page?: number; limit?: number }) {
   return res.json();
 }
 
+const EMPTY_WALLET: { balance: string; currency: string }[] = [];
+
 interface ServiceGridProps {
   walletBalance?: { balance: string; currency: string }[];
 }
 
 export function ServiceGrid({
-  walletBalance = [],
+  walletBalance = EMPTY_WALLET,
 }: ServiceGridProps) {
   const [page, setPage] = useState(1);
   const [selectedService, setSelectedService] =

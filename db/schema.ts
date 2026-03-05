@@ -332,6 +332,42 @@ export const boostingOrder = pgTable(
   ],
 );
 
+export const admin = pgTable("admin", {
+  id: text("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const adminSession = pgTable(
+  "admin_session",
+  {
+    id: text("id").primaryKey(),
+    adminId: text("admin_id")
+      .notNull()
+      .references(() => admin.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("admin_session_admin_idx").on(table.adminId),
+    index("admin_session_expires_idx").on(table.expiresAt),
+  ],
+);
+
+export const adminSettings = pgTable("admin_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
 export const webhookLog = pgTable(
   "webhook_log",
   {
@@ -463,6 +499,9 @@ export const boostingOrderRelations = relations(boostingOrder, ({ one }) => ({
 export const schema = {
   account,
   session,
+  admin,
+  adminSession,
+  adminSettings,
   user,
   verification,
   wallet,

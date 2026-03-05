@@ -1,7 +1,7 @@
 "use client";
 
 import { HugeiconsIcon } from "@hugeicons/react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ScrollReveal, staggerContainer, fadeSlideUp } from "@/components/scroll-reveal";
 import {
   DeliverySent01Icon,
@@ -49,14 +49,14 @@ export default function WhyChooseUs() {
             Trusted by thousands. Here&apos;s why you can count on us.
           </p>
         </ScrollReveal>
-        <motion.div
+        <m.div
           className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 @xl:grid-cols-3"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.15 }}
           variants={staggerContainer}>
           {TRUST_POINTS.map((point) => (
-            <motion.div
+            <m.div
               key={point.title}
               className="space-y-4 border-t pt-6"
               variants={fadeSlideUp}>
@@ -71,9 +71,9 @@ export default function WhyChooseUs() {
                   {point.description}
                 </p>
               </div>
-            </motion.div>
+            </m.div>
           ))}
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -28,7 +28,7 @@ export default function HeroSection() {
         <div className="relative pt-16 pb-16 md:pt-20 md:pb-20">
           <div className="mask-radial-from-45% mask-radial-to-75% mask-radial-at-top mask-radial-[75%_100%] mask-t-from-50% lg:aspect-9/4 absolute inset-0 aspect-square bg-linear-to-b from-muted/30 to-transparent lg:top-24 dark:opacity-50" />
           <div className="relative z-10 mx-auto w-full max-w-5xl px-6">
-            <motion.div
+            <m.div
               className="mx-auto max-w-md text-center"
               initial="hidden"
               animate="visible"
@@ -41,7 +41,7 @@ export default function HeroSection() {
                   },
                 },
               }}>
-              <motion.h1
+              <m.h1
                 className="text-balance font-display text-4xl font-semibold sm:text-5xl"
                 variants={{
                   hidden: { opacity: 0, y: 20 },
@@ -52,8 +52,8 @@ export default function HeroSection() {
                   },
                 }}>
                 Buy & Boost Social Media Accounts.
-              </motion.h1>
-              <motion.p
+              </m.h1>
+              <m.p
                 className="text-muted-foreground mt-4 text-balance"
                 variants={{
                   hidden: { opacity: 0, y: 20 },
@@ -65,8 +65,8 @@ export default function HeroSection() {
                 }}>
                 A powerful marketplace for buying premium social media
                 accounts and instant growth services, for any platform.
-              </motion.p>
-              <motion.div
+              </m.p>
+              <m.div
                 variants={{
                   hidden: { opacity: 0, y: 20 },
                   visible: {
@@ -81,9 +81,9 @@ export default function HeroSection() {
                     <ChevronRight className="opacity-50" />
                   </Link>
                 </Button>
-              </motion.div>
-            </motion.div>
-            <motion.div
+              </m.div>
+            </m.div>
+            <m.div
               className="mx-auto mt-24 max-w-2xl"
               initial="hidden"
               animate="visible"
@@ -98,7 +98,7 @@ export default function HeroSection() {
               }}>
               <div className="grid scale-95 grid-cols-4 gap-6 sm:grid-cols-4 sm:gap-8">
                 {GRID_ITEMS.map((item) => (
-                  <motion.div
+                  <m.div
                     key={item.name}
                     className={cn(item.blur && "blur-[2px]")}
                     variants={{
@@ -123,10 +123,10 @@ export default function HeroSection() {
                         {item.name}
                       </span>
                     </Card>
-                  </motion.div>
+                  </m.div>
                 ))}
               </div>
-            </motion.div>
+            </m.div>
           </div>
         </div>
       </section>

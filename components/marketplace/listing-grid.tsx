@@ -50,11 +50,13 @@ interface ListingItem {
   supplierName: string;
 }
 
+const EMPTY_WALLET: { balance: string; currency: string }[] = [];
+
 interface ListingGridProps {
   walletBalance?: { balance: string; currency: string }[];
 }
 
-export function ListingGrid({ walletBalance = [] }: ListingGridProps) {
+export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { authClient } from "@/utils/auth-client";
@@ -113,11 +114,11 @@ export function LoginForm({
                             {...field}
                           />
                         </FormControl>
-                        <a
-                          href="#"
+                        <button
+                          type="button"
                           className="text-sm underline-offset-4 hover:underline hover:text-muted-foreground">
                           Forgot your password?
-                        </a>
+                        </button>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -134,11 +135,11 @@ export function LoginForm({
 
                   <FieldDescription className="text-center">
                     Don&apos;t have an account?{" "}
-                    <a
+                    <Link
                       href="/signup"
                       className="underline-offset-4 hover:underline hover:text-muted-foreground">
                       Sign up
-                    </a>
+                    </Link>
                   </FieldDescription>
                 </Field>
               </FieldGroup>

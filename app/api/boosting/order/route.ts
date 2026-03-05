@@ -4,6 +4,7 @@ import { auth } from "@/utils/auth";
 import { db } from "@/db/drizzle";
 import { boostingOrder, transaction, wallet } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getMarkupPercent } from "@/lib/admin-auth";
 import { getOrCreateWallet, debitWallet, logTransaction } from "@/lib/wallet";
 import { addOrder, fetchServices } from "@/lib/boosting/really-simple-social";
 
@@ -42,7 +43,9 @@ export async function POST(req: NextRequest) {
   const qty = Math.max(min, Math.min(max, quantity));
 
   const rate = parseFloat(service.rate) || 0;
-  const amount = (rate * qty).toFixed(2);
+  const markupPercent = await getMarkupPercent("boosting");
+  const baseAmount = rate * qty;
+  const amount = (baseAmount * (1 + markupPercent / 100)).toFixed(2);
 
   const walletRow = await getOrCreateWallet(session.user.id, "USDT");
   const balance = parseFloat(walletRow.balance);

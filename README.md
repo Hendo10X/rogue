@@ -218,6 +218,18 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to view the app.
 
+### Admin Setup
+
+1. Run `npm run db:push` to apply schema (admin, admin_session, admin_settings tables).
+
+2. Seed the default admin (only works when no admin exists):
+   ```bash
+   curl -X POST http://localhost:3000/api/admin/seed
+   ```
+   Creates admin with username `admin` and password `admin123`. Stored in the database.
+
+3. Login at [http://localhost:3000/admin/login](http://localhost:3000/admin/login). Change the password after first login.
+
 ---
 
 ## Next Steps

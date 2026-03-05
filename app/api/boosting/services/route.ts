@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getMarkupPercent } from "@/lib/admin-auth";
 import { fetchServices } from "@/lib/boosting/really-simple-social";
 
 export async function GET(req: NextRequest) {
@@ -8,9 +9,19 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "24", 10)));
     const offset = (page - 1) * limit;
 
-    const services = await fetchServices();
+    const [services, markupPercent] = await Promise.all([
+      fetchServices(),
+      getMarkupPercent("boosting"),
+    ]);
+
+    const multiplier = 1 + markupPercent / 100;
+    const items = services
+      .map((s) => ({
+        ...s,
+        rate: (parseFloat(s.rate) * multiplier).toFixed(2),
+      }))
+      .slice(offset, offset + limit);
     const total = services.length;
-    const items = services.slice(offset, offset + limit);
 
     return NextResponse.json({
       items,

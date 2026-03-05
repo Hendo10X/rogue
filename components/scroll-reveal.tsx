@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
+import { m, type Variants } from "framer-motion";
 
 const SMOOTH_EASING = [0.22, 1, 0.36, 1] as const;
 const REVEAL_DURATION = 0.7;
@@ -46,13 +46,13 @@ export function ScrollReveal({
   amount = 0.15,
 }: ScrollRevealProps) {
   return (
-    <motion.div
+    <m.div
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount }}
       variants={variants}
       className={className}>
       {children}
-    </motion.div>
+    </m.div>
   );
 }

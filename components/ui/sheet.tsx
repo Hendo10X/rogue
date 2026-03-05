@@ -4,7 +4,7 @@ import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { Dialog as SheetPrimitive } from "radix-ui"
-import { motion } from "framer-motion"
+import { m } from "framer-motion"
 
 import { cn } from "@/lib/utils"
 
@@ -101,7 +101,7 @@ function SheetContent({
     return (
       <SheetPortal>
         <SheetPrimitive.Overlay forceMount asChild>
-          <motion.div
+          <m.div
             data-slot="sheet-overlay"
             className={cn(
               "fixed inset-0 z-50 bg-black/50",
@@ -113,7 +113,7 @@ function SheetContent({
           />
         </SheetPrimitive.Overlay>
         <SheetPrimitive.Content forceMount asChild>
-          <motion.div
+          <m.div
             data-slot="sheet-content"
             className={contentClassName}
             initial={{ y: "-100%" }}
@@ -126,7 +126,7 @@ function SheetContent({
           >
             {children}
             {closeButton}
-          </motion.div>
+          </m.div>
         </SheetPrimitive.Content>
       </SheetPortal>
     )

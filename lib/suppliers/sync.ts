@@ -1,6 +1,7 @@
 import { db } from "@/db/drizzle";
 import { supplier, listing } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { getMarkupPercent } from "@/lib/admin-auth";
 import { fetchSupplierProducts } from "./adapter";
 import { applyMarkupToString } from "./markup";
 import type { SupplierProduct } from "./types";
@@ -55,6 +56,8 @@ export async function syncListingsForSupplier(supplierId: string) {
     throw new Error("Invalid supplier response");
   }
 
+  const markupPercent = await getMarkupPercent("marketplace");
+
   const products: Array<SupplierProduct & { categoryName: string }> = [];
   for (const cat of data.categories) {
     if (Array.isArray(cat.products)) {
@@ -67,7 +70,7 @@ export async function syncListingsForSupplier(supplierId: string) {
   let upserted = 0;
   for (const p of products) {
     const supplierPrice = p.price;
-    const ourPrice = applyMarkupToString(supplierPrice);
+    const ourPrice = applyMarkupToString(supplierPrice, markupPercent);
     const platform = inferPlatform(p.categoryName, p.name);
     const slug = `listing-${supplierId}-${p.id}`;
 

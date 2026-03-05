@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -76,15 +77,19 @@ export function DashboardNavbar({
       <div className="container relative flex h-14 items-center justify-between px-4 pb-4 md:px-6">
         {/* Logo - Rogue.svg on mobile, Roguelong.svg on desktop */}
         <Link href={logoUrl} className="flex shrink-0 items-center">
-          <img
+          <Image
             src="/Rogue.svg"
             className="max-h-10 dark:invert md:hidden"
             alt="Rogue"
+            width={40}
+            height={40}
           />
-          <img
+          <Image
             src={logoSrc}
             className="max-h-10 hidden dark:invert md:block md:max-h-14 md:max-w-64"
             alt="Rogue"
+            width={256}
+            height={56}
           />
         </Link>
 
