@@ -88,16 +88,23 @@ const Navbar = ({
   };
 
   return (
-    <section className={cn("pb-2 pt-4 px-9 font-display", className)}>
+    <section className={cn("pb-2 pt-4 pl-1.5 pr-3 font-display sm:px-6 lg:px-9", className)}>
       <div className="container">
         {/* Desktop Menu */}
         <nav className="hidden items-center justify-between lg:flex">
           <div className="flex items-center gap-6">
-            {/* Logo - desktop: Roguelong.svg */}
+            {/* Logo - desktop: Roguelong.svg (light), Roguelong-darkmode.svg (dark) */}
             <Link href={logo.url} className="flex items-center gap-2">
               <Image
-                src={logo.srcDesktop ?? logo.src ?? "/Roguelong.svg"}
-                className="max-h-12 dark:invert max-w-56"
+                src="/Roguelong.svg"
+                className="max-h-12 max-w-56 dark:hidden"
+                alt={logo.alt}
+                width={224}
+                height={48}
+              />
+              <Image
+                src="/Roguelong-darkmode.svg"
+                className="hidden max-h-12 max-w-56 dark:block"
                 alt={logo.alt}
                 width={224}
                 height={48}
@@ -137,7 +144,7 @@ const Navbar = ({
             </div>
           </div>
           <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline" size="sm" className="border-primary text-primary bg-transparent hover:bg-primary hover:text-white">
               <Link href={auth.login.url}>{auth.login.title}</Link>
             </Button>
             <Button asChild size="sm">
@@ -149,11 +156,11 @@ const Navbar = ({
         {/* Mobile Menu */}
         <div className="block lg:hidden text-lg">
           <div className="flex items-center justify-between">
-            {/* Logo - mobile: Rogue.svg */}
-            <Link href={logo.url} className="flex items-center gap-2">
+            {/* Logo - mobile: Rogue.svg always, pulled to edge */}
+            <Link href={logo.url} className="-ml-0.5 flex items-center gap-2">
               <Image
-                src={logo.srcMobile ?? logo.src ?? "/Rogue.svg"}
-                className="max-h-8 dark:invert"
+                src="/Rogue.svg"
+                className="max-h-8"
                 alt={logo.alt}
                 width={120}
                 height={32}
@@ -182,8 +189,8 @@ const Navbar = ({
                   <SheetTitle>
                     <Link href={logo.url} className="flex items-center gap-2">
                       <Image
-                        src={logo.srcMobile ?? logo.src ?? "/Rogue.svg"}
-                        className="max-h-8 dark:invert"
+                        src="/Rogue.svg"
+                        className="max-h-8"
                         alt={logo.alt}
                         width={120}
                         height={32}
@@ -199,7 +206,7 @@ const Navbar = ({
                           key={item.title}
                           type="button"
                           onClick={() => scrollToSection(item.url)}
-                          className="text-left text-md font-semibold hover:text-green-800 dark:hover:text-green-400">
+                          className="text-left text-md font-semibold text-link hover:opacity-90">
                           {item.title}
                         </button>
                       ) : (
@@ -211,7 +218,7 @@ const Navbar = ({
                               : item.url
                           }
                           onClick={() => setSheetOpen(false)}
-                          className="text-md font-semibold hover:text-green-800 dark:hover:text-green-400">
+                          className="text-md font-semibold text-link hover:opacity-90">
                           {item.title}
                         </Link>
                       ),
@@ -219,7 +226,7 @@ const Navbar = ({
                   </nav>
 
                   <div className="flex flex-col gap-3">
-                    <Button asChild variant="outline">
+                    <Button asChild variant="outline" className="border-primary text-primary bg-transparent hover:bg-primary hover:text-white">
                       <Link href={auth.login.url}>{auth.login.title}</Link>
                     </Button>
                     <Button asChild>

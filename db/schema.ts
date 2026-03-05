@@ -282,6 +282,7 @@ export const deposit = pgTable(
       .references(() => wallet.id, { onDelete: "cascade" }),
     amount: numeric("amount", { precision: 18, scale: 8 }).notNull(),
     currency: text("currency").notNull(),
+    provider: text("provider").default("plisio").notNull(),
     plisioTxnId: text("plisio_txn_id"),
     plisioOrderNumber: text("plisio_order_number").notNull().unique(),
     status: text("status").default("pending").notNull(),

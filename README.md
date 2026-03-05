@@ -227,6 +227,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the app.
    curl -X POST http://localhost:3000/api/admin/seed
    ```
    Creates admin with username `admin` and password `admin123`. Stored in the database.
+   For production, set `ADMIN_SEED_SECRET` in env and pass it: `curl -X POST -d '{"secret":"your-secret"}' -H "Content-Type: application/json" http://localhost:3000/api/admin/seed`
 
 3. Login at [http://localhost:3000/admin/login](http://localhost:3000/admin/login). Change the password after first login.
 

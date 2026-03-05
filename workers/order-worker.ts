@@ -183,12 +183,8 @@ const worker = new Worker<OrderJobData>(
   }
 );
 
-worker.on("completed", (job) => {
-  console.log(`[OrderWorker] Completed: ${job.id}`);
+worker.on("failed", (_job, err) => {
+  if (err instanceof Error) {
+    process.stderr.write(`[OrderWorker] Job failed: ${err.message}\n`);
+  }
 });
-
-worker.on("failed", (job, err) => {
-  console.error(`[OrderWorker] Failed ${job?.id}:`, err?.message);
-});
-
-console.log("[OrderWorker] Started");

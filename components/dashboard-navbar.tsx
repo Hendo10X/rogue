@@ -22,6 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -58,7 +59,7 @@ const NAV_LINKS = [
 export function DashboardNavbar({
   user,
   walletBalance,
-  logoUrl = "/",
+  logoUrl = "/dashboard",
   logoSrc = "/Roguelong.svg",
 }: DashboardNavbarProps) {
   const router = useRouter();
@@ -75,18 +76,25 @@ export function DashboardNavbar({
   return (
     <header className="bg-background pt-6 font-display md:pt-8">
       <div className="container relative flex h-14 items-center justify-between px-4 pb-4 md:px-6">
-        {/* Logo - Rogue.svg on mobile, Roguelong.svg on desktop */}
+        {/* Logo - Rogue.svg on mobile (both modes), Roguelong on desktop */}
         <Link href={logoUrl} className="flex shrink-0 items-center">
           <Image
             src="/Rogue.svg"
-            className="max-h-10 dark:invert md:hidden"
+            className="max-h-10 md:hidden"
             alt="Rogue"
             width={40}
             height={40}
           />
           <Image
             src={logoSrc}
-            className="max-h-10 hidden dark:invert md:block md:max-h-14 md:max-w-64"
+            className="hidden max-h-10 md:block md:max-h-14 md:max-w-64 dark:hidden"
+            alt="Rogue"
+            width={256}
+            height={56}
+          />
+          <Image
+            src="/Roguelong-darkmode.svg"
+            className="hidden max-h-10 dark:md:block md:max-h-14 md:max-w-64"
             alt="Rogue"
             width={256}
             height={56}
@@ -105,9 +113,8 @@ export function DashboardNavbar({
                       "group inline-flex h-10 w-max items-center justify-center rounded-full bg-background px-4 py-2 text-sm font-medium",
                       "transition-colors hover:bg-muted hover:text-foreground",
                       "focus:bg-muted focus:text-foreground",
-                      "data-[active=true]:bg-muted data-[active=true]:text-foreground"
-                    )}
-                  >
+                      "data-[active=true]:bg-muted data-[active=true]:text-foreground",
+                    )}>
                     {item.title}
                   </NavigationMenuLink>
                 </NavigationMenuItem>
@@ -120,7 +127,10 @@ export function DashboardNavbar({
         <div className="flex shrink-0 items-center gap-2">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="hover:bg-muted hover:text-foreground md:hidden">
+              <Button
+                variant="outline"
+                size="icon"
+                className="hover:bg-muted hover:text-foreground md:hidden">
                 <HugeiconsIcon icon={Menu01Icon} size={16} className="size-4" />
               </Button>
             </SheetTrigger>
@@ -133,8 +143,7 @@ export function DashboardNavbar({
                   <Link
                     key={item.title}
                     href={item.url}
-                    className="rounded-full px-4 py-2 text-sm font-medium hover:bg-muted"
-                  >
+                    className="rounded-full px-4 py-2 text-sm font-medium hover:bg-muted">
                     {item.title}
                   </Link>
                 ))}
@@ -143,84 +152,91 @@ export function DashboardNavbar({
           </Sheet>
 
           <DropdownMenu>
-          <DropdownMenuTrigger className="flex cursor-pointer items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-            <Avatar>
-              <AvatarImage src={user.image ?? undefined} alt={user.name} />
-              <AvatarFallback className="bg-muted text-muted-foreground text-sm font-medium">
-                {user.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .toUpperCase()
-                  .slice(0, 2)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="hidden font-medium sm:inline-block">{user.name}</span>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="font-display w-56">
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-medium">{user.name}</p>
-                <p className="text-muted-foreground text-xs">{user.email}</p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex items-center gap-2 py-1">
-                <HugeiconsIcon
-                  icon={Wallet01Icon}
-                  size={16}
-                  className="text-muted-foreground size-4 shrink-0"
-                />
-                <div>
-                  <p className="text-muted-foreground text-xs">Balance</p>
-                  <p className="text-sm font-semibold">
-                    {primaryBalance
-                      ? `${Number(primaryBalance.balance).toLocaleString("en-US", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 8,
-                        })} ${primaryBalance.currency}`
-                      : "0.00 USDT"}
-                  </p>
+            <DropdownMenuTrigger className="flex cursor-pointer items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <Avatar>
+                <AvatarImage src={user.image ?? undefined} alt={user.name} />
+                <AvatarFallback className="bg-muted text-muted-foreground text-sm font-medium">
+                  {user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="hidden font-medium sm:inline-block">
+                {user.name}
+              </span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="font-display w-56">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-muted-foreground text-xs">{user.email}</p>
                 </div>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link
-                href="/wallet/deposit"
-                className="flex cursor-pointer items-center gap-2"
-              >
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex items-center gap-2 py-1">
+                  <HugeiconsIcon
+                    icon={Wallet01Icon}
+                    size={16}
+                    className="text-muted-foreground size-4 shrink-0"
+                  />
+                  <div>
+                    <p className="text-muted-foreground text-xs">Balance</p>
+                    <p className="text-sm font-semibold">
+                      {primaryBalance
+                        ? `${Number(primaryBalance.balance).toLocaleString(
+                            "en-US",
+                            {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 8,
+                            },
+                          )} ${primaryBalance.currency}`
+                        : "0.00 USDT"}
+                    </p>
+                  </div>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link
+                  href="/wallet/deposit"
+                  className="flex cursor-pointer items-center gap-2">
+                  <HugeiconsIcon
+                    icon={Add01Icon}
+                    size={16}
+                    className="size-4"
+                  />
+                  Fund wallet
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link
+                  href="/settings"
+                  className="flex cursor-pointer items-center gap-2">
+                  <HugeiconsIcon
+                    icon={AccountSetting01Icon}
+                    size={16}
+                    className="size-4"
+                  />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
+              <ThemeToggle asDropdownItem />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="flex cursor-pointer items-center gap-2 text-destructive focus:text-destructive">
                 <HugeiconsIcon
-                  icon={Add01Icon}
+                  icon={Logout01Icon}
                   size={16}
                   className="size-4"
                 />
-                Fund wallet
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link
-                href="/settings"
-                className="flex cursor-pointer items-center gap-2"
-              >
-                <HugeiconsIcon
-                  icon={AccountSetting01Icon}
-                  size={16}
-                  className="size-4"
-                />
-                Settings
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="flex cursor-pointer items-center gap-2 text-destructive focus:text-destructive"
-            >
-              <HugeiconsIcon icon={Logout01Icon} size={16} className="size-4" />
-              Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

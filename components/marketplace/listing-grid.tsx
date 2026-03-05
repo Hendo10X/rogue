@@ -1,16 +1,12 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ListingCard } from "./listing-card";
 import { ListingDetailModal } from "./listing-detail-modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useState, useEffect } from "react";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Refresh01Icon } from "@hugeicons/core-free-icons";
-import { toast } from "sonner";
-
 async function fetchListings(params: {
   page?: number;
   platform?: string;
@@ -57,7 +53,6 @@ interface ListingGridProps {
 }
 
 export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) {
-  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [platform, setPlatform] = useState("");
@@ -72,21 +67,6 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
     setSelectedListing(item);
     setModalOpen(true);
   }
-
-  const syncMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/admin/sync-listings", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Sync failed");
-      return data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["listings"] });
-      const total = data.results?.reduce((s: number, r: { upserted: number }) => s + r.upserted, 0) ?? 0;
-      toast.success(total > 0 ? `Synced ${total} listings` : "Sync complete");
-    },
-    onError: (err: Error) => toast.error(err.message ?? "Sync failed"),
-  });
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["listings", page, platform, debouncedSearch],
@@ -127,20 +107,6 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
             ))}
           </select>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-full"
-          disabled={syncMutation.isPending}
-          onClick={() => syncMutation.mutate(undefined)}
-        >
-          {syncMutation.isPending ? (
-            <Spinner className="mr-2 size-4" />
-          ) : (
-            <HugeiconsIcon icon={Refresh01Icon} size={16} className="mr-2 size-4" />
-          )}
-          Sync
-        </Button>
       </div>
 
       {isLoading && !data ? (
@@ -155,27 +121,9 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
         </div>
       ) : items.length === 0 ? (
         <div className="rounded-lg border border-dashed p-12 text-center">
-          <p className="text-muted-foreground mb-4">
-            No listings yet. Click Sync to fetch products from suppliers.
+          <p className="text-muted-foreground">
+            No listings yet. Contact support if you need products added.
           </p>
-          <Button
-            variant="outline"
-            className="rounded-full"
-            disabled={syncMutation.isPending}
-            onClick={() => syncMutation.mutate(undefined)}
-          >
-            {syncMutation.isPending ? (
-              <>
-                <Spinner className="mr-2 size-4" />
-                Syncing...
-              </>
-            ) : (
-              <>
-                <HugeiconsIcon icon={Refresh01Icon} size={16} className="mr-2 size-4" />
-                Sync now
-              </>
-            )}
-          </Button>
         </div>
       ) : (
         <>

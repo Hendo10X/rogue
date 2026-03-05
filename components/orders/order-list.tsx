@@ -223,7 +223,7 @@ export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
                 <button
                   type="button"
                   onClick={() => openOrderView(o)}
-                  className="hover:text-primary text-left hover:underline"
+                  className="hover:text-link text-left hover:underline text-link"
                 >
                   {o.title}
                 </button>

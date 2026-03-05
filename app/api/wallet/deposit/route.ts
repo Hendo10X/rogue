@@ -5,7 +5,6 @@ import { getOrCreateWallet } from "@/lib/wallet";
 import { createPlisioInvoice } from "@/lib/plisio";
 import { db } from "@/db/drizzle";
 import { deposit } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({
@@ -16,15 +15,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const apiKey = process.env.PLISIO_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "Payment provider not configured" },
-      { status: 500 }
-    );
-  }
-
-  let body: { amount: number; currency?: string };
+  let body: { amount: number; currency?: string; provider?: "plisio" | "korapay" };
   try {
     body = await req.json();
   } catch {
@@ -42,6 +33,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const provider = body.provider ?? "plisio";
   const currency = body.currency ?? "USDT";
   const wallet = await getOrCreateWallet(session.user.id, currency);
 
@@ -53,6 +45,55 @@ export async function POST(req: NextRequest) {
     (process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : "http://localhost:3000");
+
+  if (provider === "korapay") {
+    const publicKey = process.env.KORAPAY_PUBLIC_KEY;
+    if (!publicKey) {
+      return NextResponse.json(
+        { error: "Korapay payment provider not configured" },
+        { status: 500 }
+      );
+    }
+
+    const usdToNgn = Number(process.env.NEXT_PUBLIC_USD_TO_NGN) || 1300;
+    const amountNgn = Math.round(amount * usdToNgn);
+
+    await db.insert(deposit).values({
+      id: depositId,
+      userId: session.user.id,
+      walletId: wallet.id,
+      amount: amountNgn.toString(),
+      currency: "NGN",
+      provider: "korapay",
+      plisioOrderNumber: orderNumber,
+      status: "pending",
+    });
+
+    return NextResponse.json({
+      provider: "korapay",
+      depositId,
+      orderNumber,
+      amountUsd: amount,
+      amount: amountNgn,
+      currency: "NGN",
+      publicKey,
+      customer: {
+        name: session.user.name ?? "Customer",
+        email: session.user.email ?? "",
+      },
+      notificationUrl: `${baseUrl}/api/webhooks/korapay`,
+    });
+  }
+
+  // Plisio
+  const apiKey = process.env.PLISIO_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "Plisio payment provider not configured" },
+      { status: 500 }
+    );
+  }
+
   const callbackUrl = `${baseUrl}/api/webhooks/plisio?json=true`;
   const successUrl = `${baseUrl}/wallet/deposit/success`;
 
@@ -82,6 +123,7 @@ export async function POST(req: NextRequest) {
     walletId: wallet.id,
     amount: amount.toString(),
     currency,
+    provider: "plisio",
     plisioTxnId: result.data.txn_id,
     plisioOrderNumber: orderNumber,
     status: "pending",
@@ -89,6 +131,7 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({
+    provider: "plisio",
     depositId,
     invoiceUrl: result.data.invoice_url,
     orderNumber,

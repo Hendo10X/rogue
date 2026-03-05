@@ -38,7 +38,7 @@ export default async function DepositSuccessPage() {
             <HugeiconsIcon
               icon={CheckmarkCircle02Icon}
               size={40}
-              className="text-primary"
+              className="text-link"
             />
           </div>
           <div>

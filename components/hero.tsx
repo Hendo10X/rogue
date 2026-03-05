@@ -11,12 +11,12 @@ import { ChevronRight } from "lucide-react";
 const SMOOTH_EASING = [0.22, 1, 0.36, 1] as const;
 
 const GRID_ITEMS = [
-  { name: "X", src: "/svgs/x.svg", blur: false },
+  { name: "X", src: "/svgs/x.svg", darkSrc: "/svgs/x_dark.svg", blur: false },
   { name: "Instagram", src: "/svgs/instagram-icon.svg", blur: false },
   { name: "Facebook", src: "/svgs/facebook-icon.svg", blur: false },
   { name: "Telegram", src: "/svgs/telegram.svg", blur: false },
-  { name: "Threads", src: "/svgs/threads.svg", blur: false },
-  { name: "TikTok", src: "/svgs/tiktok-icon-light.svg", blur: false },
+  { name: "Threads", src: "/svgs/threads.svg", darkSrc: "/svgs/threads_dark.svg", blur: false },
+  { name: "TikTok", src: "/svgs/tiktok-icon-light.svg", darkSrc: "/svgs/tiktok-icon-dark.svg", blur: false },
   { name: "WhatsApp", src: "/svgs/whatsapp-icon.svg", blur: false },
   { name: "Messenger", src: "/svgs/messenger.svg", blur: false },
 ] as const;
@@ -110,14 +110,23 @@ export default function HeroSection() {
                       },
                     }}>
                     <Card className="border-0 shadow-foreground/10 flex min-w-0 flex-col items-center justify-center gap-2 rounded-xl px-4 py-4 sm:px-5 sm:py-5">
-                      <div className="flex size-10 shrink-0 items-center justify-center sm:size-12">
+                      <div className="relative flex size-10 shrink-0 items-center justify-center sm:size-12">
                         <Image
                           src={item.src}
                           alt={item.name}
                           width={24}
                           height={24}
-                          className="size-6 object-contain sm:size-8 dark:invert-[.8]"
+                          className={cn("size-6 object-contain sm:size-8", "darkSrc" in item && item.darkSrc && "dark:hidden")}
                         />
+                        {"darkSrc" in item && item.darkSrc && (
+                          <Image
+                            src={item.darkSrc}
+                            alt={item.name}
+                            width={24}
+                            height={24}
+                            className="hidden size-6 object-contain sm:size-8 dark:block"
+                          />
+                        )}
                       </div>
                       <span className="text-center text-xs font-medium sm:text-sm">
                         {item.name}

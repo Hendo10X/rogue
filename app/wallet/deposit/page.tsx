@@ -36,8 +36,8 @@ export default async function DepositPage() {
               Fund your wallet
             </h1>
             <p className="text-muted-foreground mt-2 text-sm">
-              Deposit USDT or other crypto to your wallet. Payments are secure
-              via Plisio.
+              Deposit via crypto (Plisio) or card/bank transfer (Korapay).
+              Payments are secure and encrypted.
             </p>
           </div>
           <DepositForm />

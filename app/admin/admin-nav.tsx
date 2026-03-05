@@ -44,7 +44,7 @@ function NavLinks({
             key={link.href}
             href={link.href}
             onClick={onNavigate}
-            className={`block text-sm font-medium transition-colors hover:text-primary ${
+            className={`block text-sm font-medium transition-colors hover:text-link ${
               active ? "text-foreground" : "text-muted-foreground"
             }`}
           >

@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/utils/auth";
+import { cookies } from "next/headers";
 import { db } from "@/db/drizzle";
 import { supplier } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { syncListingsForSupplier } from "@/lib/suppliers/sync";
+import { verifyAdminSession } from "@/lib/admin-auth";
+
+async function requireAdmin() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("admin_session")?.value;
+  if (!token) return null;
+  return verifyAdminSession(token);
+}
 
 const SUPPLIERS = [
   {
@@ -24,11 +31,8 @@ const SUPPLIERS = [
 ];
 
 export async function POST() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user) {
+  const admin = await requireAdmin();
+  if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

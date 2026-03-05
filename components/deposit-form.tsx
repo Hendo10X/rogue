@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,11 +13,48 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+type PaymentProvider = "plisio" | "korapay";
+
+const KORAPAY_SCRIPT_URL =
+  "https://korablobstorage.blob.core.windows.net/modal-bucket/korapay-collections.min.js";
+
+declare global {
+  interface Window {
+    Korapay?: {
+      initialize: (config: {
+        key: string;
+        reference: string;
+        amount: number;
+        currency?: string;
+        customer: { name: string; email: string };
+        notification_url?: string;
+        onSuccess?: (data: { amount: string; reference: string; status: string }) => void;
+        onFailed?: (data: unknown) => void;
+        onClose?: () => void;
+      }) => void;
+    };
+  }
+}
 
 export function DepositForm() {
   const [amount, setAmount] = useState("");
+  const [provider, setProvider] = useState<PaymentProvider>("plisio");
   const [loading, setLoading] = useState(false);
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (provider !== "korapay") return;
+    if (document.querySelector(`script[src="${KORAPAY_SCRIPT_URL}"]`)) return;
+    const script = document.createElement("script");
+    script.src = KORAPAY_SCRIPT_URL;
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      script.remove();
+    };
+  }, [provider]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,13 +68,43 @@ export function DepositForm() {
       const res = await fetch("/api/wallet/deposit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: num, currency: "USDT" }),
+        body: JSON.stringify({
+          amount: num,
+          currency: "USDT",
+          provider,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         toast.error(data.error ?? "Failed to create deposit");
         return;
       }
+
+      if (data.provider === "korapay") {
+        if (!window.Korapay) {
+          toast.error("Payment gateway loading... Please try again.");
+          return;
+        }
+        window.Korapay.initialize({
+          key: data.publicKey,
+          reference: data.orderNumber,
+          amount: data.amount,
+          currency: "NGN",
+          customer: data.customer,
+          notification_url: data.notificationUrl,
+          onSuccess: () => {
+            toast.success("Payment successful!");
+            window.location.href = "/wallet/deposit/success";
+          },
+          onFailed: () => {
+            toast.error("Payment failed. Please try again.");
+            setLoading(false);
+          },
+          onClose: () => setLoading(false),
+        });
+        return;
+      }
+
       setInvoiceUrl(data.invoiceUrl);
       toast.success("Payment link created. Redirecting...");
       window.location.href = data.invoiceUrl;
@@ -58,7 +125,7 @@ export function DepositForm() {
           <Button
             className="mt-4 w-full rounded-full"
             variant="outline"
-            onClick={() => window.location.href = invoiceUrl}>
+            onClick={() => (window.location.href = invoiceUrl)}>
             Open payment page
           </Button>
         </CardContent>
@@ -71,12 +138,35 @@ export function DepositForm() {
       <CardHeader>
         <CardTitle>Deposit amount</CardTitle>
         <CardDescription>
-          Enter the amount in USD. You&apos;ll pay with crypto (USDT, BTC, ETH,
-          etc.).
+          Enter the amount in USD and choose your payment method.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex gap-2 rounded-lg border p-1">
+            <button
+              type="button"
+              onClick={() => setProvider("plisio")}
+              className={cn(
+                "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                provider === "plisio"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}>
+              Crypto (Plisio)
+            </button>
+            <button
+              type="button"
+              onClick={() => setProvider("korapay")}
+              className={cn(
+                "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                provider === "korapay"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}>
+              Card & Bank (Korapay)
+            </button>
+          </div>
           <div className="space-y-2">
             <label htmlFor="amount" className="text-sm font-medium">
               Amount (USD)
@@ -94,7 +184,9 @@ export function DepositForm() {
               className="rounded-lg"
             />
             <p className="text-muted-foreground text-xs">
-              Min $1, max $100,000
+              {provider === "plisio"
+                ? "Pay with USDT, BTC, ETH, etc."
+                : "Pay with card or bank transfer (NGN)"}
             </p>
           </div>
           <Button

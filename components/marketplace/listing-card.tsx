@@ -47,7 +47,7 @@ export function ListingCard({
           <button
             type="button"
             onClick={onViewClick}
-            className="hover:text-primary text-left hover:underline"
+            className="hover:text-link text-left hover:underline text-link"
           >
             {title}
           </button>
