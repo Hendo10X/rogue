@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
       getUSDtoNGNRate(),
     ]);
 
-    const itemsWithDynamicPrice = items.map((item) => {
+    const itemsWithDynamicPrice = items.map((item: any) => {
       const supplierPrice = parseFloat(item.supplierPrice);
       const finalPrice = Math.round(supplierPrice * rate + markupNaira);
       return {
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     .from(listing)
     .where(eq(listing.status, "active"))
     .orderBy(listing.platform);
-  const platforms = platformsResult.map((r) => r.platform);
+  const platforms = platformsResult.map((r: any) => r.platform);
 
   return NextResponse.json({
     items: itemsWithDynamicPrice,

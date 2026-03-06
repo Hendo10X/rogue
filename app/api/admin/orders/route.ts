@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
 import { cookies } from "next/headers";
 import { db } from "@/db/drizzle";
 import { order, listing, supplier, user, boostingOrder } from "@/db/schema";
@@ -67,18 +69,18 @@ export async function GET() {
     }
   }
 
-  const boostingWithEmail = boostingOrders.map((o) => ({
+  const boostingWithEmail = boostingOrders.map((o: any) => ({
     ...o,
     type: "boosting",
     userEmail: userMap.get(o.userId) ?? "",
   }));
 
-  const marketplaceOrders = marketplaceRows.map((o) => ({
+  const marketplaceOrders = marketplaceRows.map((o: any) => ({
     ...o,
     type: "marketplace" as const,
   }));
   const allOrders = [
-    ...marketplaceOrders.map((o) => ({ ...o, userEmail: o.userEmail })),
+    ...marketplaceOrders.map((o: any) => ({ ...o, userEmail: o.userEmail })),
     ...boostingWithEmail,
   ].sort(
     (a, b) =>

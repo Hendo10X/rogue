@@ -40,7 +40,7 @@ export async function GET() {
     .limit(100);
 
   return NextResponse.json(
-    orders.map((o) => ({
+    orders.map((o: any) => ({
       id: o.id,
       status: o.status,
       amount: o.amount,
