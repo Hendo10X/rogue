@@ -3,6 +3,7 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatPriceWithCurrency } from "@/lib/format-price";
 
 interface ListingCardProps {
   id: string;
@@ -61,7 +62,7 @@ export function ListingCard({
       </CardContent>
       <CardFooter className="flex items-center justify-between border-t pt-4">
         <span className="font-semibold">
-          {currency === "NGN" ? `₦${Math.round(parseFloat(price)).toLocaleString("en-NG")}` : `₦${(parseFloat(price) * 1600).toLocaleString("en-NG")}`}
+          {formatPriceWithCurrency(price, currency)}
         </span>
         <span className="text-muted-foreground text-xs">
           {stock} in stock

@@ -10,6 +10,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { formatPriceWithCurrency } from "@/lib/format-price";
 import { PurchaseButton } from "./purchase-button";
 
 interface ListingDetailModalProps {
@@ -70,7 +71,7 @@ export function ListingDetailModal({
             <div>
               <p className="text-muted-foreground text-xs">Price</p>
               <p className="text-lg font-semibold">
-                {listing.currency === "NGN" ? `₦${Math.round(parseFloat(listing.price)).toLocaleString("en-NG")}` : `₦${(parseFloat(listing.price) * 1600).toLocaleString("en-NG")}`}
+                {formatPriceWithCurrency(listing.price, listing.currency)}
               </p>
             </div>
             <div>

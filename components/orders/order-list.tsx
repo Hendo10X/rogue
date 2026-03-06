@@ -129,7 +129,7 @@ function OrderViewSheet({
           <div>
             <p className="text-muted-foreground mb-1 text-xs">{order.supplierName}</p>
             <p className="text-xl font-semibold">
-              {formatPriceWithCurrency(order.amount)}
+              {formatPriceWithCurrency(order.amount, order.currency)}
             </p>
           </div>
           {(order.status === "completed" || order.status === "failed") && (
@@ -235,7 +235,7 @@ export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
             <CardContent className="space-y-3 pt-0">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">
-                  {formatPriceWithCurrency(o.amount)}
+                  {formatPriceWithCurrency(o.amount, o.currency)}
                 </span>
                 {(o.status === "processing" || o.status === "pending") && (
                   <span className="text-muted-foreground flex items-center gap-1 text-xs">

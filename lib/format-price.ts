@@ -1,19 +1,20 @@
-import { getUSDtoNGNRate } from "./currency";
+import { getCachedRate } from "./currency";
 
-export async function formatPriceInNaira(priceUsd: string | number): Promise<string> {
+export function formatNaira(priceUsd: string | number): string {
   const num = typeof priceUsd === "string" ? parseFloat(priceUsd) : priceUsd;
-  const rate = await getUSDtoNGNRate();
+  const rate = getCachedRate();
   const ngn = Math.round(num * rate);
-  return ngn.toLocaleString("en-NG");
+  return `₦${ngn.toLocaleString("en-NG")}`;
 }
 
-export async function formatPriceWithCurrency(
+export function formatPriceWithCurrency(
   price: string | number,
   currency: string = "USD"
-): Promise<string> {
+): string {
+  const num = typeof price === "string" ? parseFloat(price) : price;
   if (currency === "NGN") {
-    const num = typeof price === "string" ? parseFloat(price) : price;
     return `₦${Math.round(num).toLocaleString("en-NG")}`;
   }
-  return `₦${await formatPriceInNaira(price)}`;
+  // If price is in USD/USDT, convert to Naira for unified display
+  return formatNaira(num);
 }
