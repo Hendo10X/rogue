@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     orderId,
     externalOrderId,
-    amount,
+    amount: totalAmountUsdt,
     message: "Order placed successfully.",
   });
 }

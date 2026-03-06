@@ -61,13 +61,32 @@ export async function syncListingsForSupplier(supplierId: string) {
     getUSDtoNGNRate(),
   ]);
 
+  const products: SupplierProduct[] = data.categories.flatMap((cat: any) =>
+    cat.products.map((p: any) => ({
+      ...p,
+      categoryId: cat.id,
+      categoryName: cat.name,
+    }))
+  );
+
   let upserted = 0;
   for (const p of products) {
+    const [existing] = await db
+      .select({ id: listing.id })
+      .from(listing)
+      .where(
+        and(
+          eq(listing.supplierId, supplierId),
+          eq(listing.externalProductId, p.id)
+        )
+      )
+      .limit(1);
+
     const supplierPriceUsd = parseFloat(p.price);
     const supplierPriceNgn = supplierPriceUsd * rate;
     const ourPriceNgn = supplierPriceNgn + markupNaira;
     
-    const platform = inferPlatform(p.categoryName, p.name);
+    const platform = inferPlatform(p.categoryName || "", p.name);
     const slug = `listing-${supplierId}-${p.id}`;
 
     const payload = {
@@ -75,7 +94,7 @@ export async function syncListingsForSupplier(supplierId: string) {
       externalProductId: p.id,
       type: "account" as const,
       platform,
-      categoryName: p.categoryName,
+      categoryName: p.categoryName || null,
       title: p.name.slice(0, 500),
       description: p.description?.slice(0, 2000) ?? null,
       slug,
