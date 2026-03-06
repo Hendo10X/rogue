@@ -1,8 +1,5 @@
-import "dotenv/config";
-import { Worker } from "bullmq";
-import { getRedis } from "../lib/queue/redis";
-import { ORDER_QUEUE_NAME } from "../lib/queue/order-queue";
-import { db } from "../db/drizzle";
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db/drizzle";
 import {
   order,
   listing,
@@ -12,25 +9,56 @@ import {
   transaction,
   wallet,
   user,
-} from "../db/schema";
-import { eq } from "drizzle-orm";
-import { purchaseFromSupplier } from "../lib/suppliers/adapter";
+} from "@/db/schema";
+import { eq, and, asc } from "drizzle-orm";
+import { purchaseFromSupplier } from "@/lib/suppliers/adapter";
 
-interface OrderJobData {
-  orderId: string;
-}
+export const dynamic = "force-dynamic";
+export const maxDuration = 60; // Allow up to 60 seconds for processing
 
-async function processOrder(orderId: string) {
-  const [ord] = await db
-    .select()
-    .from(order)
-    .where(eq(order.id, orderId))
-    .limit(1);
+export async function GET(req: NextRequest) {
+  // Verify Vercel Cron secret or local development
+  const authHeader = req.headers.get("Authorization");
+  const isLocal = process.env.NODE_ENV === "development";
+  const cronSecret = process.env.CRON_SECRET;
 
-  if (!ord || ord.status !== "pending") {
-    return;
+  if (!isLocal && cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return new Response("Unauthorized", { status: 401 });
   }
 
+  // Fetch up to 5 pending orders to process in one go
+  const pendingOrders = await db
+    .select()
+    .from(order)
+    .where(eq(order.status, "pending"))
+    .orderBy(asc(order.createdAt))
+    .limit(5);
+
+  if (pendingOrders.length === 0) {
+    return NextResponse.json({ processed: 0, message: "No pending orders" });
+  }
+
+  const results = [];
+
+  for (const ord of pendingOrders) {
+    try {
+      results.push(await processPendingOrder(ord));
+    } catch (err) {
+      console.error(`Failed to process order ${ord.id}:`, err);
+      results.push({ orderId: ord.id, status: "error", error: String(err) });
+    }
+  }
+
+  return NextResponse.json({
+    processed: pendingOrders.length,
+    results,
+  });
+}
+
+async function processPendingOrder(ord: any) {
+  const orderId = ord.id;
+
+  // Mark as processing immediately to avoid double-processing
   await db
     .update(order)
     .set({ status: "processing", updatedAt: new Date() })
@@ -42,18 +70,20 @@ async function processOrder(orderId: string) {
     .where(eq(listing.id, ord.listingId))
     .limit(1);
 
+  if (!list) {
+    await db.update(order).set({ status: "failed", updatedAt: new Date() }).where(eq(order.id, orderId));
+    return { orderId, status: "failed", reason: "listing_not_found" };
+  }
+
   const [sup] = await db
     .select()
     .from(supplier)
-    .where(eq(supplier.id, list!.supplierId))
+    .where(eq(supplier.id, list.supplierId))
     .limit(1);
 
-  if (!list || !sup?.apiUrl || !sup?.apiKey) {
-    await db
-      .update(order)
-      .set({ status: "failed", updatedAt: new Date() })
-      .where(eq(order.id, orderId));
-    return;
+  if (!sup?.apiUrl || !sup?.apiKey) {
+    await db.update(order).set({ status: "failed", updatedAt: new Date() }).where(eq(order.id, orderId));
+    return { orderId, status: "failed", reason: "supplier_not_configured" };
   }
 
   const coupon = (ord.metadata as { coupon?: string })?.coupon;
@@ -70,6 +100,7 @@ async function processOrder(orderId: string) {
       throw new Error(purchaseResult.msg ?? "Supplier purchase failed");
     }
 
+    // Success flow
     const supplierOrderId = crypto.randomUUID();
     await db.insert(supplierOrder).values({
       id: supplierOrderId,
@@ -82,12 +113,9 @@ async function processOrder(orderId: string) {
 
     const credentials = purchaseResult.data ?? [];
     const deliveryData = credentials.join("\n");
-
-    // Standard format: username:password:email:emailpassword
-    // We'll try to parse the first one for individual fields
     const firstLine = credentials[0] || "";
     const parts = firstLine.split(":");
-    
+
     await db.insert(accountDelivery).values({
       id: crypto.randomUUID(),
       orderId,
@@ -101,6 +129,7 @@ async function processOrder(orderId: string) {
       notes: deliveryData,
     });
 
+    // Handle transaction log if paid via wallet
     if (ord.walletId) {
       await db.insert(transaction).values({
         id: crypto.randomUUID(),
@@ -114,24 +143,18 @@ async function processOrder(orderId: string) {
       });
     }
 
-    await db
-      .update(listing)
-      .set({
-        stock: list.stock - ord.quantity,
-        updatedAt: new Date(),
-      })
-      .where(eq(listing.id, list.id));
+    await db.update(listing).set({
+      stock: list.stock - ord.quantity,
+      updatedAt: new Date(),
+    }).where(eq(listing.id, list.id));
 
-    await db
-      .update(order)
-      .set({ status: "completed", updatedAt: new Date() })
-      .where(eq(order.id, orderId));
+    await db.update(order).set({ status: "completed", updatedAt: new Date() }).where(eq(order.id, orderId));
 
-    // Trigger Email Delivery
+    // Email Notification
     const [usr] = await db.select().from(user).where(eq(user.id, ord.userId)).limit(1);
     if (usr?.email) {
       try {
-        const { sendOrderDeliveryEmail } = await import("../lib/email");
+        const { sendOrderDeliveryEmail } = await import("@/lib/email");
         await sendOrderDeliveryEmail({
           to: usr.email,
           orderId,
@@ -144,37 +167,25 @@ async function processOrder(orderId: string) {
             notes: deliveryData,
           },
         });
-      } catch (emailErr) {
-        console.error("Order completion email failed:", emailErr);
+      } catch (e) {
+        console.error("Email failed:", e);
       }
     }
+
+    return { orderId, status: "completed" };
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
-    const supplierOrderId = crypto.randomUUID();
-    await db.insert(supplierOrder).values({
-      id: supplierOrderId,
-      orderId,
-      supplierId: sup.id,
-      status: "failed",
-      errorMessage: errMsg,
-    });
-
+    
+    // Recovery flow - Refund if using wallet
     if (ord.walletId) {
-      const [w] = await db
-        .select()
-        .from(wallet)
-        .where(eq(wallet.id, ord.walletId))
-        .limit(1);
+      const [w] = await db.select().from(wallet).where(eq(wallet.id, ord.walletId)).limit(1);
       if (w) {
         const current = parseFloat(w.balance);
         const refund = parseFloat(ord.amount);
-        await db
-          .update(wallet)
-          .set({
-            balance: (current + refund).toFixed(8),
-            updatedAt: new Date(),
-          })
-          .where(eq(wallet.id, ord.walletId));
+        await db.update(wallet).set({
+          balance: (current + refund).toFixed(8),
+          updatedAt: new Date(),
+        }).where(eq(wallet.id, ord.walletId));
 
         await db.insert(transaction).values({
           id: crypto.randomUUID(),
@@ -189,11 +200,8 @@ async function processOrder(orderId: string) {
       }
     }
 
-    await db
-      .update(order)
-      .set({ status: "failed", updatedAt: new Date() })
-      .where(eq(order.id, orderId));
-
+    await db.update(order).set({ status: "failed", updatedAt: new Date() }).where(eq(order.id, orderId));
+    
     await db.insert(accountDelivery).values({
       id: crypto.randomUUID(),
       orderId,
@@ -201,22 +209,7 @@ async function processOrder(orderId: string) {
       deliveryStatus: "failed",
       notes: errMsg,
     });
+
+    return { orderId, status: "failed", error: errMsg };
   }
 }
-
-const worker = new Worker<OrderJobData>(
-  ORDER_QUEUE_NAME,
-  async (job) => {
-    await processOrder(job.data.orderId);
-  },
-  {
-    connection: getRedis(),
-    concurrency: 3,
-  }
-);
-
-worker.on("failed", (_job, err) => {
-  if (err instanceof Error) {
-    process.stderr.write(`[OrderWorker] Job failed: ${err.message}\n`);
-  }
-});

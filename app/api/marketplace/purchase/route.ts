@@ -5,7 +5,6 @@ import { db } from "@/db/drizzle";
 import { listing, supplier, order, wallet } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getOrCreateWallet, debitWallet } from "@/lib/wallet";
-import { getOrderQueue } from "@/lib/queue/order-queue";
 import { getMarkupNaira } from "@/lib/admin-auth";
 import { getUSDtoNGNRate } from "@/lib/currency";
 
@@ -118,38 +117,9 @@ export async function POST(req: NextRequest) {
     metadata: { coupon: body.coupon },
   });
 
-  try {
-    const queue = getOrderQueue();
-    await queue.add(
-      "process-order",
-      {
-        orderId,
-      },
-      {
-        jobId: orderId,
-      }
-    );
-  } catch (e) {
-    await db
-      .update(order)
-      .set({ status: "failed", updatedAt: new Date() })
-      .where(eq(order.id, orderId));
-    await db
-      .update(wallet)
-      .set({
-        balance: (balance).toFixed(8),
-        updatedAt: new Date(),
-      })
-      .where(eq(wallet.id, walletRow.id));
-    return NextResponse.json(
-      { error: "Failed to queue order. Please try again." },
-      { status: 503 }
-    );
-  }
-
   return NextResponse.json({
     orderId,
-    message: "Order placed. Processing in the background.",
+    message: "Order placed. Processing will complete shortly.",
     status: "pending",
   });
 }
