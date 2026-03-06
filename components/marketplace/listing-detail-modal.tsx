@@ -57,9 +57,6 @@ export function ListingDetailModal({
           <AlertDialogTitle className="text-left">
             {listing.title}
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-left text-xs">
-            {listing.supplierName}
-          </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-4 py-2">
           <div className="rounded-lg border p-3">
