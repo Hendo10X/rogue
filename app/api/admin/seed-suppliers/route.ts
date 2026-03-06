@@ -1,0 +1,53 @@
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { db } from "@/db/drizzle";
+import { supplier } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { verifyAdminSession } from "@/lib/admin-auth";
+
+async function requireAdmin() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("admin_session")?.value;
+  if (!token) return null;
+  return verifyAdminSession(token);
+}
+
+const SUPPLIERS = [
+  {
+    id: "supplier-shopviaclone",
+    name: "ShopViaClone",
+    slug: "shopviaclone",
+    apiUrl: "https://shopviaclone22.com",
+    apiKey: process.env.SUPPLIER_SHOPVIACLONE_API_KEY ?? "",
+  },
+  {
+    id: "supplier-acctshop",
+    name: "AcctShop",
+    slug: "acctshop",
+    apiUrl: "https://acctshop.com",
+    apiKey: process.env.SUPPLIER_ACCTSHOP_API_KEY ?? "",
+  },
+];
+
+export async function POST() {
+  const admin = await requireAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const inserted: string[] = [];
+  for (const s of SUPPLIERS) {
+    if (!s.apiKey) continue;
+    const [existing] = await db
+      .select()
+      .from(supplier)
+      .where(eq(supplier.id, s.id))
+      .limit(1);
+    if (!existing) {
+      await db.insert(supplier).values(s);
+      inserted.push(s.id);
+    }
+  }
+
+  return NextResponse.json({ inserted });
+}

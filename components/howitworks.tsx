@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ScrollReveal, staggerContainer, fadeSlideUp } from "@/components/scroll-reveal";
 
 export default function HowItWorks() {
@@ -20,14 +20,14 @@ export default function HowItWorks() {
             Four simple steps. Easy and secure from start to finish.
           </p>
         </ScrollReveal>
-        <motion.div
+        <m.div
           className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.15 }}
           variants={staggerContainer}>
           {steps.map((step) => (
-            <motion.div
+            <m.div
               key={step.number}
               className="flex gap-4 border-t pt-6"
               variants={fadeSlideUp}>
@@ -40,9 +40,9 @@ export default function HowItWorks() {
                   {step.description}
                 </p>
               </div>
-            </motion.div>
+            </m.div>
           ))}
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

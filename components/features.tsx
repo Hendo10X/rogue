@@ -6,7 +6,7 @@ import {
   Activity01Icon,
   Calendar03Icon,
 } from "@hugeicons/core-free-icons";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ScrollReveal, staggerContainer, fadeSlideUp } from "@/components/scroll-reveal";
 
 const FEATURES = [
@@ -44,14 +44,14 @@ export default function Features() {
             lightning-fast.
           </p>
         </ScrollReveal>
-        <motion.div
+        <m.div
           className="@xl:grid-cols-3 mt-12 grid grid-cols-2 gap-6 text-sm"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.15 }}
           variants={staggerContainer}>
           {FEATURES.map((feature) => (
-            <motion.div
+            <m.div
               key={feature.title}
               className="space-y-4 border-t pt-6"
               variants={fadeSlideUp}>
@@ -68,9 +68,9 @@ export default function Features() {
                   {feature.description}
                 </p>
               </div>
-            </motion.div>
+            </m.div>
           ))}
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

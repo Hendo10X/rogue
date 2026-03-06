@@ -6,6 +6,7 @@ import {
   GithubIcon,
   Linkedin01Icon,
 } from "@hugeicons/core-free-icons";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const links = [
   { label: "Home", href: "/" },
@@ -24,17 +25,16 @@ const social = [
 
 export default function Footer() {
   return (
-    <footer className="bg-secondary @container border-t py-12">
+    <footer className="bg-secondary border-t border-white/10 py-12 text-white @container">
       <div className="mx-auto max-w-3xl px-6">
         <div className="grid gap-8">
-          <div className="col-span-full border-primary/20 border-b pb-8">
+          <div className="col-span-full border-b border-white/20 pb-8">
             <Link href="/" className="flex items-center gap-2">
               <Image
                 src="/Roguelong-white.svg"
                 alt="Logo"
                 width={150}
                 height={150}
-                className="dark:invert"
               />
             </Link>
             <div className="-ml-2 mt-6 flex gap-2">
@@ -42,7 +42,7 @@ export default function Footer() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-primary hover:text-primary/80 flex size-8 items-center justify-center transition-colors"
+                  className="text-white hover:opacity-80 flex size-8 items-center justify-center transition-colors"
                   aria-label={item.label}>
                   <HugeiconsIcon icon={item.icon} size={18} className="size-4" />
                 </Link>
@@ -55,15 +55,16 @@ export default function Footer() {
               <Link
                 key={link.label}
                 href={link.href}
-                className="text-primary hover:text-primary/80 text-sm transition-colors">
+                className="text-white hover:opacity-80 text-sm transition-colors">
                 {link.label}
               </Link>
             ))}
           </nav>
-          <div className="border-primary/20 border-t pt-8">
-            <p className="text-primary text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/20 pt-8">
+            <p className="text-sm">
               &copy; {new Date().getFullYear()} Rogue. All rights reserved.
             </p>
+            <ThemeToggle className="text-white hover:text-white/80" />
           </div>
         </div>
       </div>

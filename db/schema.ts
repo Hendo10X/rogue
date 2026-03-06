@@ -111,7 +111,8 @@ export const supplier = pgTable("supplier", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
-  apiUrl: text("api_url"),
+  apiUrl: text("api_url").notNull(),
+  apiKey: text("api_key").notNull(),
   status: text("status").default("active").notNull(),
   capabilities: jsonb("capabilities").$type<{
     accounts?: boolean;
@@ -131,11 +132,14 @@ export const listing = pgTable(
     supplierId: text("supplier_id")
       .notNull()
       .references(() => supplier.id, { onDelete: "cascade" }),
+    externalProductId: text("external_product_id").notNull(),
     type: text("type").notNull(), // "account" | "service"
-    platform: text("platform").notNull(), // instagram, tiktok, twitter, youtube
+    platform: text("platform").notNull(), // instagram, tiktok, twitter, youtube, vpn, etc
+    categoryName: text("category_name"),
     title: text("title").notNull(),
     description: text("description"),
     slug: text("slug").notNull().unique(),
+    supplierPrice: numeric("supplier_price", { precision: 18, scale: 8 }).notNull(),
     price: numeric("price", { precision: 18, scale: 8 }).notNull(),
     currency: text("currency").notNull(),
     stock: integer("stock").default(0).notNull(),
@@ -151,6 +155,10 @@ export const listing = pgTable(
     index("listing_supplier_idx").on(table.supplierId),
     index("listing_slug_idx").on(table.slug),
     index("listing_status_idx").on(table.status),
+    uniqueIndex("listing_supplier_product_idx").on(
+      table.supplierId,
+      table.externalProductId
+    ),
   ],
 );
 
@@ -250,6 +258,7 @@ export const accountDelivery = pgTable(
     username: text("username"),
     email: text("email"),
     password: text("password"),
+    emailPassword: text("email_password"),
     deliveryStatus: text("delivery_status").default("pending").notNull(),
     deliveredAt: timestamp("delivered_at"),
     notes: text("notes"),
@@ -261,6 +270,105 @@ export const accountDelivery = pgTable(
   },
   (table) => [index("account_delivery_order_idx").on(table.orderId)],
 );
+
+export const deposit = pgTable(
+  "deposit",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    walletId: text("wallet_id")
+      .notNull()
+      .references(() => wallet.id, { onDelete: "cascade" }),
+    amount: numeric("amount", { precision: 18, scale: 8 }).notNull(),
+    currency: text("currency").notNull(),
+    provider: text("provider").default("plisio").notNull(),
+    plisioTxnId: text("plisio_txn_id"),
+    plisioOrderNumber: text("plisio_order_number").notNull().unique(),
+    status: text("status").default("pending").notNull(),
+    invoiceUrl: text("invoice_url"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    completedAt: timestamp("completed_at"),
+  },
+  (table) => [
+    index("deposit_user_idx").on(table.userId),
+    index("deposit_status_idx").on(table.status),
+    index("deposit_plisio_order_idx").on(table.plisioOrderNumber),
+  ],
+);
+
+export const boostingOrder = pgTable(
+  "boosting_order",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    walletId: text("wallet_id")
+      .notNull()
+      .references(() => wallet.id, { onDelete: "restrict" }),
+    serviceId: integer("service_id").notNull(),
+    serviceName: text("service_name").notNull(),
+    category: text("category"),
+    link: text("link").notNull(),
+    quantity: integer("quantity").notNull(),
+    amount: numeric("amount", { precision: 18, scale: 8 }).notNull(),
+    currency: text("currency").notNull().default("USD"),
+    externalOrderId: integer("external_order_id"),
+    status: text("status").default("pending").notNull(),
+    externalStatus: text("external_status"),
+    charge: numeric("charge"),
+    startCount: text("start_count"),
+    remains: text("remains"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("boosting_order_user_idx").on(table.userId),
+    index("boosting_order_status_idx").on(table.status),
+    index("boosting_order_external_idx").on(table.externalOrderId),
+  ],
+);
+
+export const admin = pgTable("admin", {
+  id: text("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const adminSession = pgTable(
+  "admin_session",
+  {
+    id: text("id").primaryKey(),
+    adminId: text("admin_id")
+      .notNull()
+      .references(() => admin.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("admin_session_admin_idx").on(table.adminId),
+    index("admin_session_expires_idx").on(table.expiresAt),
+  ],
+);
+
+export const adminSettings = pgTable("admin_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
 
 export const webhookLog = pgTable(
   "webhook_log",
@@ -288,6 +396,7 @@ export const userRelations = relations(user, ({ many }) => ({
   accounts: many(account),
   wallets: many(wallet),
   orders: many(order),
+  boostingOrders: many(boostingOrder),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -308,6 +417,15 @@ export const walletRelations = relations(wallet, ({ one, many }) => ({
   user: one(user, { fields: [wallet.userId], references: [user.id] }),
   transactions: many(transaction),
   orders: many(order),
+  deposits: many(deposit),
+}));
+
+export const depositRelations = relations(deposit, ({ one }) => ({
+  user: one(user, { fields: [deposit.userId], references: [user.id] }),
+  wallet: one(wallet, {
+    fields: [deposit.walletId],
+    references: [wallet.id],
+  }),
 }));
 
 export const transactionRelations = relations(transaction, ({ one }) => ({
@@ -372,12 +490,24 @@ export const webhookLogRelations = relations(webhookLog, ({ one }) => ({
   }),
 }));
 
+export const boostingOrderRelations = relations(boostingOrder, ({ one }) => ({
+  user: one(user, { fields: [boostingOrder.userId], references: [user.id] }),
+  wallet: one(wallet, {
+    fields: [boostingOrder.walletId],
+    references: [wallet.id],
+  }),
+}));
+
 export const schema = {
   account,
   session,
+  admin,
+  adminSession,
+  adminSettings,
   user,
   verification,
   wallet,
+  deposit,
   supplier,
   listing,
   order,
@@ -385,4 +515,5 @@ export const schema = {
   supplierOrder,
   accountDelivery,
   webhookLog,
+  boostingOrder,
 };

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { animate } from "framer-motion";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Menu01Icon } from "@hugeicons/core-free-icons";
 
@@ -82,33 +82,34 @@ const Navbar = ({
       const id = href.slice(1);
       const el = document.getElementById(id);
       if (el) {
-        const top = el.getBoundingClientRect().top + window.scrollY;
-        animate(window.scrollY, top, {
-          type: "tween",
-          ease: [0.32, 0.72, 0, 1],
-          duration: 0.8,
-          onUpdate: (v) => window.scrollTo(0, v),
-        });
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
   };
 
   return (
-    <section className={cn("pb-2 pt-4 px-9 font-display", className)}>
+    <section className={cn("pb-2 pt-4 pl-1.5 pr-3 font-display sm:px-6 lg:px-9", className)}>
       <div className="container">
         {/* Desktop Menu */}
         <nav className="hidden items-center justify-between lg:flex">
           <div className="flex items-center gap-6">
-            {/* Logo - desktop: Roguelong.svg */}
-            <a href={logo.url} className="flex items-center gap-2">
-              <img
-                src={logo.srcDesktop ?? logo.src ?? "/Roguelong.svg"}
-                className="max-h-12 dark:invert max-w-56"
+            {/* Logo - desktop: Roguelong.svg (light), Roguelong-darkmode.svg (dark) */}
+            <Link href={logo.url} className="flex items-center gap-2">
+              <Image
+                src="/Roguelong.svg"
+                className="max-h-12 max-w-56 dark:hidden"
                 alt={logo.alt}
                 width={224}
                 height={48}
               />
-            </a>
+              <Image
+                src="/Roguelong-darkmode.svg"
+                className="hidden max-h-12 max-w-56 dark:block"
+                alt={logo.alt}
+                width={224}
+                height={48}
+              />
+            </Link>
             <div className="flex items-center">
               <NavigationMenu>
                 <NavigationMenuList>
@@ -143,11 +144,11 @@ const Navbar = ({
             </div>
           </div>
           <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <a href={auth.login.url}>{auth.login.title}</a>
+            <Button asChild variant="outline" size="sm" className="border-primary text-primary bg-transparent hover:bg-primary hover:text-white">
+              <Link href={auth.login.url}>{auth.login.title}</Link>
             </Button>
             <Button asChild size="sm">
-              <a href={auth.signup.url}>{auth.signup.title}</a>
+              <Link href={auth.signup.url}>{auth.signup.title}</Link>
             </Button>
           </div>
         </nav>
@@ -155,14 +156,16 @@ const Navbar = ({
         {/* Mobile Menu */}
         <div className="block lg:hidden text-lg">
           <div className="flex items-center justify-between">
-            {/* Logo - mobile: Rogue.svg */}
-            <a href={logo.url} className="flex items-center gap-2">
-              <img
-                src={logo.srcMobile ?? logo.src ?? "/Rogue.svg"}
-                className="max-h-8 dark:invert"
+            {/* Logo - mobile: Rogue.svg always, pulled to edge */}
+            <Link href={logo.url} className="-ml-0.5 flex items-center gap-2">
+              <Image
+                src="/Rogue.svg"
+                className="max-h-8"
                 alt={logo.alt}
+                width={120}
+                height={32}
               />
-            </a>
+            </Link>
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
                 <Button
@@ -184,13 +187,15 @@ const Navbar = ({
                 className="overflow-y-auto font-display">
                 <SheetHeader>
                   <SheetTitle>
-                    <a href={logo.url} className="flex items-center gap-2">
-                      <img
-                        src={logo.srcMobile ?? logo.src ?? "/Rogue.svg"}
-                        className="max-h-8 dark:invert"
+                    <Link href={logo.url} className="flex items-center gap-2">
+                      <Image
+                        src="/Rogue.svg"
+                        className="max-h-8"
                         alt={logo.alt}
+                        width={120}
+                        height={32}
                       />
-                    </a>
+                    </Link>
                   </SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-6 p-4">
@@ -201,7 +206,7 @@ const Navbar = ({
                           key={item.title}
                           type="button"
                           onClick={() => scrollToSection(item.url)}
-                          className="text-left text-md font-semibold hover:text-green-800 dark:hover:text-green-400">
+                          className="text-left text-md font-semibold text-link hover:opacity-90">
                           {item.title}
                         </button>
                       ) : (
@@ -213,7 +218,7 @@ const Navbar = ({
                               : item.url
                           }
                           onClick={() => setSheetOpen(false)}
-                          className="text-md font-semibold hover:text-green-800 dark:hover:text-green-400">
+                          className="text-md font-semibold text-link hover:opacity-90">
                           {item.title}
                         </Link>
                       ),
@@ -221,11 +226,11 @@ const Navbar = ({
                   </nav>
 
                   <div className="flex flex-col gap-3">
-                    <Button asChild variant="outline">
-                      <a href={auth.login.url}>{auth.login.title}</a>
+                    <Button asChild variant="outline" className="border-primary text-primary bg-transparent hover:bg-primary hover:text-white">
+                      <Link href={auth.login.url}>{auth.login.title}</Link>
                     </Button>
                     <Button asChild>
-                      <a href={auth.signup.url}>{auth.signup.title}</a>
+                      <Link href={auth.signup.url}>{auth.signup.title}</Link>
                     </Button>
                   </div>
                 </div>
