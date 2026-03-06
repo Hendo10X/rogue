@@ -53,7 +53,6 @@ export function ListingCard({
             {title}
           </button>
         </h3>
-        <p className="text-muted-foreground text-xs">{supplierName}</p>
       </CardHeader>
       <CardContent className="pb-2">
         <p className="text-muted-foreground line-clamp-2 text-sm">
