@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
-import { deposit } from "@/db/schema";
+import { deposit, webhookLog } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyKorapayWebhook } from "@/lib/korapay";
 import { creditWallet, logTransaction } from "@/lib/wallet";

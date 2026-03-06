@@ -6,8 +6,10 @@ import { getUSDtoNGNRate } from "@/lib/currency";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    const category = searchParams.get("category");
+    const query = searchParams.get("q")?.toLowerCase();
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "24", 10)));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10)));
     const offset = (page - 1) * limit;
 
     const [services, markupNaira, rate] = await Promise.all([
@@ -16,7 +18,22 @@ export async function GET(req: NextRequest) {
       getUSDtoNGNRate(),
     ]);
 
-    const items = services
+    // Extract unique categories
+    const categories = Array.from(new Set(services.map((s) => s.category))).sort();
+
+    // Filter services
+    let filteredServices = services;
+    if (category && category !== "all") {
+      filteredServices = filteredServices.filter((s) => s.category === category);
+    }
+    if (query) {
+      filteredServices = filteredServices.filter((s) => 
+        s.name.toLowerCase().includes(query) || 
+        s.category.toLowerCase().includes(query)
+      );
+    }
+
+    const items = filteredServices
       .map((s) => {
         const supplierRateUsd = parseFloat(s.rate);
         const supplierRateNgn = supplierRateUsd * rate;
@@ -28,10 +45,11 @@ export async function GET(req: NextRequest) {
         };
       })
       .slice(offset, offset + limit);
-    const total = services.length;
+    const total = filteredServices.length;
 
     return NextResponse.json({
       items,
+      categories,
       pagination: {
         page,
         limit,
