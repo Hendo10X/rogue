@@ -24,6 +24,12 @@ export async function getUSDtoNGNRate(): Promise<number> {
   } catch (error) {
     console.error("Error fetching USD to NGN rate:", error);
     // Fallback to a sensible default if API fails
-    return (cachedRate ?? Number(process.env.NEXT_PUBLIC_USD_TO_NGN)) || 1600;
+    const fallback = (cachedRate ?? Number(process.env.NEXT_PUBLIC_USD_TO_NGN)) || 1600;
+    cachedRate = fallback; // Ensure cachedRate is at least the fallback for sync usage
+    return fallback;
   }
+}
+
+export function getCachedRate(): number {
+  return cachedRate || Number(process.env.NEXT_PUBLIC_USD_TO_NGN) || 1600;
 }

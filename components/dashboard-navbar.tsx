@@ -37,6 +37,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { formatNaira } from "@/lib/format-price";
 
 interface DashboardNavbarProps {
   user: {
@@ -187,14 +188,8 @@ export function DashboardNavbar({
                     <p className="text-muted-foreground text-xs">Balance</p>
                     <p className="text-sm font-semibold">
                       {primaryBalance
-                        ? `${Number(primaryBalance.balance).toLocaleString(
-                            "en-US",
-                            {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 8,
-                            },
-                          )} ${primaryBalance.currency}`
-                        : "0.00 USDT"}
+                        ? formatNaira(primaryBalance.balance)
+                        : "₦0"}
                     </p>
                   </div>
                 </div>
