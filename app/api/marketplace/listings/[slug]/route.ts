@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
 import { listing, supplier } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getMarkupNaira } from "@/lib/admin-auth";
+import { getUSDtoNGNRate } from "@/lib/currency";
 
 export async function GET(
   _req: NextRequest,
@@ -34,5 +36,17 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(row);
+  const [markupNaira, rate] = await Promise.all([
+    getMarkupNaira("marketplace"),
+    getUSDtoNGNRate(),
+  ]);
+
+  const supplierPrice = parseFloat(row.supplierPrice);
+  const finalPrice = Math.round(supplierPrice * rate + markupNaira);
+
+  return NextResponse.json({
+    ...row,
+    price: String(finalPrice),
+    currency: "NGN",
+  });
 }

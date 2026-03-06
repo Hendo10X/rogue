@@ -17,8 +17,8 @@ export default function AdminSettingsPage() {
     fetch("/api/admin/settings")
       .then((r) => r.json())
       .then((data) => {
-        setMarketplace(String(data.markupPercentMarketplace ?? 15));
-        setBoosting(String(data.markupPercentBoosting ?? 15));
+        setMarketplace(String(data.markupNairaMarketplace ?? 0));
+        setBoosting(String(data.markupNairaBoosting ?? 0));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -27,7 +27,7 @@ export default function AdminSettingsPage() {
     const m = parseFloat(marketplace);
     const b = parseFloat(boosting);
     if (!Number.isFinite(m) || m < 0 || !Number.isFinite(b) || b < 0) {
-      toast.error("Enter valid percentages (0 or more)");
+      toast.error("Enter valid Naira amounts (0 or more)");
       return;
     }
     setSaving(true);
@@ -60,33 +60,33 @@ export default function AdminSettingsPage() {
       <h1 className="text-2xl font-semibold">Settings</h1>
       <Card className="max-w-md border shadow-none">
         <CardHeader>
-          <h2 className="font-medium">Profit / Markup</h2>
+          <h2 className="font-medium">Profit / Markup (Naira)</h2>
           <p className="text-muted-foreground text-sm">
-            Percentage added to supplier prices. Type e.g. 15 or 700. Applied to
-            marketplace listings and boosting services.
+            Fixed amount in Naira added to supplier prices (converted from USD). 
+            Applied to marketplace listings and boosting services.
           </p>
         </CardHeader>
         <CardContent>
           <FieldSet>
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="marketplace">Marketplace Markup (%)</FieldLabel>
+                <FieldLabel htmlFor="marketplace">Marketplace Markup (₦)</FieldLabel>
                 <Input
                   id="marketplace"
                   type="number"
                   min={0}
-                  step={0.1}
+                  step={10}
                   value={marketplace}
                   onChange={(e) => setMarketplace(e.target.value)}
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="boosting">Boosting Markup (%)</FieldLabel>
+                <FieldLabel htmlFor="boosting">Boosting Markup (₦)</FieldLabel>
                 <Input
                   id="boosting"
                   type="number"
                   min={0}
-                  step={0.1}
+                  step={10}
                   value={boosting}
                   onChange={(e) => setBoosting(e.target.value)}
                 />

@@ -1,6 +1,6 @@
 import { db } from "@/db/drizzle";
-import { admin, adminSession, adminSettings } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { admin, adminSession, adminSettings, user } from "@/db/schema";
+import { eq, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -112,6 +112,25 @@ export async function setSetting(key: string, value: string): Promise<void> {
       target: adminSettings.key,
       set: { value, updatedAt: new Date() },
     });
+}
+
+export async function getAdminStats() {
+  const [u] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(user);
+  return {
+    userCount: u?.count ?? 0,
+  };
+}
+
+export async function getMarkupNaira(
+  area: "marketplace" | "boosting"
+): Promise<number> {
+  const key =
+    area === "marketplace" ? "markup_naira_marketplace" : "markup_naira_boosting";
+  const val = await getSetting(key);
+  const n = val ? parseFloat(val) : NaN;
+  return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
 export async function getMarkupPercent(

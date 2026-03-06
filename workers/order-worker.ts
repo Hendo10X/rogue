@@ -11,6 +11,7 @@ import {
   accountDelivery,
   transaction,
   wallet,
+  user,
 } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { purchaseFromSupplier } from "../lib/suppliers/adapter";
@@ -82,10 +83,19 @@ async function processOrder(orderId: string) {
     const credentials = purchaseResult.data ?? [];
     const deliveryData = credentials.join("\n");
 
+    // Standard format: username:password:email:emailpassword
+    // We'll try to parse the first one for individual fields
+    const firstLine = credentials[0] || "";
+    const parts = firstLine.split(":");
+    
     await db.insert(accountDelivery).values({
       id: crypto.randomUUID(),
       orderId,
       platform: list.platform,
+      username: parts[0] || null,
+      password: parts[1] || null,
+      email: parts[2] || null,
+      emailPassword: parts[3] || null,
       deliveryStatus: "delivered",
       deliveredAt: new Date(),
       notes: deliveryData,
@@ -116,6 +126,28 @@ async function processOrder(orderId: string) {
       .update(order)
       .set({ status: "completed", updatedAt: new Date() })
       .where(eq(order.id, orderId));
+
+    // Trigger Email Delivery
+    const [usr] = await db.select().from(user).where(eq(user.id, ord.userId)).limit(1);
+    if (usr?.email) {
+      try {
+        const { sendOrderDeliveryEmail } = await import("../lib/email");
+        await sendOrderDeliveryEmail({
+          to: usr.email,
+          orderId,
+          platform: list.platform,
+          details: {
+            username: parts[0],
+            password: parts[1],
+            email: parts[2],
+            emailPassword: parts[3],
+            notes: deliveryData,
+          },
+        });
+      } catch (emailErr) {
+        console.error("Order completion email failed:", emailErr);
+      }
+    }
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     const supplierOrderId = crypto.randomUUID();

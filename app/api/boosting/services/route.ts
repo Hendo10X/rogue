@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMarkupPercent } from "@/lib/admin-auth";
+import { getMarkupNaira } from "@/lib/admin-auth";
 import { fetchServices } from "@/lib/boosting/really-simple-social";
+import { getUSDtoNGNRate } from "@/lib/currency";
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,17 +10,23 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "24", 10)));
     const offset = (page - 1) * limit;
 
-    const [services, markupPercent] = await Promise.all([
+    const [services, markupNaira, rate] = await Promise.all([
       fetchServices(),
-      getMarkupPercent("boosting"),
+      getMarkupNaira("boosting"),
+      getUSDtoNGNRate(),
     ]);
 
-    const multiplier = 1 + markupPercent / 100;
     const items = services
-      .map((s) => ({
-        ...s,
-        rate: (parseFloat(s.rate) * multiplier).toFixed(2),
-      }))
+      .map((s) => {
+        const supplierRateUsd = parseFloat(s.rate);
+        const supplierRateNgn = supplierRateUsd * rate;
+        const finalRateNgn = supplierRateNgn + markupNaira;
+        return {
+          ...s,
+          rate: finalRateNgn.toFixed(2),
+          currency: "NGN",
+        };
+      })
       .slice(offset, offset + limit);
     const total = services.length;
 

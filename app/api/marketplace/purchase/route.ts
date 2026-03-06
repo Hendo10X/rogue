@@ -6,6 +6,8 @@ import { listing, supplier, order, wallet } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getOrCreateWallet, debitWallet } from "@/lib/wallet";
 import { getOrderQueue } from "@/lib/queue/order-queue";
+import { getMarkupNaira } from "@/lib/admin-auth";
+import { getUSDtoNGNRate } from "@/lib/currency";
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({
@@ -35,6 +37,7 @@ export async function POST(req: NextRequest) {
       supplierId: listing.supplierId,
       title: listing.title,
       price: listing.price,
+      supplierPrice: listing.supplierPrice,
       stock: listing.stock,
       platform: listing.platform,
     })
@@ -66,11 +69,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const totalAmount = (parseFloat(list.price) * quantity).toFixed(2);
+  const [markupNaira, rate] = await Promise.all([
+    getMarkupNaira("marketplace"),
+    getUSDtoNGNRate(),
+  ]);
+
+  const supplierPrice = parseFloat(list.supplierPrice);
+  const unitPriceNgn = supplierPrice * rate + markupNaira;
+  const totalAmount = (unitPriceNgn * quantity).toFixed(2);
+
   const walletRow = await getOrCreateWallet(session.user.id, "USDT");
+  // NOTE: This assumes wallet balance is compared against NGN if currency is NGN
+  // Actually, the wallet uses 'currency'. If wallet is USDT, we need to convert totalAmount back to USD or convert balance to NGN.
+  // Given current system, let's assume debitWallet handles the currency check or we should be cautious.
+  // The User previously asked for Naira everything, but wallets are USDT.
+  // Let's convert totalAmount (NGN) to USDT (balance is in numeric/USDT usually)
+  const totalAmountUsdt = (parseFloat(totalAmount) / rate).toFixed(8);
+
   const balance = parseFloat(walletRow.balance);
 
-  if (balance < parseFloat(totalAmount)) {
+  if (balance < parseFloat(totalAmountUsdt)) {
     return NextResponse.json(
       { error: "Insufficient wallet balance. Fund your wallet first." },
       { status: 400 }
@@ -80,7 +98,7 @@ export async function POST(req: NextRequest) {
   const orderId = crypto.randomUUID();
 
   try {
-    await debitWallet(walletRow.id, totalAmount, "USDT");
+    await debitWallet(walletRow.id, totalAmountUsdt, "USDT");
   } catch (e) {
     return NextResponse.json(
       { error: "Failed to debit wallet. Try again." },
@@ -93,8 +111,8 @@ export async function POST(req: NextRequest) {
     userId: session.user.id,
     listingId: list.id,
     status: "pending",
-    amount: totalAmount,
-    currency: "USD",
+    amount: totalAmountUsdt, // Store in USDT for internal tracking
+    currency: "USDT",
     quantity,
     walletId: walletRow.id,
     metadata: { coupon: body.coupon },

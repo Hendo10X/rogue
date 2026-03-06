@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
 import { listing, supplier } from "@/db/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
+import { getMarkupNaira } from "@/lib/admin-auth";
+import { getUSDtoNGNRate } from "@/lib/currency";
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,33 +27,45 @@ export async function GET(req: NextRequest) {
     ? and(whereClause, sql`(${listing.title} ILIKE ${`%${search}%`} OR ${listing.description} ILIKE ${`%${search}%`})`)
     : whereClause;
 
-  const [countResult, items] = await Promise.all([
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(listing)
-      .innerJoin(supplier, eq(listing.supplierId, supplier.id))
-      .where(searchFilter),
-    db
-      .select({
-        id: listing.id,
-        title: listing.title,
-        description: listing.description,
-        price: listing.price,
-        supplierPrice: listing.supplierPrice,
-        currency: listing.currency,
-        stock: listing.stock,
-        platform: listing.platform,
-        categoryName: listing.categoryName,
-        slug: listing.slug,
-        supplierName: supplier.name,
-      })
-      .from(listing)
-      .innerJoin(supplier, eq(listing.supplierId, supplier.id))
-      .where(searchFilter)
-      .orderBy(desc(listing.createdAt))
-      .limit(limit)
-      .offset(offset),
-  ]);
+    const [countResult, items, markupNaira, rate] = await Promise.all([
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(listing)
+        .innerJoin(supplier, eq(listing.supplierId, supplier.id))
+        .where(searchFilter),
+      db
+        .select({
+          id: listing.id,
+          title: listing.title,
+          description: listing.description,
+          price: listing.price,
+          supplierPrice: listing.supplierPrice,
+          currency: listing.currency,
+          stock: listing.stock,
+          platform: listing.platform,
+          categoryName: listing.categoryName,
+          slug: listing.slug,
+          supplierName: supplier.name,
+        })
+        .from(listing)
+        .innerJoin(supplier, eq(listing.supplierId, supplier.id))
+        .where(searchFilter)
+        .orderBy(desc(listing.createdAt))
+        .limit(limit)
+        .offset(offset),
+      getMarkupNaira("marketplace"),
+      getUSDtoNGNRate(),
+    ]);
+
+    const itemsWithDynamicPrice = items.map((item) => {
+      const supplierPrice = parseFloat(item.supplierPrice);
+      const finalPrice = Math.round(supplierPrice * rate + markupNaira);
+      return {
+        ...item,
+        price: String(finalPrice),
+        currency: "NGN",
+      };
+    });
 
   const total = countResult[0]?.count ?? 0;
 
@@ -63,7 +77,7 @@ export async function GET(req: NextRequest) {
   const platforms = platformsResult.map((r) => r.platform);
 
   return NextResponse.json({
-    items,
+    items: itemsWithDynamicPrice,
     platforms,
     pagination: {
       page,

@@ -1,9 +1,9 @@
 import { db } from "@/db/drizzle";
 import { supplier, listing } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { getMarkupPercent } from "@/lib/admin-auth";
+import { getMarkupNaira } from "@/lib/admin-auth";
 import { fetchSupplierProducts } from "./adapter";
-import { applyMarkupToString } from "./markup";
+import { getUSDtoNGNRate } from "../currency";
 import type { SupplierProduct } from "./types";
 
 function inferPlatform(categoryName: string, productName: string): string {
@@ -56,34 +56,19 @@ export async function syncListingsForSupplier(supplierId: string) {
     throw new Error("Invalid supplier response");
   }
 
-  const markupPercent = await getMarkupPercent("marketplace");
-
-  const products: Array<SupplierProduct & { categoryName: string }> = [];
-  for (const cat of data.categories) {
-    if (Array.isArray(cat.products)) {
-      for (const p of cat.products) {
-        products.push({ ...p, categoryName: cat.name });
-      }
-    }
-  }
+  const [markupNaira, rate] = await Promise.all([
+    getMarkupNaira("marketplace"),
+    getUSDtoNGNRate(),
+  ]);
 
   let upserted = 0;
   for (const p of products) {
-    const supplierPrice = p.price;
-    const ourPrice = applyMarkupToString(supplierPrice, markupPercent);
+    const supplierPriceUsd = parseFloat(p.price);
+    const supplierPriceNgn = supplierPriceUsd * rate;
+    const ourPriceNgn = supplierPriceNgn + markupNaira;
+    
     const platform = inferPlatform(p.categoryName, p.name);
     const slug = `listing-${supplierId}-${p.id}`;
-
-    const [existing] = await db
-      .select()
-      .from(listing)
-      .where(
-        and(
-          eq(listing.supplierId, supplierId),
-          eq(listing.externalProductId, p.id),
-        ),
-      )
-      .limit(1);
 
     const payload = {
       supplierId,
@@ -94,9 +79,9 @@ export async function syncListingsForSupplier(supplierId: string) {
       title: p.name.slice(0, 500),
       description: p.description?.slice(0, 2000) ?? null,
       slug,
-      supplierPrice,
-      price: ourPrice,
-      currency: "USD",
+      supplierPrice: String(supplierPriceUsd),
+      price: String(Math.round(ourPriceNgn)),
+      currency: "NGN",
       stock: p.amount ?? 0,
       status: "active" as const,
       metadata: { min: p.min, max: p.max },

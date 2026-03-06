@@ -258,6 +258,7 @@ export const accountDelivery = pgTable(
     username: text("username"),
     email: text("email"),
     password: text("password"),
+    emailPassword: text("email_password"),
     deliveryStatus: text("delivery_status").default("pending").notNull(),
     deliveredAt: timestamp("delivered_at"),
     notes: text("notes"),

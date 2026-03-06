@@ -3,7 +3,6 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatPriceWithCurrency } from "@/lib/format-price";
 import type { ReallySimpleSocialService } from "@/lib/boosting/really-simple-social";
 
 interface ServiceCardProps {
@@ -44,7 +43,7 @@ export function ServiceCard({ service, onViewClick }: ServiceCardProps) {
       </CardContent>
       <CardFooter className="flex items-center justify-between border-t pt-4">
         <span className="text-muted-foreground text-sm">
-          from {formatPriceWithCurrency(rate * min)}
+          from ₦{(rate * min).toLocaleString("en-NG")}
         </span>
         <Button size="sm" className="rounded-full" onClick={onViewClick}>
           View

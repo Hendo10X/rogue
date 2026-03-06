@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatPriceWithCurrency } from "@/lib/format-price";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
@@ -105,7 +104,7 @@ export function ServiceOrderModal({
             {service.name}
           </AlertDialogTitle>
           <AlertDialogDescription className="text-left text-xs">
-            ₦{rate.toLocaleString()}/unit · Min {min} – Max {max}
+            ₦{Math.round(rate).toLocaleString("en-NG")}/unit · Min {min} – Max {max}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-4 py-2">
@@ -136,13 +135,13 @@ export function ServiceOrderModal({
             <div>
               <p className="text-muted-foreground text-xs">Total</p>
               <p className="text-lg font-semibold">
-                {formatPriceWithCurrency(total)}
+                ₦{Math.round(parseFloat(total)).toLocaleString("en-NG")}
               </p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Your balance</p>
               <p className="font-medium">
-                {formatPriceWithCurrency(userBalance)}
+                 ₦{Math.round(parseFloat(userBalance)).toLocaleString("en-NG")}
               </p>
               {!canAfford && (
                 <p className="text-destructive text-xs">
@@ -163,7 +162,7 @@ export function ServiceOrderModal({
                 Placing order...
               </>
             ) : (
-              `Order ${formatPriceWithCurrency(total)}`
+              `Order ₦${Math.round(parseFloat(total)).toLocaleString("en-NG")}`
             )}
           </Button>
         </div>

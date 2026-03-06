@@ -1,11 +1,19 @@
-const USD_TO_NGN = Number(process.env.NEXT_PUBLIC_USD_TO_NGN) || 1600;
+import { getUSDtoNGNRate } from "./currency";
 
-export function formatPriceInNaira(priceUsd: string | number): string {
+export async function formatPriceInNaira(priceUsd: string | number): Promise<string> {
   const num = typeof priceUsd === "string" ? parseFloat(priceUsd) : priceUsd;
-  const ngn = Math.round(num * USD_TO_NGN);
+  const rate = await getUSDtoNGNRate();
+  const ngn = Math.round(num * rate);
   return ngn.toLocaleString("en-NG");
 }
 
-export function formatPriceWithCurrency(priceUsd: string | number): string {
-  return `₦${formatPriceInNaira(priceUsd)}`;
+export async function formatPriceWithCurrency(
+  price: string | number,
+  currency: string = "USD"
+): Promise<string> {
+  if (currency === "NGN") {
+    const num = typeof price === "string" ? parseFloat(price) : price;
+    return `₦${Math.round(num).toLocaleString("en-NG")}`;
+  }
+  return `₦${await formatPriceInNaira(price)}`;
 }

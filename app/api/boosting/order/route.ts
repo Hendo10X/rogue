@@ -4,9 +4,10 @@ import { auth } from "@/utils/auth";
 import { db } from "@/db/drizzle";
 import { boostingOrder, transaction, wallet } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { getMarkupPercent } from "@/lib/admin-auth";
+import { getMarkupNaira } from "@/lib/admin-auth";
 import { getOrCreateWallet, debitWallet, logTransaction } from "@/lib/wallet";
 import { addOrder, fetchServices } from "@/lib/boosting/really-simple-social";
+import { getUSDtoNGNRate } from "@/lib/currency";
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({
@@ -42,15 +43,20 @@ export async function POST(req: NextRequest) {
   const max = parseInt(service.max, 10) || 10000;
   const qty = Math.max(min, Math.min(max, quantity));
 
-  const rate = parseFloat(service.rate) || 0;
-  const markupPercent = await getMarkupPercent("boosting");
-  const baseAmount = rate * qty;
-  const amount = (baseAmount * (1 + markupPercent / 100)).toFixed(2);
+  const [markupNaira, rate] = await Promise.all([
+    getMarkupNaira("boosting"),
+    getUSDtoNGNRate(),
+  ]);
+
+  const rateUsd = parseFloat(service.rate) || 0;
+  const unitPriceNgn = rateUsd * rate + markupNaira;
+  const totalAmountNgn = unitPriceNgn * qty;
+  const totalAmountUsdt = (totalAmountNgn / rate).toFixed(8);
 
   const walletRow = await getOrCreateWallet(session.user.id, "USDT");
   const balance = parseFloat(walletRow.balance);
 
-  if (balance < parseFloat(amount)) {
+  if (balance < parseFloat(totalAmountUsdt)) {
     return NextResponse.json(
       { error: "Insufficient wallet balance. Fund your wallet first." },
       { status: 400 }
@@ -58,7 +64,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await debitWallet(walletRow.id, amount, "USDT");
+    await debitWallet(walletRow.id, totalAmountUsdt, "USDT");
   } catch {
     return NextResponse.json(
       { error: "Failed to debit wallet. Try again." },
@@ -96,8 +102,8 @@ export async function POST(req: NextRequest) {
     category: service.category,
     link: link.trim(),
     quantity: qty,
-    amount,
-    currency: "USD",
+    amount: totalAmountUsdt,
+    currency: "USDT",
     externalOrderId,
     status: "processing",
     externalStatus: "In progress",
@@ -106,8 +112,8 @@ export async function POST(req: NextRequest) {
   await logTransaction({
     walletId: walletRow.id,
     type: "order_payment",
-    amount: `-${amount}`,
-    currency: "USD",
+    amount: `-${totalAmountUsdt}`,
+    currency: "USDT",
     status: "completed",
     externalReference: String(externalOrderId),
     metadata: { boostingOrderId: orderId, serviceId, serviceName: service.name },

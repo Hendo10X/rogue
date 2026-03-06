@@ -16,13 +16,13 @@ export async function GET() {
   }
 
   const [marketplace, boosting] = await Promise.all([
-    getSetting("markup_percent_marketplace"),
-    getSetting("markup_percent_boosting"),
+    getSetting("markup_naira_marketplace"),
+    getSetting("markup_naira_boosting"),
   ]);
 
   return NextResponse.json({
-    markupPercentMarketplace: marketplace ? parseFloat(marketplace) : 15,
-    markupPercentBoosting: boosting ? parseFloat(boosting) : 15,
+    markupNairaMarketplace: marketplace ? parseFloat(marketplace) : 0,
+    markupNairaBoosting: boosting ? parseFloat(boosting) : 0,
   });
 }
 
@@ -40,10 +40,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (typeof body.marketplace === "number" && body.marketplace >= 0) {
-    await setSetting("markup_percent_marketplace", String(body.marketplace));
+    await setSetting("markup_naira_marketplace", String(body.marketplace));
   }
   if (typeof body.boosting === "number" && body.boosting >= 0) {
-    await setSetting("markup_percent_boosting", String(body.boosting));
+    await setSetting("markup_naira_boosting", String(body.boosting));
   }
 
   return NextResponse.json({ ok: true });
