@@ -3,10 +3,20 @@ import { drizzle } from "drizzle-orm/neon-http";
 
 config({ path: ".env" });
 
-const url = process.env.DATABASE_URL;
+let dbInstance: any = null;
 
-if (!url && process.env.NODE_ENV === "production") {
-  console.warn("DATABASE_URL is not set. Database connection may fail if this module is evaluated during build.");
+export function getDb() {
+  if (dbInstance) return dbInstance;
+  
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    if (process.env.NODE_ENV === "production" && !process.env.NEXT_PHASE) {
+       console.warn("DATABASE_URL is not set.");
+    }
+  }
+  
+  dbInstance = drizzle(url || "postgres://localhost/postgres");
+  return dbInstance;
 }
 
-export const db = drizzle(url || "postgres://localhost/postgres");
+export const db = getDb();

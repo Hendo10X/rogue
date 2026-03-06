@@ -117,7 +117,7 @@ export async function getWalletBalance(
   }
 
   const filtered = currency
-    ? wallets.filter((w) => w.currency === currency)
+    ? wallets.filter((w: any) => w.currency === currency)
     : wallets;
 
   if (currency && filtered.length === 0) {
@@ -131,7 +131,7 @@ export async function getWalletBalance(
     };
   }
 
-  return filtered.map((w) => ({ balance: w.balance, currency: w.currency }));
+  return filtered.map((w: any) => ({ balance: w.balance, currency: w.currency }));
 }
 
 export async function logTransaction(params: {
