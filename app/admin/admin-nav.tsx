@@ -18,6 +18,7 @@ const links = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/suppliers", label: "Suppliers" },
+  { href: "/admin/users", label: "Users" },
   { href: "/admin/settings", label: "Settings" },
   { href: "/admin/change-password", label: "Change Password" },
 ];

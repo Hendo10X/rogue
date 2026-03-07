@@ -2,7 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@/db/drizzle";
 import { wallet, transaction } from "@/db/schema";
 
-const DEFAULT_CURRENCY = "USDT";
+const DEFAULT_CURRENCY = "NGN";
 
 function generateId() {
   return crypto.randomUUID();

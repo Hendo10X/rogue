@@ -51,12 +51,11 @@ export async function POST(req: NextRequest) {
   const rateUsd = parseFloat(service.rate) || 0;
   const unitPriceNgn = rateUsd * rate + markupNaira;
   const totalAmountNgn = unitPriceNgn * qty;
-  const totalAmountUsdt = (totalAmountNgn / rate).toFixed(8);
 
-  const walletRow = await getOrCreateWallet(session.user.id, "USDT");
+  const walletRow = await getOrCreateWallet(session.user.id, "NGN");
   const balance = parseFloat(walletRow.balance);
 
-  if (balance < parseFloat(totalAmountUsdt)) {
+  if (balance < totalAmountNgn) {
     return NextResponse.json(
       { error: "Insufficient wallet balance. Fund your wallet first." },
       { status: 400 }
@@ -64,7 +63,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await debitWallet(walletRow.id, totalAmountUsdt, "USDT");
+    await debitWallet(walletRow.id, String(totalAmountNgn), "NGN");
   } catch {
     return NextResponse.json(
       { error: "Failed to debit wallet. Try again." },
@@ -102,8 +101,8 @@ export async function POST(req: NextRequest) {
     category: service.category,
     link: link.trim(),
     quantity: qty,
-    amount: totalAmountUsdt,
-    currency: "USDT",
+    amount: String(totalAmountNgn),
+    currency: "NGN",
     externalOrderId,
     status: "processing",
     externalStatus: "In progress",
@@ -112,8 +111,8 @@ export async function POST(req: NextRequest) {
   await logTransaction({
     walletId: walletRow.id,
     type: "order_payment",
-    amount: `-${totalAmountUsdt}`,
-    currency: "USDT",
+    amount: `-${totalAmountNgn}`,
+    currency: "NGN",
     status: "completed",
     externalReference: String(externalOrderId),
     metadata: { boostingOrderId: orderId, serviceId, serviceName: service.name },
@@ -122,7 +121,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     orderId,
     externalOrderId,
-    amount: totalAmountUsdt,
+    amount: String(totalAmountNgn),
     message: "Order placed successfully.",
   });
 }

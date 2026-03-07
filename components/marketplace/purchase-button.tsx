@@ -41,12 +41,8 @@ export function PurchaseButton({
   const [loading, setLoading] = useState(false);
 
   const totalNgn = parseFloat(price) * quantity;
-  // NOTE: This assumes balance is in USDT and needs conversion if compared directly, 
-  // but let's assume the user's NGN balance is what matters. 
-  // Actually, wait, wallet contains balance in 'currency'. 
-  // For now, let's just fix the UI.
   const balance = parseFloat(userBalance);
-  const canAfford = true; // Placeholder until wallet logic is fully audited
+  const canAfford = balance >= totalNgn;
   const outOfStock = stock < 1;
 
   async function handlePurchase() {
@@ -114,7 +110,7 @@ export function PurchaseButton({
                 Total: <strong>₦{Math.round(totalNgn).toLocaleString("en-NG")}</strong>
               </p>
               <p className="text-muted-foreground">
-                Your balance: {balance.toFixed(2)} USDT
+                Your balance: ₦{balance.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 {!canAfford && (
                   <span className="text-destructive block">
                     Insufficient balance. Fund your wallet first.

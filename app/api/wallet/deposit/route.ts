@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const currency = body.currency ?? "USDT";
+  const currency = body.currency ?? "NGN";
   const wallet = await getOrCreateWallet(session.user.id, currency);
 
   const depositId = crypto.randomUUID();

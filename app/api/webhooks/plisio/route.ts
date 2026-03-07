@@ -4,6 +4,7 @@ import { deposit } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyPlisioWebhook } from "@/lib/plisio";
 import { creditWallet, logTransaction } from "@/lib/wallet";
+import { getUSDtoNGNRate } from "@/lib/currency";
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.PLISIO_API_KEY;
@@ -58,7 +59,9 @@ export async function POST(req: NextRequest) {
 
   const amount =
     (payload.source_amount ?? payload.invoice_sum ?? payload.amount ?? dep.amount) as string;
-  const currency = dep.currency;
+  
+  const rate = await getUSDtoNGNRate();
+  const amountNgn = Math.round(parseFloat(amount) * rate);
 
   await db
     .update(deposit)
@@ -68,13 +71,13 @@ export async function POST(req: NextRequest) {
     })
     .where(eq(deposit.id, dep.id));
 
-  await creditWallet(dep.walletId, String(amount), currency);
+  await creditWallet(dep.walletId, String(amountNgn), "NGN");
 
   await logTransaction({
     walletId: dep.walletId,
     type: "deposit",
-    amount: String(amount),
-    currency,
+    amount: String(amountNgn),
+    currency: "NGN",
     status: "completed",
     externalReference: payload.txn_id as string,
     metadata: {

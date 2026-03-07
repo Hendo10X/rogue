@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
   try {
   const { searchParams } = new URL(req.url);
   const platform = searchParams.get("platform");
+  const platformGroup = searchParams.get("platformGroup");
   const category = searchParams.get("category");
   const search = searchParams.get("search");
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
@@ -17,6 +18,7 @@ export async function GET(req: NextRequest) {
 
   const baseConditions = [eq(listing.status, "active")];
   if (platform) baseConditions.push(eq(listing.platform, platform));
+  if (platformGroup === "facebook") baseConditions.push(sql`(${listing.platform} ILIKE '%facebook%')`);
   if (category) baseConditions.push(eq(listing.categoryName, category));
   const whereClause =
     baseConditions.length === 1
@@ -50,7 +52,10 @@ export async function GET(req: NextRequest) {
         .from(listing)
         .innerJoin(supplier, eq(listing.supplierId, supplier.id))
         .where(searchFilter)
-        .orderBy(desc(listing.createdAt))
+        .orderBy(
+          sql`CASE WHEN ${supplier.name} ILIKE '%shopviaclone%' THEN 0 ELSE 1 END`,
+          desc(listing.createdAt)
+        )
         .limit(limit)
         .offset(offset),
       getMarkupNaira("marketplace"),

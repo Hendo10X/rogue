@@ -89,12 +89,11 @@ export async function POST(req: NextRequest) {
   const unitPriceNgn = supplierPrice * rate + markupNaira;
   const totalAmount = (unitPriceNgn * quantity).toFixed(2);
 
-  const walletRow = await getOrCreateWallet(session.user.id, "USDT");
-  const totalAmountUsdt = (parseFloat(totalAmount) / rate).toFixed(8);
+  const walletRow = await getOrCreateWallet(session.user.id, "NGN");
 
   const balance = parseFloat(walletRow.balance);
 
-  if (balance < parseFloat(totalAmountUsdt)) {
+  if (balance < parseFloat(totalAmount)) {
     return NextResponse.json(
       { error: "Insufficient wallet balance. Fund your wallet first." },
       { status: 400 }
@@ -105,7 +104,7 @@ export async function POST(req: NextRequest) {
 
   // 1. Debit wallet
   try {
-    await debitWallet(walletRow.id, totalAmountUsdt, "USDT");
+    await debitWallet(walletRow.id, totalAmount, "NGN");
   } catch (e) {
     return NextResponse.json(
       { error: "Failed to debit wallet. Try again." },
@@ -119,8 +118,8 @@ export async function POST(req: NextRequest) {
     userId: session.user.id,
     listingId: list.id,
     status: "processing",
-    amount: totalAmountUsdt,
-    currency: "USDT",
+    amount: totalAmount,
+    currency: "NGN",
     quantity,
     walletId: walletRow.id,
     metadata: { coupon: body.coupon },
@@ -170,8 +169,8 @@ export async function POST(req: NextRequest) {
       id: crypto.randomUUID(),
       walletId: walletRow.id,
       type: "order_payment",
-      amount: `-${totalAmountUsdt}`,
-      currency: "USDT",
+      amount: `-${totalAmount}`,
+      currency: "NGN",
       status: "completed",
       orderId,
       externalReference: purchaseResult.trans_id,

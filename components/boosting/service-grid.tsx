@@ -59,7 +59,7 @@ export function ServiceGrid({
   const pagination = data?.pagination;
 
   const userBalance =
-    walletBalance.find((w) => w.currency === "USDT")?.balance ?? "0";
+    walletBalance.find((w) => w.currency === "NGN")?.balance ?? "0";
 
   function openModal(service: ReallySimpleSocialService) {
     setSelectedService(service);

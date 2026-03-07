@@ -110,8 +110,6 @@ export async function POST(req: NextRequest) {
   try {
     const amountNgn =
       payload.data?.amount ?? parseFloat(dep.amount);
-    const usdToNgn = Number(process.env.NEXT_PUBLIC_USD_TO_NGN) || 1300;
-    const amountUsd = (amountNgn / usdToNgn).toFixed(8);
 
     await db
       .update(deposit)
@@ -122,13 +120,13 @@ export async function POST(req: NextRequest) {
       })
       .where(eq(deposit.id, dep.id));
 
-    await creditWallet(dep.walletId, amountUsd, "USDT");
+    await creditWallet(dep.walletId, String(amountNgn), "NGN");
 
     await logTransaction({
       walletId: dep.walletId,
       type: "deposit",
-      amount: amountUsd,
-      currency: "USDT",
+      amount: String(amountNgn),
+      currency: "NGN",
       status: "completed",
       externalReference: payload.data?.reference,
       metadata: {

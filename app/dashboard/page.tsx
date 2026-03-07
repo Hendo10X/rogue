@@ -36,7 +36,7 @@ export default async function DashboardPage() {
     getOrders(headersList.get("cookie") ?? ""),
   ]);
 
-  const primaryBalance = walletBalance.find((w) => w.currency === "USDT") ?? walletBalance[0];
+  const primaryBalance = walletBalance.find((w) => w.currency === "NGN") ?? walletBalance[0];
   const recentOrders = Array.isArray(orders) ? orders.slice(0, 5) : [];
 
   return (
@@ -63,7 +63,7 @@ export default async function DashboardPage() {
 
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-border bg-background p-4 shadow-none">
-              <p className="text-muted-foreground text-sm">Balance (USDT)</p>
+              <p className="text-muted-foreground text-sm">Balance (NGN)</p>
               <p className="mt-1 font-display text-2xl font-semibold">
                 {primaryBalance
                   ? Number(primaryBalance.balance).toLocaleString("en-US", {
@@ -71,7 +71,7 @@ export default async function DashboardPage() {
                       maximumFractionDigits: 2,
                     })
                   : "0.00"}{" "}
-                <span className="text-muted-foreground font-normal">USDT</span>
+                <span className="text-muted-foreground font-normal">NGN</span>
               </p>
               <Link
                 href="/wallet/deposit"
@@ -158,7 +158,7 @@ export default async function DashboardPage() {
                           <td className="p-3">{o.title ?? "—"}</td>
                           <td className="p-3 capitalize">{o.status ?? "—"}</td>
                           <td className="p-3">
-                            {o.amount ?? "—"} {o.currency ?? "USDT"}
+                            {o.amount ?? "—"} {o.currency ?? "NGN"}
                           </td>
                           <td className="text-muted-foreground p-3">
                             {o.createdAt
