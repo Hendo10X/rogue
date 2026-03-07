@@ -17,14 +17,16 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [marketplace, boosting] = await Promise.all([
+  const [marketplace, boosting, announcement] = await Promise.all([
     getSetting("markup_naira_marketplace"),
     getSetting("markup_naira_boosting"),
+    getSetting("site_announcement"),
   ]);
 
   return NextResponse.json({
     markupNairaMarketplace: marketplace ? parseFloat(marketplace) : 0,
     markupNairaBoosting: boosting ? parseFloat(boosting) : 0,
+    announcement: announcement ? JSON.parse(announcement) : null,
   });
 }
 
@@ -34,7 +36,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { marketplace?: number; boosting?: number };
+  let body: {
+    marketplace?: number;
+    boosting?: number;
+    announcement?: {
+      active: boolean;
+      type: "banner" | "modal";
+      message: string;
+      id: string;
+    } | null;
+  };
   try {
     body = await req.json();
   } catch {
@@ -46,6 +57,13 @@ export async function POST(req: NextRequest) {
   }
   if (typeof body.boosting === "number" && body.boosting >= 0) {
     await setSetting("markup_naira_boosting", String(body.boosting));
+  }
+  if (body.announcement !== undefined) {
+    if (body.announcement === null) {
+      await setSetting("site_announcement", "");
+    } else {
+      await setSetting("site_announcement", JSON.stringify(body.announcement));
+    }
   }
 
   return NextResponse.json({ ok: true });
