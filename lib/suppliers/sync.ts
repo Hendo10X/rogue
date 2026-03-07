@@ -87,6 +87,15 @@ export async function syncListingsForSupplier(supplierId: string) {
     const ourPriceNgn = supplierPriceNgn + markupNaira;
     
     const platform = inferPlatform(p.categoryName || "", p.name);
+
+    if (
+      supplierId.toLowerCase().includes("acctshop") &&
+      platform !== "instagram" &&
+      platform !== "tiktok"
+    ) {
+      continue;
+    }
+
     const slug = `listing-${supplierId}-${p.id}`;
 
     const payload = {
