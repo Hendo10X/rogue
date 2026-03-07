@@ -25,15 +25,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const provider = body.provider ?? "plisio";
   const amount = Number(body.amount);
-  if (!Number.isFinite(amount) || amount < 1 || amount > 100000) {
+  const maxAmount = provider === "korapay" ? 10000000 : 100000;
+
+  if (!Number.isFinite(amount) || amount < 1 || amount > maxAmount) {
     return NextResponse.json(
-      { error: "Amount must be between 1 and 100000" },
+      { error: `Amount must be between 1 and ${maxAmount}` },
       { status: 400 }
     );
   }
 
-  const provider = body.provider ?? "plisio";
   const currency = body.currency ?? "USDT";
   const wallet = await getOrCreateWallet(session.user.id, currency);
 
@@ -56,7 +58,9 @@ export async function POST(req: NextRequest) {
     }
 
     const usdToNgn = Number(process.env.NEXT_PUBLIC_USD_TO_NGN) || 1300;
-    const amountNgn = Math.round(amount * usdToNgn);
+    // For Korapay, the user provides the amount in NGN
+    const amountNgn = Math.round(amount);
+    const amountUsd = amountNgn / usdToNgn;
 
     await db.insert(deposit).values({
       id: depositId,
@@ -73,7 +77,7 @@ export async function POST(req: NextRequest) {
       provider: "korapay",
       depositId,
       orderNumber,
-      amountUsd: amount,
+      amountUsd: amountUsd,
       amount: amountNgn,
       currency: "NGN",
       publicKey,

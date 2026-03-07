@@ -40,7 +40,7 @@ declare global {
 
 export function DepositForm() {
   const [amount, setAmount] = useState("");
-  const [provider, setProvider] = useState<PaymentProvider>("plisio");
+  const [provider, setProvider] = useState<PaymentProvider>("korapay");
   const [loading, setLoading] = useState(false);
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
 
@@ -60,7 +60,7 @@ export function DepositForm() {
     e.preventDefault();
     const num = parseFloat(amount);
     if (!Number.isFinite(num) || num < 1) {
-      toast.error("Enter a valid amount (min $1)");
+      toast.error(provider === "korapay" ? "Enter a valid amount (min 1 NGN)" : "Enter a valid amount (min $1)");
       return;
     }
     setLoading(true);
@@ -70,7 +70,7 @@ export function DepositForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: num,
-          currency: "USDT",
+          currency: provider === "korapay" ? "NGN" : "USDT",
           provider,
         }),
       });
@@ -138,23 +138,12 @@ export function DepositForm() {
       <CardHeader>
         <CardTitle>Deposit amount</CardTitle>
         <CardDescription>
-          Enter the amount in USD and choose your payment method.
+          Choose your payment method and enter the amount.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex gap-2 rounded-lg border p-1">
-            <button
-              type="button"
-              onClick={() => setProvider("plisio")}
-              className={cn(
-                "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                provider === "plisio"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}>
-              Crypto (Plisio)
-            </button>
             <button
               type="button"
               onClick={() => setProvider("korapay")}
@@ -166,27 +155,38 @@ export function DepositForm() {
               )}>
               Card & Bank (Korapay)
             </button>
+            <button
+              type="button"
+              onClick={() => setProvider("plisio")}
+              className={cn(
+                "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                provider === "plisio"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}>
+              Crypto (Plisio)
+            </button>
           </div>
           <div className="space-y-2">
             <label htmlFor="amount" className="text-sm font-medium">
-              Amount (USD)
+              Amount ({provider === "korapay" ? "NGN" : "USD"})
             </label>
             <Input
               id="amount"
               type="number"
               min={1}
-              max={100000}
-              step={0.01}
-              placeholder="50"
+              max={10000000} // Increased max for NGN
+              step={provider === "korapay" ? 1 : 0.01}
+              placeholder={provider === "korapay" ? "1000" : "50"}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               disabled={loading}
               className="rounded-lg"
             />
             <p className="text-muted-foreground text-xs">
-              {provider === "plisio"
-                ? "Pay with USDT, BTC, ETH, etc."
-                : "Pay with card or bank transfer (NGN)"}
+              {provider === "korapay"
+                ? "Pay with card or bank transfer (Naira)"
+                : "Pay with USDT, BTC, ETH, etc."}
             </p>
           </div>
           <Button

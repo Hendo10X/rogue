@@ -12,14 +12,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-  SheetClose,
-} from "@/components/ui/sheet";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatPriceWithCurrency } from "@/lib/format-price";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -53,8 +54,9 @@ function StatusBadge({ status }: { status: string }) {
     processing: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
     completed: "bg-green-500/15 text-green-600 dark:text-green-400",
     failed: "bg-red-500/15 text-red-600 dark:text-red-400",
+    manual_review: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
   };
-  const label = status.charAt(0).toUpperCase() + status.slice(1);
+  const label = status === "manual_review" ? "Manual Review" : status.charAt(0).toUpperCase() + status.slice(1);
   return (
     <Badge variant="secondary" className={variants[status] ?? ""}>
       {label}
@@ -99,7 +101,7 @@ function CredentialsBlock({ credentials }: { credentials: string[] }) {
   );
 }
 
-function OrderViewSheet({
+function OrderViewModal({
   order,
   open,
   onOpenChange,
@@ -110,12 +112,12 @@ function OrderViewSheet({
 }) {
   if (!order) return null;
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle className="line-clamp-2">{order.title}</SheetTitle>
-          <SheetDescription>
-            <div className="flex flex-wrap items-center gap-2">
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="sm:max-w-md">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="line-clamp-2">{order.title}</AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="flex flex-wrap items-center gap-2 pt-2">
               <StatusBadge status={order.status} />
               <Badge variant="outline">{order.platform}</Badge>
               <span className="text-xs">
@@ -123,9 +125,9 @@ function OrderViewSheet({
                 {order.quantity}
               </span>
             </div>
-          </SheetDescription>
-        </SheetHeader>
-        <div className="flex flex-1 flex-col gap-4 py-4">
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="flex flex-col gap-4 py-4">
           <div>
             <p className="text-muted-foreground mb-1 text-xs">{order.supplierName}</p>
             <p className="text-xl font-semibold">
@@ -136,21 +138,19 @@ function OrderViewSheet({
             <CredentialsBlock credentials={order.credentials} />
           )}
         </div>
-        <SheetFooter className="flex-row gap-2 sm:flex-row">
-          <SheetClose asChild>
-            <Button variant="outline" className="rounded-full">
-              Close
-            </Button>
-          </SheetClose>
-          <Button asChild className="rounded-full">
+        <AlertDialogFooter>
+          <AlertDialogCancel className="rounded-full">
+            Close
+          </AlertDialogCancel>
+          <AlertDialogAction asChild className="rounded-full">
             <Link href={`/marketplace/${order.slug}`}>
               View listing
               <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="ml-2" />
             </Link>
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -162,7 +162,7 @@ async function fetchOrders() {
 
 export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const { data: orders = initialOrders, isLoading } = useQuery({
     queryKey: ["orders"],
     queryFn: fetchOrders,
@@ -172,7 +172,7 @@ export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
 
   function openOrderView(o: Order) {
     setViewOrder(o);
-    setSheetOpen(true);
+    setModalOpen(true);
   }
 
   if (isLoading && orders.length === 0) {
@@ -237,10 +237,10 @@ export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
                 <span className="font-semibold">
                   {formatPriceWithCurrency(o.amount, o.currency)}
                 </span>
-                {(o.status === "processing" || o.status === "pending") && (
+                {(o.status === "processing" || o.status === "pending" || o.status === "manual_review") && (
                   <span className="text-muted-foreground flex items-center gap-1 text-xs">
                     <Spinner className="size-3" />
-                    Processing...
+                    {o.status === "manual_review" ? "In Review..." : "Processing..."}
                   </span>
                 )}
                 <Button
@@ -259,10 +259,10 @@ export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
           </Card>
         ))}
       </div>
-      <OrderViewSheet
+      <OrderViewModal
         order={viewOrder}
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
       />
     </>
   );
