@@ -14,7 +14,7 @@ export default async function BoostingPage() {
     redirect("/login");
   }
 
-  await getOrCreateWallet(session.user.id, "USDT");
+  await getOrCreateWallet(session.user.id, "NGN");
   const balance = await getWalletBalance(session.user.id);
   const walletBalance = Array.isArray(balance) ? balance : [balance];
 

@@ -30,7 +30,7 @@ export default async function OrdersPage() {
   const [orders, walletBalance] = await Promise.all([
     getOrders(headersList.get("cookie") ?? ""),
     (async () => {
-      await getOrCreateWallet(session!.user!.id, "USDT");
+      await getOrCreateWallet(session!.user!.id, "NGN");
       const b = await getWalletBalance(session!.user!.id);
       return Array.isArray(b) ? b : [b];
     })(),

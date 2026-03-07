@@ -72,7 +72,7 @@ export function DashboardNavbar({
   }
 
   const primaryBalance =
-    walletBalance.find((w) => w.currency === "USDT") ?? walletBalance[0];
+    walletBalance.find((w) => w.currency === "NGN") ?? walletBalance[0];
 
   return (
     <header className="bg-background pt-6 font-display md:pt-8">

@@ -34,7 +34,7 @@ export default async function ListingPage({
   const [listing, walletBalance] = await Promise.all([
     getListing(slug),
     (async () => {
-      await getOrCreateWallet(session!.user!.id, "USDT");
+      await getOrCreateWallet(session!.user!.id, "NGN");
       const b = await getWalletBalance(session!.user!.id);
       return Array.isArray(b) ? b : [b];
     })(),
@@ -91,7 +91,7 @@ export default async function ListingPage({
             stock={listing.stock}
             title={listing.title}
             userBalance={
-              walletBalance.find((w) => w.currency === "USDT")?.balance ?? "0"
+              walletBalance.find((w) => w.currency === "NGN")?.balance ?? "0"
             }
           />
         </div>

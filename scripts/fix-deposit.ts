@@ -28,11 +28,9 @@ async function fixDeposit(depositId: string) {
       return;
     }
 
-    // Calculate USD amount (using default or env rate)
-    const usdToNgn = Number(process.env.NEXT_PUBLIC_USD_TO_NGN) || 1300;
-    const amountUsd = (parseFloat(dep.amount) / usdToNgn).toFixed(8);
+    const amountNgn = parseFloat(dep.amount);
 
-    console.log(`Crediting wallet ${dep.walletId} with ${amountUsd} USDT...`);
+    console.log(`Crediting wallet ${dep.walletId} with ₦${amountNgn} NGN...`);
 
     await db
       .update(deposit)
@@ -42,13 +40,13 @@ async function fixDeposit(depositId: string) {
       })
       .where(eq(deposit.id, depositId));
 
-    await creditWallet(dep.walletId, amountUsd, "USDT");
+    await creditWallet(dep.walletId, String(amountNgn), "NGN");
 
     await logTransaction({
       walletId: dep.walletId,
       type: "deposit",
-      amount: amountUsd,
-      currency: "USDT",
+      amount: String(amountNgn),
+      currency: "NGN",
       status: "completed",
       metadata: {
         manualFix: true,

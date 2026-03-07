@@ -1,6 +1,6 @@
 import { db } from "@/db/drizzle";
 import { supplier, listing } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { getMarkupNaira } from "@/lib/admin-auth";
 import { fetchSupplierProducts } from "./adapter";
 import { getUSDtoNGNRate } from "../currency";
@@ -13,8 +13,21 @@ function inferPlatform(categoryName: string, productName: string): string {
     combined.includes("facebook") ||
     combined.includes("faceb00k") ||
     combined.includes("facabook")
-  )
+  ) {
+    if (combined.includes("dating")) return "dating facebook";
+    if (combined.includes("marketplace")) return "marketplace facebook";
+    if (combined.includes("ads") || combined.includes("bm")) return "ads facebook";
+    if (combined.includes("aged") || combined.includes("old")) return "aged facebook";
+
+    const countryMatch = combined.match(/\b(uk|usa|vietnam|philippines|indonesia|thailand|india|brazil|colombia|mexico|nigeria|germany|france|italy|spain|canada|australia)\b/i);
+    if (countryMatch) {
+      return `${countryMatch[0].toLowerCase()} facebook`;
+    }
+
+    if (combined.includes("new")) return "new facebook";
+    if (combined.includes("random")) return "random countries facebook";
     return "facebook";
+  }
   if (combined.includes("tiktok")) return "tiktok";
   if (combined.includes("twitter") || combined.includes("x.com"))
     return "twitter";
@@ -69,6 +82,18 @@ export async function syncListingsForSupplier(supplierId: string) {
     }))
   );
 
+  // If this is AcctShop, immediately hide all non-IG/TikTok listings first
+  if (sup.name.toLowerCase().includes("acctshop")) {
+    await db.update(listing)
+      .set({ status: "inactive" })
+      .where(
+        and(
+          eq(listing.supplierId, supplierId),
+          sql`${listing.platform} NOT IN ('instagram', 'tiktok')`
+        )
+      );
+  }
+
   let upserted = 0;
   for (const p of products) {
     const [existing] = await db
@@ -89,7 +114,7 @@ export async function syncListingsForSupplier(supplierId: string) {
     const platform = inferPlatform(p.categoryName || "", p.name);
 
     if (
-      supplierId.toLowerCase().includes("acctshop") &&
+      sup.name.toLowerCase().includes("acctshop") &&
       platform !== "instagram" &&
       platform !== "tiktok"
     ) {

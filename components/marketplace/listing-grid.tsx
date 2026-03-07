@@ -7,15 +7,64 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useState, useEffect } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { FavouriteIcon } from "@hugeicons/core-free-icons";
+
+function FacebookLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 36 36" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#1877F2" d="M36 18c0-9.941-8.059-18-18-18S0 8.059 0 18c0 8.978 6.578 16.406 15.188 17.781V23.25h-4.5v-5.25h4.5v-4.032c0-4.437 2.64-6.884 6.671-6.884 1.933 0 3.957.346 3.957.346v4.352h-2.23c-2.196 0-2.881 1.362-2.881 2.76v3.458h4.896l-.782 5.25h-4.114v12.531C29.422 34.406 36 26.978 36 18z"/>
+      <path fill="#ffffff" d="M24.205 23.25l.782-5.25h-4.896v-3.458c0-1.398.685-2.76 2.881-2.76h2.23v-4.352s-2.024-.346-3.957-.346c-4.032 0-6.671 2.447-6.671 6.884v4.032h-4.5v5.25h4.5v12.531a18.156 18.156 0 005.626 0V23.25h4.005z"/>
+    </svg>
+  );
+}
+
+function getPlatformIcon(platform: string) {
+  const p = platform.toLowerCase();
+  if (p.includes("dating")) return <HugeiconsIcon icon={FavouriteIcon} className="text-rose-500 fill-rose-500" size={20} />;
+  
+  if (p.includes("usa")) return <span className="text-xl leading-none">🇺🇸</span>;
+  if (p.includes("uk")) return <span className="text-xl leading-none">🇬🇧</span>;
+  if (p.includes("vietnam")) return <span className="text-xl leading-none">🇻🇳</span>;
+  if (p.includes("philippines")) return <span className="text-xl leading-none">🇵🇭</span>;
+  if (p.includes("indonesia")) return <span className="text-xl leading-none">🇮🇩</span>;
+  if (p.includes("thailand")) return <span className="text-xl leading-none">🇹🇭</span>;
+  if (p.includes("india")) return <span className="text-xl leading-none">🇮🇳</span>;
+  if (p.includes("brazil")) return <span className="text-xl leading-none">🇧🇷</span>;
+  if (p.includes("colombia")) return <span className="text-xl leading-none">🇨🇴</span>;
+  if (p.includes("mexico")) return <span className="text-xl leading-none">🇲🇽</span>;
+  if (p.includes("nigeria")) return <span className="text-xl leading-none">🇳🇬</span>;
+  if (p.includes("germany")) return <span className="text-xl leading-none">🇩🇪</span>;
+  if (p.includes("france")) return <span className="text-xl leading-none">🇫🇷</span>;
+  if (p.includes("italy")) return <span className="text-xl leading-none">🇮🇹</span>;
+  if (p.includes("spain")) return <span className="text-xl leading-none">🇪🇸</span>;
+  if (p.includes("canada")) return <span className="text-xl leading-none">🇨🇦</span>;
+  if (p.includes("australia")) return <span className="text-xl leading-none">🇦🇺</span>;
+
+  if (p.includes("facebook")) return <FacebookLogo className="size-5 shrink-0" />;
+  return null;
+}
+
 async function fetchListings(params: {
   page?: number;
   platform?: string;
+  platformGroup?: string;
   category?: string;
   search?: string;
 }) {
   const searchParams = new URLSearchParams();
   if (params.page) searchParams.set("page", String(params.page));
   if (params.platform) searchParams.set("platform", params.platform);
+  if (params.platformGroup) searchParams.set("platformGroup", params.platformGroup);
   if (params.category) searchParams.set("category", params.category);
   if (params.search) searchParams.set("search", params.search);
   const res = await fetch(`/api/marketplace/listings?${searchParams}`);
@@ -55,7 +104,8 @@ interface ListingGridProps {
 export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
-  const [platform, setPlatform] = useState("");
+  const [primaryPlatform, setPrimaryPlatform] = useState("");
+  const [facebookCategory, setFacebookCategory] = useState("");
   const [selectedListing, setSelectedListing] = useState<ListingItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -69,14 +119,25 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
   }
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["listings", page, platform, debouncedSearch],
-    queryFn: () =>
-      fetchListings({ page, platform: platform || undefined, search: debouncedSearch || undefined }),
+    queryKey: ["listings", page, primaryPlatform, facebookCategory, debouncedSearch],
+    queryFn: () => {
+      const platformParams: { platform?: string; platformGroup?: string } = {};
+      if (primaryPlatform === "facebook") {
+        if (facebookCategory) platformParams.platform = facebookCategory;
+        else platformParams.platformGroup = "facebook";
+      } else if (primaryPlatform) {
+        platformParams.platform = primaryPlatform;
+      }
+      return fetchListings({ page, ...platformParams, search: debouncedSearch || undefined });
+    },
   });
 
   const platforms: string[] = data?.platforms ?? [];
   const items = data?.items ?? [];
   const pagination = data?.pagination;
+
+  const facebookPlatforms = platforms.filter((p) => p.toLowerCase().includes("facebook"));
+  const otherPlatforms = platforms.filter((p) => !p.toLowerCase().includes("facebook"));
 
   return (
     <div className="space-y-6">
@@ -91,21 +152,61 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
             }}
             className="max-w-xs rounded-lg"
           />
-          <select
-            value={platform}
-            onChange={(e) => {
-              setPlatform(e.target.value);
+          <Select
+            value={primaryPlatform || "all"}
+            onValueChange={(val) => {
+              setPrimaryPlatform(val === "all" ? "" : val);
+              setFacebookCategory("");
               setPage(1);
             }}
-            className="border-input bg-background h-9 max-w-xs rounded-lg border px-3 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
           >
-            <option value="">All platforms</option>
-            {platforms.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-9 w-[180px] rounded-lg bg-background">
+              <SelectValue placeholder="All platforms" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All platforms</SelectItem>
+              {facebookPlatforms.length > 0 && (
+                <SelectItem value="facebook">
+                  <div className="flex items-center gap-2">
+                    <FacebookLogo className="size-4 shrink-0" />
+                    <span className="uppercase">Facebook</span>
+                  </div>
+                </SelectItem>
+              )}
+              {otherPlatforms.map((p) => (
+                <SelectItem key={p} value={p}>
+                  <span className="uppercase">{p}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {primaryPlatform === "facebook" && facebookPlatforms.length > 0 && (
+            <Select
+              value={facebookCategory || "all"}
+              onValueChange={(val) => {
+                setFacebookCategory(val === "all" ? "" : val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-[280px] rounded-lg bg-background border-primary/50 text-primary">
+                <SelectValue placeholder="All Facebook Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Facebook Categories</SelectItem>
+                {facebookPlatforms.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    <div className="flex items-center gap-2">
+                      <div className="flex size-5 items-center justify-center shrink-0">
+                        {getPlatformIcon(p)}
+                      </div>
+                      <span className="uppercase">{p}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </div>
 
