@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { db } from "@/db/drizzle";
 import { wallet, transaction, user } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -41,11 +41,10 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get or create NGN wallet
     let [userWallet] = await db
       .select()
       .from(wallet)
-      .where(eq(wallet.userId, id))
+      .where(and(eq(wallet.userId, id), eq(wallet.currency, "NGN")))
       .limit(1);
 
     if (!userWallet) {
@@ -71,29 +70,25 @@ export async function POST(
     const newBalance =
       body.type === "credit" ? currentBalance + amount : currentBalance - amount;
 
-    await db.transaction(async (tx: any) => {
-      // 1. Update wallet balance
-      await tx
-        .update(wallet)
-        .set({ balance: String(newBalance) })
-        .where(eq(wallet.id, userWallet.id));
+    await db
+      .update(wallet)
+      .set({ balance: String(newBalance), updatedAt: new Date() })
+      .where(eq(wallet.id, userWallet.id));
 
-      // 2. Log transaction
-      await tx.insert(transaction).values({
-        id: crypto.randomUUID(),
-        walletId: userWallet.id,
-        type: "adjustment",
-        amount: String(amount),
-        currency: "NGN",
-        status: "completed",
-        metadata: {
-          adminAdjustment: true,
-          action: body.type,
-          previousBalance: currentBalance,
-          newBalance: newBalance,
-          adminId: admin.id
-        },
-      });
+    await db.insert(transaction).values({
+      id: crypto.randomUUID(),
+      walletId: userWallet.id,
+      type: "adjustment",
+      amount: body.type === "credit" ? String(amount) : `-${amount}`,
+      currency: "NGN",
+      status: "completed",
+      metadata: {
+        adminAdjustment: true,
+        action: body.type,
+        previousBalance: currentBalance,
+        newBalance: newBalance,
+        adminId: admin.id,
+      },
     });
 
     return NextResponse.json({ ok: true, newBalance: String(newBalance) });

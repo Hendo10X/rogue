@@ -37,7 +37,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { formatNaira } from "@/lib/format-price";
+import { formatPriceWithCurrency } from "@/lib/format-price";
 
 interface DashboardNavbarProps {
   user: {
@@ -188,7 +188,7 @@ export function DashboardNavbar({
                     <p className="text-muted-foreground text-xs">Balance</p>
                     <p className="text-sm font-semibold">
                       {primaryBalance
-                        ? formatNaira(primaryBalance.balance)
+                        ? formatPriceWithCurrency(primaryBalance.balance, "NGN")
                         : "₦0"}
                     </p>
                   </div>

@@ -82,7 +82,7 @@ export default function AdminUsersPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to adjust balance");
 
-      toast.success(`Successfully ${adjustmentType}ed $${amount.toFixed(2)}`);
+      toast.success(`Successfully ${adjustmentType}ed ₦${amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`);
       setAdjustingUser(null);
       fetchUsers(); // Refresh list to show new balance
     } catch (e) {

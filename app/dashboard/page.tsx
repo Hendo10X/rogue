@@ -29,7 +29,7 @@ export default async function DashboardPage() {
   const headersList = await headers();
   const [walletBalance, orders] = await Promise.all([
     (async () => {
-      await getOrCreateWallet(session!.user!.id, "USDT");
+      await getOrCreateWallet(session!.user!.id, "NGN");
       const b = await getWalletBalance(session!.user!.id);
       return Array.isArray(b) ? b : [b];
     })(),
