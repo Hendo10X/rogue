@@ -3,6 +3,8 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+const ADMIN_EMAIL = "Vinseven8@gmail.com";
+
 interface OrderEmailParams {
   to: string;
   orderId: string;
@@ -47,7 +49,7 @@ export async function sendOrderDeliveryEmail({
 
   try {
     const data = await resend.emails.send({
-      from: "Rogue <onboarding@resend.dev>", // Replace with verified domain in production
+      from: "Rogue <onboarding@resend.dev>",
       to,
       subject: `Order Delivered: ${platform} (#${orderId.slice(0, 8)})`,
       html,
@@ -56,5 +58,79 @@ export async function sendOrderDeliveryEmail({
   } catch (error) {
     console.error("Failed to send email:", error);
     return { success: false, error };
+  }
+}
+
+interface AdminOrderNotifyParams {
+  orderId: string;
+  orderType: "marketplace" | "boosting";
+  userEmail: string;
+  userName: string;
+  amount: string;
+  currency: string;
+  platform?: string;
+  serviceName?: string;
+  status: string;
+}
+
+export async function sendAdminOrderNotification({
+  orderId,
+  orderType,
+  userEmail,
+  userName,
+  amount,
+  currency,
+  platform,
+  serviceName,
+  status,
+}: AdminOrderNotifyParams) {
+  const amountFormatted = currency === "NGN"
+    ? `₦${parseFloat(amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}`
+    : `${parseFloat(amount).toFixed(2)} ${currency}`;
+
+  const productLabel = orderType === "marketplace"
+    ? `Marketplace — ${platform ?? "N/A"}`
+    : `Boosting — ${serviceName ?? "N/A"}`;
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+      <h2 style="color: #333;">New Order Received</h2>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+          <td style="padding: 8px 0; color: #666; width: 130px;">Order ID</td>
+          <td style="padding: 8px 0; font-weight: 600;">${orderId.slice(0, 8)}...</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #666;">Type</td>
+          <td style="padding: 8px 0; font-weight: 600;">${productLabel}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #666;">Amount</td>
+          <td style="padding: 8px 0; font-weight: 600; color: #16a34a;">${amountFormatted}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #666;">Customer</td>
+          <td style="padding: 8px 0;">${userName} (${userEmail})</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #666;">Status</td>
+          <td style="padding: 8px 0; font-weight: 600;">${status}</td>
+        </tr>
+      </table>
+      
+      <p style="font-size: 0.85em; color: #999;">This is an automated notification from Rogue.</p>
+    </div>
+  `;
+
+  try {
+    await resend.emails.send({
+      from: "Rogue <onboarding@resend.dev>",
+      to: ADMIN_EMAIL,
+      subject: `New ${orderType} order — ${amountFormatted} from ${userName}`,
+      html,
+    });
+  } catch (error) {
+    console.error("[Admin Notify] Failed to send:", error);
   }
 }

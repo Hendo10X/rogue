@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
         .innerJoin(supplier, eq(listing.supplierId, supplier.id))
         .where(searchFilter)
         .orderBy(
+          sql`CASE WHEN ${listing.stock} <= 0 THEN 1 ELSE 0 END`,
           sql`CASE WHEN ${supplier.name} ILIKE '%shopviaclone%' THEN 0 ELSE 1 END`,
           desc(listing.createdAt)
         )
