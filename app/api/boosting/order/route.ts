@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { db } from "@/db/drizzle";
-import { boostingOrder, transaction, wallet } from "@/db/schema";
+import { boostingOrder, transaction, wallet, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getMarkupNaira } from "@/lib/admin-auth";
 import { getOrCreateWallet, debitWallet, logTransaction } from "@/lib/wallet";
 import { addOrder, fetchServices } from "@/lib/boosting/really-simple-social";
 import { getUSDtoNGNRate } from "@/lib/currency";
+import { sendAdminOrderNotification } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({
@@ -117,6 +118,23 @@ export async function POST(req: NextRequest) {
     externalReference: String(externalOrderId),
     metadata: { boostingOrderId: orderId, serviceId, serviceName: service.name },
   });
+
+  // Admin email notification
+  try {
+    const [usr] = await db.select().from(user).where(eq(user.id, session.user.id)).limit(1);
+    if (usr?.email) {
+      await sendAdminOrderNotification({
+        orderId,
+        orderType: "boosting",
+        userEmail: usr.email,
+        userName: usr.name,
+        amount: String(totalAmountNgn),
+        currency: "NGN",
+        serviceName: service.name,
+        status: "processing",
+      });
+    }
+  } catch { /* non-critical */ }
 
   return NextResponse.json({
     orderId,

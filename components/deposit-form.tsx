@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -39,6 +40,7 @@ declare global {
 }
 
 export function DepositForm() {
+  const router = useRouter();
   const [amount, setAmount] = useState("");
   const [provider, setProvider] = useState<PaymentProvider>("korapay");
   const [loading, setLoading] = useState(false);
@@ -94,13 +96,17 @@ export function DepositForm() {
           notification_url: data.notificationUrl,
           onSuccess: () => {
             toast.success("Payment successful!");
-            window.location.href = "/wallet/deposit/success";
+            router.refresh();
+            router.push("/wallet/deposit/success");
           },
           onFailed: () => {
             toast.error("Payment failed. Please try again.");
             setLoading(false);
           },
-          onClose: () => setLoading(false),
+          onClose: () => {
+            router.refresh();
+            setLoading(false);
+          },
         });
         return;
       }

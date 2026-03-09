@@ -183,23 +183,35 @@ export async function POST(req: NextRequest) {
 
     await db.update(order).set({ status: "completed", updatedAt: new Date() }).where(eq(order.id, orderId));
 
-    // Email Delivery
+    // Email Delivery + Admin Notification
     const [usr] = await db.select().from(user).where(eq(user.id, session.user.id)).limit(1);
     if (usr?.email) {
       try {
-        const { sendOrderDeliveryEmail } = await import("@/lib/email");
-        await sendOrderDeliveryEmail({
-          to: usr.email,
-          orderId,
-          platform: list.platform,
-          details: {
-            username: parts[0],
-            password: parts[1],
-            email: parts[2],
-            emailPassword: parts[3],
-            notes: deliveryData,
-          },
-        });
+        const { sendOrderDeliveryEmail, sendAdminOrderNotification } = await import("@/lib/email");
+        await Promise.allSettled([
+          sendOrderDeliveryEmail({
+            to: usr.email,
+            orderId,
+            platform: list.platform,
+            details: {
+              username: parts[0],
+              password: parts[1],
+              email: parts[2],
+              emailPassword: parts[3],
+              notes: deliveryData,
+            },
+          }),
+          sendAdminOrderNotification({
+            orderId,
+            orderType: "marketplace",
+            userEmail: usr.email,
+            userName: usr.name,
+            amount: totalAmount,
+            currency: "NGN",
+            platform: list.platform,
+            status: "completed",
+          }),
+        ]);
       } catch (ee) {
         console.error("Email delivery failed:", ee);
       }
@@ -235,6 +247,24 @@ export async function POST(req: NextRequest) {
       deliveryStatus: "pending", // Set to pending for manual check
       notes: `Automatic fulfillment failed: ${errMsg}`,
     });
+
+    // Notify admin about manual review order
+    try {
+      const [usr] = await db.select().from(user).where(eq(user.id, session.user.id)).limit(1);
+      if (usr?.email) {
+        const { sendAdminOrderNotification } = await import("@/lib/email");
+        await sendAdminOrderNotification({
+          orderId,
+          orderType: "marketplace",
+          userEmail: usr.email,
+          userName: usr.name,
+          amount: totalAmount,
+          currency: "NGN",
+          platform: list.platform,
+          status: "manual_review — needs fulfillment",
+        });
+      }
+    } catch { /* non-critical */ }
 
     return NextResponse.json({
       message: "Order placed, but there was a slight delay in processing. Our team is fulfilling it manually now.",
