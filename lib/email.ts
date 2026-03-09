@@ -55,7 +55,7 @@ export async function sendOrderDeliveryEmail({
 
   try {
     const data = await getResend().emails.send({
-      from: "Rogue <onboarding@resend.dev>",
+      from: "Rogue <noreply@roguesocials.com>",
       to,
       subject: `Order Delivered: ${platform} (#${orderId.slice(0, 8)})`,
       html,
@@ -131,7 +131,7 @@ export async function sendAdminOrderNotification({
 
   try {
     await getResend().emails.send({
-      from: "Rogue <onboarding@resend.dev>",
+      from: "Rogue <noreply@roguesocials.com>",
       to: ADMIN_EMAIL,
       subject: `New ${orderType} order — ${amountFormatted} from ${userName}`,
       html,
