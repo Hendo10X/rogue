@@ -5,21 +5,49 @@ import { ServiceCard } from "./service-card";
 import { ServiceOrderModal } from "./service-order-modal";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState } from "react";
 import type { ReallySimpleSocialService } from "@/lib/boosting/really-simple-social";
 
-async function fetchServices(params: { 
-  page?: number; 
-  limit?: number; 
-  q?: string; 
-  category?: string 
+function getCategoryIcon(category: string) {
+  const c = category.toLowerCase();
+  if (c.includes("instagram")) return <img src="/svgs/instagram-icon.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
+  if (c.includes("tiktok")) return <img src="/svgs/tiktok-icon-dark.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
+  if (c.includes("telegram")) return <img src="/svgs/telegram.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
+  if (c.includes("whatsapp")) return <img src="/svgs/whatsapp-icon.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
+  if (c.includes("threads")) return <img src="/svgs/threads.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
+  if (c.includes("facebook")) return <img src="/svgs/facebook-icon.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
+  if (c.includes("twitter") || c.includes(" x ") || c === "x") return <img src="/svgs/x.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
+  if (c.includes("youtube")) return <span className="text-sm leading-none">▶️</span>;
+  if (c.includes("spotify") || c.includes("music")) return <span className="text-sm leading-none">🎵</span>;
+  if (c.includes("snapchat") || c.includes("snap")) return <span className="text-sm leading-none">👻</span>;
+  if (c.includes("discord")) return <span className="text-sm leading-none">💬</span>;
+  if (c.includes("linkedin")) return <span className="text-sm leading-none">💼</span>;
+  if (c.includes("vpn")) return <span className="text-sm leading-none">🔒</span>;
+  if (c.includes("website") || c.includes("traffic") || c.includes("seo")) return <span className="text-sm leading-none">🌐</span>;
+  if (c.includes("review")) return <span className="text-sm leading-none">⭐</span>;
+  return <span className="text-sm leading-none">📦</span>;
+}
+
+async function fetchServices(params: {
+  page?: number;
+  limit?: number;
+  q?: string;
+  category?: string;
 }) {
   const searchParams = new URLSearchParams();
   if (params.page) searchParams.set("page", String(params.page));
   if (params.limit) searchParams.set("limit", String(params.limit));
   if (params.q) searchParams.set("q", params.q);
   if (params.category) searchParams.set("category", params.category);
-  
+
   const res = await fetch(`/api/boosting/services?${searchParams}`);
   if (!res.ok) {
     const data = await res.json();
@@ -46,12 +74,13 @@ export function ServiceGrid({
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["boosting-services", page, search, category],
-    queryFn: () => fetchServices({ 
-      page, 
-      limit: 50, 
-      q: search, 
-      category: category === "all" ? "" : category 
-    }),
+    queryFn: () =>
+      fetchServices({
+        page,
+        limit: 50,
+        q: search,
+        category: category === "all" ? "" : category,
+      }),
   });
 
   const items = data?.items ?? [];
@@ -71,11 +100,6 @@ export function ServiceGrid({
     setPage(1);
   }
 
-  function handleCategoryChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    setCategory(e.target.value);
-    setPage(1);
-  }
-
   if (isError) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
@@ -88,36 +112,43 @@ export function ServiceGrid({
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row">
-        <div className="relative flex-1">
-          <input
-            type="text"
-            placeholder="Search services..."
-            value={search}
-            onChange={handleSearchChange}
-            className="w-full rounded-full border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
-        <div className="sm:w-64">
-          <select
-            value={category}
-            onChange={handleCategoryChange}
-            className="w-full rounded-full border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-          >
-            <option value="all">All Categories</option>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Input
+          placeholder="Search services..."
+          value={search}
+          onChange={handleSearchChange}
+          className="max-w-xs rounded-lg"
+        />
+        <Select
+          value={category}
+          onValueChange={(val) => {
+            setCategory(val);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="h-9 w-[220px] rounded-lg bg-background">
+            <SelectValue placeholder="All Categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
             {categories.map((cat: string) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
+              <SelectItem key={cat} value={cat}>
+                <div className="flex items-center gap-2">
+                  {getCategoryIcon(cat)}
+                  <span>{cat}</span>
+                </div>
+              </SelectItem>
             ))}
-          </select>
-        </div>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className={isLoading ? "opacity-60 pointer-events-none" : ""}>
         {items.length === 0 && !isLoading ? (
           <div className="rounded-lg border border-dashed p-12 text-center">
-            <p className="text-muted-foreground">No services found matching your criteria.</p>
+            <p className="text-muted-foreground">
+              No services found matching your criteria.
+            </p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -139,8 +170,7 @@ export function ServiceGrid({
             size="sm"
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="rounded-full"
-          >
+            className="rounded-full">
             Previous
           </Button>
           <span className="flex items-center px-4 text-sm">
@@ -151,8 +181,7 @@ export function ServiceGrid({
             size="sm"
             disabled={page >= pagination.totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="rounded-full"
-          >
+            className="rounded-full">
             Next
           </Button>
         </div>
