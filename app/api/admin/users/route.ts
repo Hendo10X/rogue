@@ -35,7 +35,7 @@ export async function GET() {
       )
       .orderBy(desc(user.createdAt));
 
-    const output = users.map((u) => ({
+    const output = users.map((u: { id: string; name: string; email: string; createdAt: Date | null; balance: string | null }) => ({
       id: u.id,
       name: u.name,
       email: u.email,
