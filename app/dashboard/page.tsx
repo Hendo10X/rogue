@@ -5,6 +5,8 @@ import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { DashboardNavbar } from "@/components/dashboard-navbar";
 
+export const dynamic = "force-dynamic";
+
 async function getOrders(cookie: string) {
   const base =
     process.env.NEXT_PUBLIC_APP_URL ??
@@ -29,7 +31,7 @@ export default async function DashboardPage() {
   const headersList = await headers();
   const [walletBalance, orders] = await Promise.all([
     (async () => {
-      await getOrCreateWallet(session!.user!.id, "USDT");
+      await getOrCreateWallet(session!.user!.id, "NGN");
       const b = await getWalletBalance(session!.user!.id);
       return Array.isArray(b) ? b : [b];
     })(),

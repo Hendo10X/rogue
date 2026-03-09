@@ -7,6 +7,9 @@ import { DashboardNavbar } from "@/components/dashboard-navbar";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
+import { BalanceRefresher } from "./balance-refresher";
+
+export const dynamic = "force-dynamic";
 
 export default async function DepositSuccessPage() {
   const session = await auth.api.getSession({
@@ -23,6 +26,7 @@ export default async function DepositSuccessPage() {
 
   return (
     <div className="min-h-screen bg-background font-display">
+      <BalanceRefresher />
       <DashboardNavbar
         user={{
           id: session.user.id,
@@ -46,9 +50,8 @@ export default async function DepositSuccessPage() {
               Payment submitted
             </h1>
             <p className="text-muted-foreground mt-2 text-sm">
-              Your deposit is being processed. Funds will appear in your wallet
-              once the payment is confirmed on the blockchain (usually within a
-              few minutes).
+              Your deposit is being processed. Your balance will update
+              automatically once the payment is confirmed.
             </p>
           </div>
           <div className="flex gap-3">

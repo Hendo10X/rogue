@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { db } from "@/db/drizzle";
 import { user, wallet } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -26,32 +26,23 @@ export async function GET() {
         name: user.name,
         email: user.email,
         createdAt: user.createdAt,
-        walletId: wallet.id,
         balance: wallet.balance,
       })
       .from(user)
-      .leftJoin(wallet, eq(user.id, wallet.userId))
+      .leftJoin(
+        wallet,
+        and(eq(user.id, wallet.userId), eq(wallet.currency, "NGN"))
+      )
       .orderBy(desc(user.createdAt));
 
-    // Consolidate users and format output ensuring NGN is grabbed if multiple exist
-    const userMap = new Map();
-    for (const u of users) {
-      if (!userMap.has(u.id)) {
-        userMap.set(u.id, {
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          createdAt: u.createdAt,
-          balance: "0",
-        });
-      }
-      if (u.balance !== null) {
-        // Just take the first balance found for now since we enforce NGN mainly
-        userMap.get(u.id).balance = u.balance;
-      }
-    }
+    const output = users.map((u: { id: string; name: string; email: string; createdAt: Date | null; balance: string | null }) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      createdAt: u.createdAt,
+      balance: u.balance ?? "0",
+    }));
 
-    const output = Array.from(userMap.values());
     return NextResponse.json(output);
   } catch (err) {
     console.error(err);

@@ -95,9 +95,11 @@ export function DepositForm() {
           customer: data.customer,
           notification_url: data.notificationUrl,
           onSuccess: () => {
-            toast.success("Payment successful!");
-            router.refresh();
-            router.push("/wallet/deposit/success");
+            toast.success("Payment successful! Confirming deposit...");
+            setTimeout(() => {
+              router.refresh();
+              router.push("/wallet/deposit/success");
+            }, 3000);
           },
           onFailed: () => {
             toast.error("Payment failed. Please try again.");
