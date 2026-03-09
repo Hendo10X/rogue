@@ -133,7 +133,7 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
   const debouncedSearch = useDebounce(searchInput, 300);
 
   const userBalance =
-    walletBalance.find((w) => w.currency === "USDT")?.balance ?? "0";
+    walletBalance.find((w) => w.currency === "NGN")?.balance ?? "0";
 
   function openListingModal(item: ListingItem) {
     setSelectedListing(item);

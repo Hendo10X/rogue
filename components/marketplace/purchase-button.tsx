@@ -40,13 +40,11 @@ export function PurchaseButton({
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  const totalNgn = parseFloat(price) * quantity;
   const balance = parseFloat(userBalance);
-  const canAfford = balance >= totalNgn;
   const outOfStock = stock < 1;
 
   async function handlePurchase() {
-    if (!canAfford || stock < quantity) return;
+    if (stock < quantity) return;
     setLoading(true);
     try {
       const res = await fetch("/api/marketplace/purchase", {
@@ -106,23 +104,18 @@ export function PurchaseButton({
               />
             </div>
             <div className="text-sm">
-              <p>
-                Total: <strong>₦{Math.round(totalNgn).toLocaleString("en-NG")}</strong>
-              </p>
               <p className="text-muted-foreground">
                 Your balance: ₦{balance.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                {!canAfford && (
-                  <span className="text-destructive block">
-                    Insufficient balance. Fund your wallet first.
-                  </span>
-                )}
+              </p>
+              <p className="text-muted-foreground text-xs mt-1">
+                Final price is calculated at checkout with the live exchange rate.
               </p>
             </div>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              disabled={loading || !canAfford || quantity > stock}
+              disabled={loading || quantity > stock}
               onClick={(e) => {
                 e.preventDefault();
                 handlePurchase();
@@ -138,7 +131,7 @@ export function PurchaseButton({
                   Processing...
                 </>
               ) : (
-                `Pay ₦${Math.round(totalNgn).toLocaleString("en-NG")}`
+                "Confirm Purchase"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
