@@ -28,29 +28,51 @@ function FacebookLogo({ className }: { className?: string }) {
   );
 }
 
+function PlatformSvgIcon({ src, alt }: { src: string; alt: string }) {
+  return <img src={src} alt={alt} className="size-5 shrink-0 rounded-sm" />;
+}
+
 function getPlatformIcon(platform: string) {
   const p = platform.toLowerCase();
-  if (p.includes("dating")) return <HugeiconsIcon icon={FavouriteIcon} className="text-rose-500 fill-rose-500" size={20} />;
-  
-  if (p.includes("usa")) return <span className="text-xl leading-none">🇺🇸</span>;
-  if (p.includes("uk")) return <span className="text-xl leading-none">🇬🇧</span>;
-  if (p.includes("vietnam")) return <span className="text-xl leading-none">🇻🇳</span>;
-  if (p.includes("philippines")) return <span className="text-xl leading-none">🇵🇭</span>;
-  if (p.includes("indonesia")) return <span className="text-xl leading-none">🇮🇩</span>;
-  if (p.includes("thailand")) return <span className="text-xl leading-none">🇹🇭</span>;
-  if (p.includes("india")) return <span className="text-xl leading-none">🇮🇳</span>;
-  if (p.includes("brazil")) return <span className="text-xl leading-none">🇧🇷</span>;
-  if (p.includes("colombia")) return <span className="text-xl leading-none">🇨🇴</span>;
-  if (p.includes("mexico")) return <span className="text-xl leading-none">🇲🇽</span>;
-  if (p.includes("nigeria")) return <span className="text-xl leading-none">🇳🇬</span>;
-  if (p.includes("germany")) return <span className="text-xl leading-none">🇩🇪</span>;
-  if (p.includes("france")) return <span className="text-xl leading-none">🇫🇷</span>;
-  if (p.includes("italy")) return <span className="text-xl leading-none">🇮🇹</span>;
-  if (p.includes("spain")) return <span className="text-xl leading-none">🇪🇸</span>;
-  if (p.includes("canada")) return <span className="text-xl leading-none">🇨🇦</span>;
-  if (p.includes("australia")) return <span className="text-xl leading-none">🇦🇺</span>;
 
+  if (p.includes("instagram")) return <PlatformSvgIcon src="/svgs/instagram-icon.svg" alt="Instagram" />;
+  if (p.includes("tiktok")) return <PlatformSvgIcon src="/svgs/tiktok-icon-dark.svg" alt="TikTok" />;
+  if (p.includes("telegram")) return <PlatformSvgIcon src="/svgs/telegram.svg" alt="Telegram" />;
+  if (p.includes("whatsapp")) return <PlatformSvgIcon src="/svgs/whatsapp-icon.svg" alt="WhatsApp" />;
+  if (p.includes("messenger")) return <PlatformSvgIcon src="/svgs/messenger.svg" alt="Messenger" />;
+  if (p.includes("threads")) return <PlatformSvgIcon src="/svgs/threads.svg" alt="Threads" />;
+  if (p.includes("twitter") || p.includes(" x ") || p === "x") return <PlatformSvgIcon src="/svgs/x.svg" alt="X" />;
   if (p.includes("facebook")) return <FacebookLogo className="size-5 shrink-0" />;
+
+  if (p.includes("dating")) return <HugeiconsIcon icon={FavouriteIcon} className="text-rose-500 fill-rose-500" size={20} />;
+  if (p.includes("vpn")) return <span className="text-base leading-none">🔒</span>;
+  if (p.includes("spotify") || p.includes("music")) return <span className="text-base leading-none">🎵</span>;
+  if (p.includes("youtube")) return <span className="text-base leading-none">▶️</span>;
+  if (p.includes("snapchat") || p.includes("snap")) return <span className="text-base leading-none">👻</span>;
+  if (p.includes("discord")) return <span className="text-base leading-none">💬</span>;
+  if (p.includes("linkedin")) return <span className="text-base leading-none">💼</span>;
+  if (p.includes("gmail") || p.includes("email") || p.includes("mail")) return <span className="text-base leading-none">📧</span>;
+  if (p.includes("netflix") || p.includes("streaming")) return <span className="text-base leading-none">🎬</span>;
+  if (p.includes("gaming") || p.includes("game")) return <span className="text-base leading-none">🎮</span>;
+
+  if (p.includes("usa")) return <span className="text-base leading-none">🇺🇸</span>;
+  if (p.includes("uk")) return <span className="text-base leading-none">🇬🇧</span>;
+  if (p.includes("vietnam")) return <span className="text-base leading-none">🇻🇳</span>;
+  if (p.includes("philippines")) return <span className="text-base leading-none">🇵🇭</span>;
+  if (p.includes("indonesia")) return <span className="text-base leading-none">🇮🇩</span>;
+  if (p.includes("thailand")) return <span className="text-base leading-none">🇹🇭</span>;
+  if (p.includes("india")) return <span className="text-base leading-none">🇮🇳</span>;
+  if (p.includes("brazil")) return <span className="text-base leading-none">🇧🇷</span>;
+  if (p.includes("colombia")) return <span className="text-base leading-none">🇨🇴</span>;
+  if (p.includes("mexico")) return <span className="text-base leading-none">🇲🇽</span>;
+  if (p.includes("nigeria")) return <span className="text-base leading-none">🇳🇬</span>;
+  if (p.includes("germany")) return <span className="text-base leading-none">🇩🇪</span>;
+  if (p.includes("france")) return <span className="text-base leading-none">🇫🇷</span>;
+  if (p.includes("italy")) return <span className="text-base leading-none">🇮🇹</span>;
+  if (p.includes("spain")) return <span className="text-base leading-none">🇪🇸</span>;
+  if (p.includes("canada")) return <span className="text-base leading-none">🇨🇦</span>;
+  if (p.includes("australia")) return <span className="text-base leading-none">🇦🇺</span>;
+
   return null;
 }
 
@@ -175,7 +197,12 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
               )}
               {otherPlatforms.map((p) => (
                 <SelectItem key={p} value={p}>
-                  <span className="uppercase">{p}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex size-5 items-center justify-center shrink-0">
+                      {getPlatformIcon(p)}
+                    </div>
+                    <span className="uppercase">{p}</span>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
