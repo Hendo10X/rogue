@@ -57,7 +57,11 @@ export function PurchaseButton({
         toast.error(data.error ?? "Purchase failed");
         return;
       }
-      toast.success("Order placed! Check your orders for delivery.");
+      if (data.status === "completed") {
+        toast.success("Purchase successful! Credentials delivered — check your orders.");
+      } else {
+        toast.info(data.message ?? "Order placed — under review. Check your orders for updates.");
+      }
       setOpen(false);
       router.refresh();
       router.push("/orders");

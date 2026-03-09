@@ -30,12 +30,31 @@ export async function purchaseFromSupplier(
   formData.set("api_key", config.apiKey);
   if (coupon) formData.set("coupon", coupon);
 
-  const url = `${config.baseUrl}/api/order.php`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: formData.toString(),
-  });
-  if (!res.ok) throw new Error(`Supplier purchase failed: ${res.status}`);
-  return res.json() as Promise<SupplierPurchaseResponse>;
+  const url = `${config.baseUrl}/api/buy_product`;
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData.toString(),
+    });
+  } catch (networkErr) {
+    throw new Error(`Supplier network error: ${networkErr instanceof Error ? networkErr.message : String(networkErr)}`);
+  }
+
+  const rawText = await res.text();
+
+  if (!res.ok) {
+    throw new Error(`Supplier HTTP ${res.status}: ${rawText.slice(0, 500)}`);
+  }
+
+  let parsed: SupplierPurchaseResponse;
+  try {
+    parsed = JSON.parse(rawText);
+  } catch {
+    throw new Error(`Supplier returned non-JSON: ${rawText.slice(0, 500)}`);
+  }
+
+  return parsed;
 }
