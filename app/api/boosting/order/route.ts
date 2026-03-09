@@ -8,7 +8,6 @@ import { getMarkupNaira } from "@/lib/admin-auth";
 import { getOrCreateWallet, debitWallet, logTransaction } from "@/lib/wallet";
 import { addOrder, fetchServices } from "@/lib/boosting/really-simple-social";
 import { getUSDtoNGNRate } from "@/lib/currency";
-import { sendAdminOrderNotification } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({
@@ -123,6 +122,7 @@ export async function POST(req: NextRequest) {
   try {
     const [usr] = await db.select().from(user).where(eq(user.id, session.user.id)).limit(1);
     if (usr?.email) {
+      const { sendAdminOrderNotification } = await import("@/lib/email");
       await sendAdminOrderNotification({
         orderId,
         orderType: "boosting",

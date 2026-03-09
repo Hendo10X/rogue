@@ -1,7 +1,13 @@
 
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return _resend;
+}
 
 const ADMIN_EMAIL = "Vinseven8@gmail.com";
 
@@ -48,7 +54,7 @@ export async function sendOrderDeliveryEmail({
   `;
 
   try {
-    const data = await resend.emails.send({
+    const data = await getResend().emails.send({
       from: "Rogue <onboarding@resend.dev>",
       to,
       subject: `Order Delivered: ${platform} (#${orderId.slice(0, 8)})`,
@@ -124,7 +130,7 @@ export async function sendAdminOrderNotification({
   `;
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: "Rogue <onboarding@resend.dev>",
       to: ADMIN_EMAIL,
       subject: `New ${orderType} order — ${amountFormatted} from ${userName}`,
