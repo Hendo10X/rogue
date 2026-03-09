@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
+
+export const dynamic = "force-dynamic";
 import { DashboardNavbar } from "@/components/dashboard-navbar";
 import { OrderList } from "@/components/orders/order-list";
 

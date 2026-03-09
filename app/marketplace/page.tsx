@@ -5,6 +5,8 @@ import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { DashboardNavbar } from "@/components/dashboard-navbar";
 import { ListingGrid } from "@/components/marketplace/listing-grid";
 
+export const dynamic = "force-dynamic";
+
 export default async function MarketplacePage() {
   const session = await auth.api.getSession({
     headers: await headers(),

@@ -140,3 +140,63 @@ export async function sendAdminOrderNotification({
     console.error("[Admin Notify] Failed to send:", error);
   }
 }
+
+interface AdminDepositNotifyParams {
+  depositId: string;
+  provider: "korapay" | "plisio";
+  userEmail: string;
+  userName: string;
+  amount: string;
+  currency: string;
+}
+
+export async function sendAdminDepositNotification({
+  depositId,
+  provider,
+  userEmail,
+  userName,
+  amount,
+  currency,
+}: AdminDepositNotifyParams) {
+  const amountFormatted = currency === "NGN"
+    ? `₦${parseFloat(amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}`
+    : `${parseFloat(amount).toFixed(2)} ${currency}`;
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+      <h2 style="color: #333;">Wallet Funded</h2>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+          <td style="padding: 8px 0; color: #666; width: 130px;">Customer</td>
+          <td style="padding: 8px 0; font-weight: 600;">${userName} (${userEmail})</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #666;">Amount</td>
+          <td style="padding: 8px 0; font-weight: 600; color: #16a34a;">${amountFormatted}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #666;">Provider</td>
+          <td style="padding: 8px 0; font-weight: 600;">${provider === "korapay" ? "Korapay (Card/Bank)" : "Plisio (Crypto)"}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #666;">Deposit ID</td>
+          <td style="padding: 8px 0;">${depositId.slice(0, 8)}...</td>
+        </tr>
+      </table>
+      
+      <p style="font-size: 0.85em; color: #999;">This is an automated notification from Rogue.</p>
+    </div>
+  `;
+
+  try {
+    await getResend().emails.send({
+      from: "Rogue <noreply@roguesocials.com>",
+      to: ADMIN_EMAIL,
+      subject: `Wallet funded — ${amountFormatted} by ${userName} via ${provider}`,
+      html,
+    });
+  } catch (error) {
+    console.error("[Admin Deposit Notify] Failed to send:", error);
+  }
+}

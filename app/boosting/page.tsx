@@ -5,6 +5,8 @@ import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { DashboardNavbar } from "@/components/dashboard-navbar";
 import { ServiceGrid } from "@/components/boosting/service-grid";
 
+export const dynamic = "force-dynamic";
+
 export default async function BoostingPage() {
   const session = await auth.api.getSession({
     headers: await headers(),

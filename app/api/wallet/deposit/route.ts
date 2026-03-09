@@ -36,8 +36,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const currency = body.currency ?? "NGN";
-  const wallet = await getOrCreateWallet(session.user.id, currency);
+  const wallet = await getOrCreateWallet(session.user.id, "NGN");
 
   const depositId = crypto.randomUUID();
   const orderNumber = `dep_${depositId.replace(/-/g, "")}`;
@@ -103,10 +102,10 @@ export async function POST(req: NextRequest) {
 
   const result = await createPlisioInvoice(apiKey, {
     orderNumber,
-    orderName: `Wallet deposit ${currency}`,
+    orderName: "Wallet deposit USD",
     sourceCurrency: "USD",
     sourceAmount: amount,
-    currency,
+    currency: "USD",
     callbackUrl,
     successCallbackUrl: `${successUrl}?order=${orderNumber}&status=ok&json=true`,
     email: session.user.email ?? undefined,
@@ -126,7 +125,7 @@ export async function POST(req: NextRequest) {
     userId: session.user.id,
     walletId: wallet.id,
     amount: amount.toString(),
-    currency,
+    currency: "NGN",
     provider: "plisio",
     plisioTxnId: result.data.txn_id,
     plisioOrderNumber: orderNumber,
@@ -140,6 +139,6 @@ export async function POST(req: NextRequest) {
     invoiceUrl: result.data.invoice_url,
     orderNumber,
     amount,
-    currency,
+    currency: "NGN",
   });
 }

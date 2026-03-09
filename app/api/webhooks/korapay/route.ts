@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
-import { deposit } from "@/db/schema";
+import { deposit, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyKorapayWebhook } from "@/lib/korapay";
 import { creditWallet, logTransaction } from "@/lib/wallet";
@@ -101,6 +101,22 @@ export async function POST(req: NextRequest) {
     });
 
     console.log("[Korapay Webhook] Credited wallet", dep.walletId, "with", amountNgn, "NGN");
+
+    try {
+      const [usr] = await db.select().from(user).where(eq(user.id, dep.userId)).limit(1);
+      if (usr?.email) {
+        const { sendAdminDepositNotification } = await import("@/lib/email");
+        await sendAdminDepositNotification({
+          depositId: dep.id,
+          provider: "korapay",
+          userEmail: usr.email,
+          userName: usr.name,
+          amount: String(amountNgn),
+          currency: "NGN",
+        });
+      }
+    } catch { /* non-critical */ }
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("[Korapay Webhook] Processing error:", error);

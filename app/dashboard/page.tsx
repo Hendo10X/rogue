@@ -5,6 +5,8 @@ import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { DashboardNavbar } from "@/components/dashboard-navbar";
 
+export const dynamic = "force-dynamic";
+
 async function getOrders(cookie: string) {
   const base =
     process.env.NEXT_PUBLIC_APP_URL ??
