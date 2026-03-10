@@ -76,7 +76,7 @@ export default async function ListingPage({
             <div>
               <p className="text-muted-foreground text-sm">Price</p>
               <p className="text-xl font-semibold">
-                {formatPriceWithCurrency(listing.price)}
+                {formatPriceWithCurrency(listing.price, listing.currency)}
               </p>
             </div>
             <div>
