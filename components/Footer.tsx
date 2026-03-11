@@ -5,6 +5,7 @@ import {
   TwitterIcon,
   GithubIcon,
   Linkedin01Icon,
+  TelegramIcon,
 } from "@hugeicons/core-free-icons";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -14,13 +15,14 @@ const links = [
   { label: "Pricing", href: "#" },
   { label: "About", href: "#" },
   { label: "Blog", href: "#" },
-  { label: "Contact", href: "#" },
+  { label: "Support", href: "https://t.me/rogue4l" },
 ];
 
 const social = [
   { icon: TwitterIcon, href: "#", label: "Twitter" },
   { icon: GithubIcon, href: "#", label: "GitHub" },
   { icon: Linkedin01Icon, href: "#", label: "LinkedIn" },
+  { icon: TelegramIcon, href: "https://t.me/roguesocials", label: "Telegram" },
 ];
 
 export default function Footer() {

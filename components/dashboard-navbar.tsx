@@ -10,6 +10,7 @@ import {
   Logout01Icon,
   Menu01Icon,
   Add01Icon,
+  Information,
 } from "@hugeicons/core-free-icons";
 import { authClient } from "@/utils/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -55,6 +56,7 @@ const NAV_LINKS = [
   { title: "Marketplace", url: "/marketplace" },
   { title: "Boosting", url: "/boosting" },
   { title: "Orders", url: "/orders" },
+  { title: "Support", url: "https://t.me/rogue4l" },
 ];
 
 export function DashboardNavbar({
@@ -75,16 +77,16 @@ export function DashboardNavbar({
     walletBalance.find((w) => w.currency === "NGN") ?? walletBalance[0];
 
   return (
-    <header className="bg-background pt-6 font-display md:pt-8">
+    <header className="bg-background pt-4 font-display md:pt-8">
       <div className="container relative flex h-14 items-center justify-between px-4 pb-4 md:px-6">
         {/* Logo - Rogue.svg on mobile (both modes), Roguelong on desktop */}
-        <Link href={logoUrl} className="flex shrink-0 items-center">
+        <Link href={logoUrl} className="ml-0 flex shrink-0 items-center">
           <Image
             src="/Rogue.svg"
-            className="max-h-10 md:hidden"
+            className="max-h-9 md:hidden"
             alt="Rogue"
-            width={40}
-            height={40}
+            width={36}
+            height={36}
           />
           <Image
             src={logoSrc}
@@ -217,6 +219,18 @@ export function DashboardNavbar({
                     className="size-4"
                   />
                   Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link
+                  href="https://t.me/rogue4l"
+                  className="flex cursor-pointer items-center gap-2">
+                  <HugeiconsIcon
+                    icon={Information}
+                    size={16}
+                    className="size-4"
+                  />
+                  Help & Support
                 </Link>
               </DropdownMenuItem>
               <ThemeToggle asDropdownItem />
