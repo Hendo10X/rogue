@@ -77,16 +77,16 @@ export function DashboardNavbar({
     walletBalance.find((w) => w.currency === "NGN") ?? walletBalance[0];
 
   return (
-    <header className="bg-background pt-6 font-display md:pt-8">
+    <header className="bg-background pt-4 font-display md:pt-8">
       <div className="container relative flex h-14 items-center justify-between px-4 pb-4 md:px-6">
         {/* Logo - Rogue.svg on mobile (both modes), Roguelong on desktop */}
-        <Link href={logoUrl} className="flex shrink-0 items-center">
+        <Link href={logoUrl} className="ml-0 flex shrink-0 items-center">
           <Image
             src="/Rogue.svg"
-            className="max-h-10 md:hidden"
+            className="max-h-9 md:hidden"
             alt="Rogue"
-            width={40}
-            height={40}
+            width={36}
+            height={36}
           />
           <Image
             src={logoSrc}

@@ -27,6 +27,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface MenuItem {
   title: string;
@@ -92,7 +98,7 @@ const Navbar = ({
   };
 
   return (
-    <section className={cn("pb-2 pt-4 pl-1.5 pr-3 font-display sm:px-6 lg:px-9", className)}>
+    <section className={cn("pb-2 pt-4 px-4 font-display sm:px-6 lg:px-9", className)}>
       <div className="container">
         {/* Desktop Menu */}
         <nav className="hidden items-center justify-between lg:flex">
@@ -190,13 +196,13 @@ const Navbar = ({
         <div className="block lg:hidden text-lg">
           <div className="flex items-center justify-between">
             {/* Logo - mobile: Rogue.svg always, pulled to edge */}
-            <Link href={logo.url} className="-ml-0.5 flex items-center gap-2">
+            <Link href={logo.url} className="flex items-center gap-2">
               <Image
                 src="/Rogue.svg"
-                className="max-h-8"
+                className="max-h-9 md:max-h-12"
                 alt={logo.alt}
-                width={120}
-                height={32}
+                width={36}
+                height={36}
               />
             </Link>
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -223,23 +229,24 @@ const Navbar = ({
                     <Link href={logo.url} className="flex items-center gap-2">
                       <Image
                         src="/Rogue.svg"
-                        className="max-h-8"
+                        className="max-h-9"
                         alt={logo.alt}
-                        width={120}
-                        height={32}
+                        width={36}
+                        height={36}
                       />
                     </Link>
                   </SheetTitle>
                 </SheetHeader>
-                <div className="flex flex-col gap-6 p-4">
+                <div className="flex flex-col gap-4 p-4">
                   <nav className="flex flex-col gap-4">
-                    {menu.map((item) =>
-                      item.url.startsWith("#") && isHome ? (
+                    {menu.map((item) => {
+                      const mobileNavLinkClass = "text-left text-md font-semibold text-link dark:text-white dark:hover:text-rogue-lime transition-colors hover:opacity-90";
+                      return item.url.startsWith("#") && isHome ? (
                         <button
                           key={item.title}
                           type="button"
                           onClick={() => scrollToSection(item.url)}
-                          className="text-left text-md font-semibold text-link hover:opacity-90">
+                          className={mobileNavLinkClass}>
                           {item.title}
                         </button>
                       ) : (
@@ -251,32 +258,38 @@ const Navbar = ({
                               : item.url
                           }
                           onClick={() => setSheetOpen(false)}
-                          className="text-md font-semibold text-link hover:opacity-90">
+                          className={mobileNavLinkClass}>
                           {item.title}
                         </Link>
-                      ),
-                    )}
+                      );
+                    })}
                   </nav>
 
-                  <div className="flex flex-col gap-4">
-                    <p className="text-muted-foreground px-4 text-xs font-semibold uppercase tracking-wider">Support</p>
-                    <nav className="flex flex-col gap-2">
-                      <Link
-                        href="https://t.me/rogue4l"
-                        onClick={() => setSheetOpen(false)}
-                        className="flex items-center gap-3 rounded-md px-4 py-2 text-md font-semibold text-link hover:bg-muted">
-                        <HugeiconsIcon icon={Information} size={18} className="size-5 shrink-0" />
-                        Contact Support
-                      </Link>
-                      <Link
-                        href="https://t.me/roguesocials"
-                        onClick={() => setSheetOpen(false)}
-                        className="flex items-center gap-3 rounded-md px-4 py-2 text-md font-semibold text-link hover:bg-muted">
-                        <HugeiconsIcon icon={TelegramIcon} size={18} className="size-5 shrink-0" />
-                        Telegram Channel
-                      </Link>
-                    </nav>
-                  </div>
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="support" className="border-none">
+                      <AccordionTrigger className="flex h-10 w-full items-center justify-between rounded-full bg-transparent p-0 text-md font-semibold text-link dark:text-white dark:hover:text-rogue-lime transition-colors hover:bg-transparent hover:text-foreground hover:no-underline">
+                        Support
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-0 pt-2">
+                        <div className="flex flex-col gap-2 pl-4">
+                          <Link
+                            href="https://t.me/rogue4l"
+                            onClick={() => setSheetOpen(false)}
+                            className="flex items-center gap-3 rounded-md px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+                            <HugeiconsIcon icon={Information} size={16} className="size-4 shrink-0" />
+                            Contact Support
+                          </Link>
+                          <Link
+                            href="https://t.me/roguesocials"
+                            onClick={() => setSheetOpen(false)}
+                            className="flex items-center gap-3 rounded-md px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+                            <HugeiconsIcon icon={TelegramIcon} size={16} className="size-4 shrink-0" />
+                            Telegram Channel
+                          </Link>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
 
                   <div className="flex flex-col gap-3">
                     <Button asChild variant="outline" className="border-primary text-primary bg-transparent hover:bg-primary hover:text-white">
