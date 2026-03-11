@@ -36,6 +36,7 @@ interface UserRow {
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   
   // Modal State
   const [adjustingUser, setAdjustingUser] = useState<UserRow | null>(null);
@@ -100,11 +101,28 @@ export default function AdminUsersPage() {
     );
   }
 
+  const query = search.toLowerCase().trim();
+  const filteredUsers = query
+    ? users.filter(
+        (u) =>
+          u.name.toLowerCase().includes(query) ||
+          u.email.toLowerCase().includes(query)
+      )
+    : users;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Users Management</h1>
+        <span className="text-muted-foreground text-sm">{users.length} total</span>
       </div>
+
+      <Input
+        placeholder="Search by name or email..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-sm"
+      />
 
       <div className="rounded-md border bg-card">
         <Table>
@@ -117,14 +135,14 @@ export default function AdminUsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.length === 0 ? (
+            {filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
-                  No users found.
+                  {query ? "No users match your search." : "No users found."}
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((user) => (
+              filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
                     <div className="font-medium">{user.name}</div>
