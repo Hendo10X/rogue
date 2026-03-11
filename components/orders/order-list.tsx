@@ -34,6 +34,7 @@ import { toast } from "sonner";
 
 interface Order {
   id: string;
+  type?: "marketplace" | "boosting";
   status: string;
   amount: string;
   currency: string;
@@ -44,7 +45,7 @@ interface Order {
   slug: string;
   supplierName: string;
   deliveryStatus: string;
-  deliveredAt: string | null;
+  deliveredAt?: string | null;
   credentials: string[];
 }
 
@@ -142,12 +143,18 @@ function OrderViewModal({
           <AlertDialogCancel className="rounded-full">
             Close
           </AlertDialogCancel>
-          <AlertDialogAction asChild className="rounded-full">
-            <Link href={`/marketplace/${order.slug}`}>
-              View listing
-              <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="ml-2" />
-            </Link>
-          </AlertDialogAction>
+          {order.slug ? (
+            <AlertDialogAction asChild className="rounded-full">
+              <Link href={`/marketplace/${order.slug}`}>
+                View listing
+                <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="ml-2" />
+              </Link>
+            </AlertDialogAction>
+          ) : (
+            <AlertDialogAction className="rounded-full">
+              OK
+            </AlertDialogAction>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

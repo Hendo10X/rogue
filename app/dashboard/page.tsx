@@ -3,20 +3,49 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
+import { db } from "@/db/drizzle";
+import { order, listing, supplier, boostingOrder } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 import { DashboardNavbar } from "@/components/dashboard-navbar";
+import { formatPriceWithCurrency } from "@/lib/format-price";
 
 export const dynamic = "force-dynamic";
 
-async function getOrders(cookie: string) {
-  const base =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-  const res = await fetch(`${base}/api/orders`, {
-    headers: { cookie },
-    cache: "no-store",
-  });
-  if (!res.ok) return [];
-  return res.json();
+async function getRecentOrders(userId: string) {
+  const [marketplaceOrders, boostOrders] = await Promise.all([
+    db
+      .select({
+        id: order.id,
+        status: order.status,
+        amount: order.amount,
+        currency: order.currency,
+        createdAt: order.createdAt,
+        title: listing.title,
+      })
+      .from(order)
+      .innerJoin(listing, eq(order.listingId, listing.id))
+      .innerJoin(supplier, eq(listing.supplierId, supplier.id))
+      .where(eq(order.userId, userId))
+      .orderBy(desc(order.createdAt))
+      .limit(5),
+    db
+      .select({
+        id: boostingOrder.id,
+        status: boostingOrder.status,
+        amount: boostingOrder.amount,
+        currency: boostingOrder.currency,
+        createdAt: boostingOrder.createdAt,
+        title: boostingOrder.serviceName,
+      })
+      .from(boostingOrder)
+      .where(eq(boostingOrder.userId, userId))
+      .orderBy(desc(boostingOrder.createdAt))
+      .limit(5),
+  ]);
+
+  const all = [...marketplaceOrders, ...boostOrders];
+  all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return all.slice(0, 5);
 }
 
 export default async function DashboardPage() {
@@ -28,18 +57,16 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const headersList = await headers();
-  const [walletBalance, orders] = await Promise.all([
+  const [walletBalance, recentOrders] = await Promise.all([
     (async () => {
       await getOrCreateWallet(session!.user!.id, "NGN");
       const b = await getWalletBalance(session!.user!.id);
       return Array.isArray(b) ? b : [b];
     })(),
-    getOrders(headersList.get("cookie") ?? ""),
+    getRecentOrders(session.user.id),
   ]);
 
   const primaryBalance = walletBalance.find((w) => w.currency === "NGN") ?? walletBalance[0];
-  const recentOrders = Array.isArray(orders) ? orders.slice(0, 5) : [];
 
   return (
     <div className="min-h-screen bg-background font-display">
@@ -160,7 +187,7 @@ export default async function DashboardPage() {
                           <td className="p-3">{o.title ?? "—"}</td>
                           <td className="p-3 capitalize">{o.status ?? "—"}</td>
                           <td className="p-3">
-                            {o.amount ?? "—"} {o.currency ?? "NGN"}
+                            {o.amount ? formatPriceWithCurrency(o.amount, o.currency ?? "NGN") : "—"}
                           </td>
                           <td className="text-muted-foreground p-3">
                             {o.createdAt

@@ -127,6 +127,15 @@ export async function POST(req: NextRequest) {
 
   // 3. Talk to Supplier
   try {
+    console.log(`[PurchaseAPI] Calling supplier:`, {
+      orderId,
+      supplierId: sup.id,
+      supplierName: sup.name,
+      baseUrl: sup.apiUrl,
+      productId: list.externalProductId,
+      quantity,
+    });
+
     const purchaseResult = await purchaseFromSupplier(
       { baseUrl: sup.apiUrl, apiKey: sup.apiKey },
       list.externalProductId,
@@ -134,8 +143,10 @@ export async function POST(req: NextRequest) {
       body.coupon
     );
 
+    console.log(`[PurchaseAPI] Supplier response for order ${orderId}:`, JSON.stringify(purchaseResult));
+
     if (purchaseResult.status !== "success" || !purchaseResult.trans_id) {
-      throw new Error(purchaseResult.msg ?? "Supplier purchase failed");
+      throw new Error(purchaseResult.msg ?? `Supplier returned: ${JSON.stringify(purchaseResult)}`);
     }
 
     // Success flow
@@ -267,7 +278,7 @@ export async function POST(req: NextRequest) {
     } catch { /* non-critical */ }
 
     return NextResponse.json({
-      message: "Order placed, but there was a slight delay in processing. Our team is fulfilling it manually now.",
+      message: `Order placed, but automatic delivery failed: ${errMsg}. Our team is fulfilling it manually now.`,
       orderId,
       status: "manual_review",
     });
