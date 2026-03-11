@@ -35,6 +35,11 @@ const formSchema = z.object({
   email: z.email(),
   password: passwordSchema.max(100),
   name: z.string().min(3).max(100),
+  phoneNumber: z
+    .string()
+    .min(10, "Phone number must be at least 10 digits")
+    .max(15, "Phone number is too long")
+    .regex(/^\+?[0-9]+$/, "Enter a valid phone number (e.g. +2348012345678)"),
 });
 
 const PASSWORD_REQUIREMENTS = [
@@ -78,16 +83,19 @@ export function SignupForm({
       email: "",
       password: "",
       name: "",
+      phoneNumber: "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
     try {
-      const result = await authClient.signUp.email({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (authClient.signUp.email as any)({
         email: values.email,
         password: values.password,
         name: values.name,
+        phoneNumber: values.phoneNumber,
       });
 
       if (result.error) {
@@ -98,8 +106,9 @@ export function SignupForm({
 
       toast.success("Signed up successfully");
       router.push("/login");
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to sign up");
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Failed to sign up";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -113,7 +122,7 @@ export function SignupForm({
         <CardHeader>
           <CardTitle>Welcome to Roguesocials</CardTitle>
           <CardDescription>
-            Enter your details below to login to your account
+            Enter your details below to create your account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -144,6 +153,25 @@ export function SignupForm({
                         <FormLabel>Email</FormLabel>
                         <FormControl>
                           <Input placeholder="email@example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </Field>
+                <Field>
+                  <FormField
+                    control={form.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="+2348012345678"
+                            type="tel"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -243,11 +271,6 @@ export function SignupForm({
                               </li>
                             ))}
                           </ul>
-                          <button
-                            type="button"
-                            className="text-sm underline-offset-4 hover:underline hover:text-muted-foreground">
-                            Forgot your password?
-                          </button>
                           <FormMessage />
                         </FormItem>
                       );

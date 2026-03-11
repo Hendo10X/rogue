@@ -29,8 +29,53 @@ interface UserRow {
   id: string;
   name: string;
   email: string;
+  phoneNumber: string;
   createdAt: string;
   balance: string;
+  ipAddress: string;
+}
+
+function CopyText({ text, label }: { text: string; label?: string }) {
+  if (!text) return <span className="text-muted-foreground/50">—</span>;
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard.writeText(text);
+        toast.success(`${label ?? "Text"} copied`);
+      }}
+      className="text-left hover:underline underline-offset-2 cursor-pointer"
+      title="Click to copy"
+    >
+      {text}
+    </button>
+  );
+}
+
+function TruncatedIp({ ip }: { ip: string }) {
+  if (!ip) return <span className="text-muted-foreground/50">—</span>;
+
+  const parts = ip.split(".");
+  const short =
+    parts.length >= 2 ? `${parts[0]}.${parts[1]}...` : ip.slice(0, 8) + "…";
+
+  return (
+    <span className="group/ip relative inline-block">
+      <button
+        type="button"
+        onClick={() => {
+          navigator.clipboard.writeText(ip);
+          toast.success("IP address copied");
+        }}
+        className="hover:underline underline-offset-2 cursor-pointer"
+      >
+        {short}
+      </button>
+      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded bg-popover text-popover-foreground border px-2.5 py-1 text-xs font-mono shadow-md opacity-0 transition-opacity group-hover/ip:opacity-100 z-50">
+        {ip}
+      </span>
+    </span>
+  );
 }
 
 export default function AdminUsersPage() {
@@ -95,7 +140,7 @@ export default function AdminUsersPage() {
 
   if (loading && users.length === 0) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
+      <div className="flex min-h-100 items-center justify-center">
         <Spinner className="size-8" />
       </div>
     );
@@ -106,7 +151,8 @@ export default function AdminUsersPage() {
     ? users.filter(
         (u) =>
           u.name.toLowerCase().includes(query) ||
-          u.email.toLowerCase().includes(query)
+          u.email.toLowerCase().includes(query) ||
+          u.phoneNumber.includes(query)
       )
     : users;
 
@@ -118,26 +164,28 @@ export default function AdminUsersPage() {
       </div>
 
       <Input
-        placeholder="Search by name or email..."
+        placeholder="Search by name, email, or phone..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="max-w-sm"
       />
 
-      <div className="rounded-md border bg-card">
+      <div className="overflow-x-auto rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>User</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>IP Address</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead className="text-right">Balance (NGN)</TableHead>
-              <TableHead className="w-[100px]"></TableHead>
+              <TableHead className="w-25"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   {query ? "No users match your search." : "No users found."}
                 </TableCell>
               </TableRow>
@@ -147,6 +195,12 @@ export default function AdminUsersPage() {
                   <TableCell>
                     <div className="font-medium">{user.name}</div>
                     <div className="text-sm text-muted-foreground">{user.email}</div>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    <CopyText text={user.phoneNumber} label="Phone" />
+                  </TableCell>
+                  <TableCell className="text-sm font-mono">
+                    <TruncatedIp ip={user.ipAddress} />
                   </TableCell>
                   <TableCell>
                     {formatDistanceToNow(new Date(user.createdAt), {
