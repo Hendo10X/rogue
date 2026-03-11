@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const cookieStore = await cookies();
   const token = cookieStore.get("admin_session")?.value;
