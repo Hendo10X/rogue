@@ -5,16 +5,20 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Menu01Icon } from "@hugeicons/core-free-icons";
+import { Menu01Icon, Information, TelegramIcon } from "@hugeicons/core-free-icons";
 
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuIndicator,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
+  NavigationMenuTrigger,
+  NavigationMenuViewport,
 } from "@/components/ui/navigation-menu";
 import {
   Sheet,
@@ -111,7 +115,7 @@ const Navbar = ({
               />
             </Link>
             <div className="flex items-center">
-              <NavigationMenu>
+              <NavigationMenu viewport={false}>
                 <NavigationMenuList>
                   {menu.map((item) => {
                     const navLinkClass =
@@ -139,6 +143,35 @@ const Navbar = ({
                       </NavigationMenuItem>
                     );
                   })}
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="group inline-flex h-10 w-max items-center justify-center rounded-full bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground">
+                      Support
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid w-[200px] gap-1 p-2">
+                        <li>
+                          <NavigationMenuLink asChild>
+                            <Link
+                              href="https://t.me/rogue4l"
+                              className="select-none leading-none no-underline outline-none transition-colors">
+                              <HugeiconsIcon icon={Information} size={16} className="size-4 shrink-0" />
+                              <div className="text-sm font-medium leading-none">Contact Support</div>
+                            </Link>
+                          </NavigationMenuLink>
+                        </li>
+                        <li>
+                          <NavigationMenuLink asChild>
+                            <Link
+                              href="https://t.me/roguesocials"
+                              className="select-none leading-none no-underline outline-none transition-colors">
+                              <HugeiconsIcon icon={TelegramIcon} size={16} className="size-4 shrink-0" />
+                              <div className="text-sm font-medium leading-none">Telegram Channel</div>
+                            </Link>
+                          </NavigationMenuLink>
+                        </li>
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
                 </NavigationMenuList>
               </NavigationMenu>
             </div>
@@ -224,6 +257,26 @@ const Navbar = ({
                       ),
                     )}
                   </nav>
+
+                  <div className="flex flex-col gap-4">
+                    <p className="text-muted-foreground px-4 text-xs font-semibold uppercase tracking-wider">Support</p>
+                    <nav className="flex flex-col gap-2">
+                      <Link
+                        href="https://t.me/rogue4l"
+                        onClick={() => setSheetOpen(false)}
+                        className="flex items-center gap-3 rounded-md px-4 py-2 text-md font-semibold text-link hover:bg-muted">
+                        <HugeiconsIcon icon={Information} size={18} className="size-5 shrink-0" />
+                        Contact Support
+                      </Link>
+                      <Link
+                        href="https://t.me/roguesocials"
+                        onClick={() => setSheetOpen(false)}
+                        className="flex items-center gap-3 rounded-md px-4 py-2 text-md font-semibold text-link hover:bg-muted">
+                        <HugeiconsIcon icon={TelegramIcon} size={18} className="size-5 shrink-0" />
+                        Telegram Channel
+                      </Link>
+                    </nav>
+                  </div>
 
                   <div className="flex flex-col gap-3">
                     <Button asChild variant="outline" className="border-primary text-primary bg-transparent hover:bg-primary hover:text-white">

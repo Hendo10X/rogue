@@ -87,6 +87,7 @@ export default function AdminUsersPage() {
   const [adjustingUser, setAdjustingUser] = useState<UserRow | null>(null);
   const [adjustmentAmount, setAdjustmentAmount] = useState("");
   const [adjustmentType, setAdjustmentType] = useState<"credit" | "debit">("credit");
+  const [deletingUser, setDeletingUser] = useState<UserRow | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   function fetchUsers() {
@@ -131,6 +132,28 @@ export default function AdminUsersPage() {
       toast.success(`Successfully ${adjustmentType}ed ₦${amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`);
       setAdjustingUser(null);
       fetchUsers(); // Refresh list to show new balance
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "An error occurred");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDeleteUser() {
+    if (!deletingUser) return;
+    
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/users/${deletingUser.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete user");
+
+      toast.success("User successfully deleted");
+      setDeletingUser(null);
+      fetchUsers();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "An error occurred");
     } finally {
@@ -222,6 +245,16 @@ export default function AdminUsersPage() {
                     >
                       Adjust
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => {
+                        setDeletingUser(user);
+                      }}
+                    >
+                      Delete
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
@@ -229,6 +262,35 @@ export default function AdminUsersPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Deletion Confirmation Modal */}
+      <AlertDialog
+        open={!!deletingUser}
+        onOpenChange={(open) => !open && setDeletingUser(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete <strong>{deletingUser?.name}</strong>'s
+              account and remove all associated data, including wallets, orders, and sessions.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={submitting}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteUser();
+              }}
+            >
+              {submitting ? "Deleting..." : "Delete Account"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Adjustment Modal */}
       <AlertDialog
