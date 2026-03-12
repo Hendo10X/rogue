@@ -154,9 +154,9 @@ export function ServiceGrid({
 
         <div className="w-full max-w-xs space-y-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground font-medium uppercase tracking-wider">Price Range (NGN)</span>
-            <span className="font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-              ₦{priceRange[0].toLocaleString()} - ₦{priceRange[1].toLocaleString()}
+            <span className="text-muted-foreground font-medium uppercase tracking-wider">Price Range</span>
+            <span className="font-display font-semibold text-primary">
+              ₦{priceRange[0].toLocaleString()} – ₦{priceRange[1].toLocaleString()}
             </span>
           </div>
           <Slider
