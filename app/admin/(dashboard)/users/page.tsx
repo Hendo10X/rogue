@@ -193,7 +193,8 @@ export default function AdminUsersPage() {
         className="max-w-sm"
       />
 
-      <div className="overflow-x-auto rounded-md border bg-card">
+      {/* Desktop table */}
+      <div className="hidden md:block rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -261,6 +262,67 @@ export default function AdminUsersPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {filteredUsers.length === 0 ? (
+          <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
+            {query ? "No users match your search." : "No users found."}
+          </div>
+        ) : (
+          filteredUsers.map((user) => (
+            <div key={user.id} className="rounded-lg border bg-card p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-medium">{user.name}</p>
+                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                </div>
+                <p className="text-sm font-semibold">
+                  ₦{parseFloat(user.balance).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs">Phone</p>
+                  <CopyText text={user.phoneNumber} label="Phone" />
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">IP Address</p>
+                  <span className="font-mono text-xs">
+                    <TruncatedIp ip={user.ipAddress} />
+                  </span>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Joined</p>
+                  <p>{formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}</p>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    setAdjustingUser(user);
+                    setAdjustmentAmount("");
+                    setAdjustmentType("credit");
+                  }}
+                >
+                  Adjust
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => setDeletingUser(user)}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Deletion Confirmation Modal */}

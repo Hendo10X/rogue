@@ -116,7 +116,8 @@ export default function AdminSuppliersPage() {
           </Button>
         </div>
       </div>
-      <div className="overflow-x-auto rounded-lg border bg-background shadow-none">
+      {/* Desktop table */}
+      <div className="hidden md:block rounded-lg border bg-background shadow-none">
         <Table>
           <TableHeader>
             <TableRow className="border-b">
@@ -145,6 +146,34 @@ export default function AdminSuppliersPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {suppliers.length === 0 ? (
+          <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
+            No suppliers configured
+          </div>
+        ) : (
+          suppliers.map((s) => (
+            <div key={s.id} className="rounded-lg border bg-card p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="font-medium">{s.name}</p>
+                <span className="text-xs capitalize rounded-full bg-muted px-2 py-0.5">{s.status}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs">Slug</p>
+                  <p className="font-mono text-xs">{s.slug}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Balance</p>
+                  <p>{s.balance}</p>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
