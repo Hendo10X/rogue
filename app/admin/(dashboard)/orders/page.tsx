@@ -124,7 +124,8 @@ export default function AdminOrdersPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Orders</h1>
-      <div className="overflow-x-auto rounded-lg border bg-background shadow-none">
+      {/* Desktop table */}
+      <div className="hidden md:block rounded-lg border bg-background shadow-none">
         <Table>
           <TableHeader>
             <TableRow className="border-b">
@@ -183,6 +184,59 @@ export default function AdminOrdersPage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {orders.length === 0 ? (
+          <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
+            No orders yet
+          </div>
+        ) : (
+          orders.map((o) => (
+            <div key={`${o.type}-${o.id}`} className="rounded-lg border bg-card p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-medium truncate max-w-[200px]">
+                    {o.type === "marketplace" ? o.title ?? "—" : o.serviceName ?? o.link ?? "—"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{o.userEmail ?? "—"}</p>
+                </div>
+                <StatusBadge status={o.status} />
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs">Type</p>
+                  <p className="capitalize">{o.type}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Amount</p>
+                  <p className="font-medium">{o.amount} {o.currency}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Date</p>
+                  <p>{new Date(o.createdAt).toLocaleDateString()}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="font-mono">{o.id.slice(0, 8)}</span>
+                {o.status === "manual_review" && o.type === "marketplace" && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setFulfillingOrder(o);
+                      setCredentials("");
+                    }}
+                  >
+                    <HugeiconsIcon icon={CheckmarkBadge01Icon} className="mr-1 size-3" />
+                    Fulfill
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       <AlertDialog 

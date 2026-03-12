@@ -161,45 +161,77 @@ export default async function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-border bg-background">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="p-3 text-left font-medium">Product</th>
-                      <th className="p-3 text-left font-medium">Status</th>
-                      <th className="p-3 text-left font-medium">Amount</th>
-                      <th className="p-3 text-left font-medium">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentOrders.map(
-                      (
-                        o: {
-                          id?: string;
-                          title?: string;
-                          status?: string;
-                          amount?: string;
-                          currency?: string;
-                          createdAt?: string;
-                        }
-                      ) => (
-                        <tr key={o.id} className="border-b last:border-0">
-                          <td className="p-3">{o.title ?? "—"}</td>
-                          <td className="p-3 capitalize">{o.status ?? "—"}</td>
-                          <td className="p-3">
+              <>
+                <div className="hidden md:block rounded-lg border border-border bg-background">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="p-3 text-left font-medium">Product</th>
+                        <th className="p-3 text-left font-medium">Status</th>
+                        <th className="p-3 text-left font-medium">Amount</th>
+                        <th className="p-3 text-left font-medium">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentOrders.map(
+                        (
+                          o: {
+                            id?: string;
+                            title?: string;
+                            status?: string;
+                            amount?: string;
+                            currency?: string;
+                            createdAt?: string;
+                          }
+                        ) => (
+                          <tr key={o.id} className="border-b last:border-0">
+                            <td className="p-3">{o.title ?? "—"}</td>
+                            <td className="p-3 capitalize">{o.status ?? "—"}</td>
+                            <td className="p-3">
+                              {o.amount ? formatPriceWithCurrency(o.amount, o.currency ?? "NGN") : "—"}
+                            </td>
+                            <td className="text-muted-foreground p-3">
+                              {o.createdAt
+                                ? new Date(o.createdAt).toLocaleDateString()
+                                : "—"}
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex flex-col gap-3 md:hidden">
+                  {recentOrders.map(
+                    (
+                      o: {
+                        id?: string;
+                        title?: string;
+                        status?: string;
+                        amount?: string;
+                        currency?: string;
+                        createdAt?: string;
+                      }
+                    ) => (
+                      <div key={o.id} className="rounded-lg border border-border bg-background p-4 space-y-2">
+                        <div className="flex items-start justify-between">
+                          <p className="font-medium text-sm">{o.title ?? "—"}</p>
+                          <span className="text-xs capitalize rounded-full bg-muted px-2 py-0.5">{o.status ?? "—"}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <p className="font-medium">
                             {o.amount ? formatPriceWithCurrency(o.amount, o.currency ?? "NGN") : "—"}
-                          </td>
-                          <td className="text-muted-foreground p-3">
-                            {o.createdAt
-                              ? new Date(o.createdAt).toLocaleDateString()
-                              : "—"}
-                          </td>
-                        </tr>
-                      )
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                          </p>
+                          <p className="text-muted-foreground text-xs">
+                            {o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "—"}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              </>
             )}
           </section>
         </div>
