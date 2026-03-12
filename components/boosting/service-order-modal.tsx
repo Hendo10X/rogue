@@ -19,8 +19,12 @@ import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
 import type { ReallySimpleSocialService } from "@/lib/boosting/really-simple-social";
 
+interface ExtendedService extends ReallySimpleSocialService {
+  provider?: string;
+}
+
 interface ServiceOrderModalProps {
-  service: ReallySimpleSocialService | null;
+  service: ExtendedService | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   userBalance: string;
@@ -67,6 +71,7 @@ export function ServiceOrderModal({
           serviceId: service.service,
           link: link.trim(),
           quantity: qty,
+          provider: service.provider ?? "rss",
         }),
       });
       const data = await res.json();

@@ -293,6 +293,15 @@ export function SignupForm({
                     )}
                   </Button>
 
+                   <FieldDescription className="text-center">
+                    By signing up, you agree to our{" "}
+                    <Link
+                      href="/terms"
+                      className="underline-offset-4 hover:underline hover:text-primary">
+                      Terms and Conditions
+                    </Link>
+                  </FieldDescription>
+
                   <FieldDescription className="text-center">
                     Already have an account?{" "}
                     <Link

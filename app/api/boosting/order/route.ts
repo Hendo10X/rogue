@@ -6,7 +6,8 @@ import { boostingOrder, transaction, wallet, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getMarkupNaira } from "@/lib/admin-auth";
 import { getOrCreateWallet, debitWallet, logTransaction } from "@/lib/wallet";
-import { addOrder, fetchServices } from "@/lib/boosting/really-simple-social";
+import * as rss from "@/lib/boosting/really-simple-social";
+import * as rp from "@/lib/boosting/reseller-provider";
 import { getUSDtoNGNRate } from "@/lib/currency";
 
 export async function POST(req: NextRequest) {
@@ -18,14 +19,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { serviceId: number; link: string; quantity: number };
+  let body: { serviceId: number; link: string; quantity: number; provider: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { serviceId, link, quantity } = body;
+  const { serviceId, link, quantity, provider = "rss" } = body;
   if (!serviceId || !link?.trim() || !quantity || quantity < 1) {
     return NextResponse.json(
       { error: "serviceId, link, and quantity are required" },
@@ -33,7 +34,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const services = await fetchServices();
+  // Fetch services from the specific provider
+  let services;
+  if (provider === "rp") {
+    services = await rp.fetchServices();
+  } else {
+    services = await rss.fetchServices();
+  }
+
   const service = services.find((s) => s.service === serviceId);
   if (!service) {
     return NextResponse.json({ error: "Service not found" }, { status: 404 });
@@ -73,13 +81,23 @@ export async function POST(req: NextRequest) {
 
   let externalOrderId: number;
   try {
-    const result = await addOrder({
-      service: serviceId,
-      link: link.trim(),
-      quantity: qty,
-    });
-    externalOrderId = result.order;
+    if (provider === "rp") {
+      const result = await rp.addOrder({
+        service: serviceId,
+        link: link.trim(),
+        quantity: qty,
+      });
+      externalOrderId = result.order;
+    } else {
+      const result = await rss.addOrder({
+        service: serviceId,
+        link: link.trim(),
+        quantity: qty,
+      });
+      externalOrderId = result.order;
+    }
   } catch (e) {
+    // Refund on failure
     await db
       .update(wallet)
       .set({
@@ -104,6 +122,7 @@ export async function POST(req: NextRequest) {
     amount: String(totalAmountNgn),
     currency: "NGN",
     externalOrderId,
+    provider,
     status: "processing",
     externalStatus: "In progress",
   });
@@ -115,7 +134,7 @@ export async function POST(req: NextRequest) {
     currency: "NGN",
     status: "completed",
     externalReference: String(externalOrderId),
-    metadata: { boostingOrderId: orderId, serviceId, serviceName: service.name },
+    metadata: { boostingOrderId: orderId, serviceId, serviceName: service.name, provider },
   });
 
   // Admin email notification

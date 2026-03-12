@@ -10,8 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ReallySimpleSocialService } from "@/lib/boosting/really-simple-social";
 
+interface ExtendedService extends ReallySimpleSocialService {
+  provider?: string;
+}
+
 interface ServiceCardProps {
-  service: ReallySimpleSocialService;
+  service: ExtendedService;
   onViewClick: () => void;
 }
 

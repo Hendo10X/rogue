@@ -11,11 +11,9 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 const links = [
   { label: "Home", href: "/" },
-  { label: "Features", href: "#" },
-  { label: "Pricing", href: "#" },
-  { label: "About", href: "#" },
   { label: "Blog", href: "#" },
   { label: "Support", href: "https://t.me/rogue4l" },
+  { label: "Terms & Conditions", href: "/terms" },
 ];
 
 const social = [
