@@ -317,6 +317,7 @@ export const boostingOrder = pgTable(
     amount: numeric("amount", { precision: 18, scale: 8 }).notNull(),
     currency: text("currency").notNull().default("USD"),
     externalOrderId: integer("external_order_id"),
+    provider: text("provider").default("rss").notNull(),
     status: text("status").default("pending").notNull(),
     externalStatus: text("external_status"),
     charge: numeric("charge"),

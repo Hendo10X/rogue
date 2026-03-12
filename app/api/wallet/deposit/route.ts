@@ -102,16 +102,16 @@ export async function POST(req: NextRequest) {
 
   const result = await createPlisioInvoice(apiKey, {
     orderNumber,
-    orderName: "Wallet deposit USD",
+    orderName: "Wallet deposit",
     sourceCurrency: "USD",
     sourceAmount: amount,
-    currency: "USD",
     callbackUrl,
-    successCallbackUrl: `${successUrl}?order=${orderNumber}&status=ok&json=true`,
+    successCallbackUrl: `${successUrl}?order=${orderNumber}&status=ok`,
     email: session.user.email ?? undefined,
   });
 
   if (result.status !== "success" || !result.data) {
+    console.error("[Plisio] Invoice creation failed:", JSON.stringify(result));
     return NextResponse.json(
       {
         error: result.error?.message ?? "Failed to create payment invoice",

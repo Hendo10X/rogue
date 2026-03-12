@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FavouriteIcon } from "@hugeicons/core-free-icons";
 
@@ -82,6 +83,8 @@ async function fetchListings(params: {
   platformGroup?: string;
   category?: string;
   search?: string;
+  minPrice?: number;
+  maxPrice?: number;
 }) {
   const searchParams = new URLSearchParams();
   if (params.page) searchParams.set("page", String(params.page));
@@ -89,6 +92,8 @@ async function fetchListings(params: {
   if (params.platformGroup) searchParams.set("platformGroup", params.platformGroup);
   if (params.category) searchParams.set("category", params.category);
   if (params.search) searchParams.set("search", params.search);
+  if (params.minPrice !== undefined) searchParams.set("minPrice", String(params.minPrice));
+  if (params.maxPrice !== undefined) searchParams.set("maxPrice", String(params.maxPrice));
   const res = await fetch(`/api/marketplace/listings?${searchParams}`);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Failed to fetch");
@@ -128,6 +133,7 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
   const [searchInput, setSearchInput] = useState("");
   const [primaryPlatform, setPrimaryPlatform] = useState("");
   const [facebookCategory, setFacebookCategory] = useState("");
+  const [priceRange, setPriceRange] = useState([0, 500000]);
   const [selectedListing, setSelectedListing] = useState<ListingItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -140,17 +146,22 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
     setModalOpen(true);
   }
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["listings", page, primaryPlatform, facebookCategory, debouncedSearch],
+  const { data, isLoading, isFetching, isError, error } = useQuery({
+    queryKey: ["listings", page, primaryPlatform, facebookCategory, debouncedSearch, priceRange],
     queryFn: () => {
-      const platformParams: { platform?: string; platformGroup?: string } = {};
+      const params: any = { page };
       if (primaryPlatform === "facebook") {
-        if (facebookCategory) platformParams.platform = facebookCategory;
-        else platformParams.platformGroup = "facebook";
+        if (facebookCategory) params.platform = facebookCategory;
+        else params.platformGroup = "facebook";
       } else if (primaryPlatform) {
-        platformParams.platform = primaryPlatform;
+        params.platform = primaryPlatform;
       }
-      return fetchListings({ page, ...platformParams, search: debouncedSearch || undefined });
+      return fetchListings({ 
+        ...params,
+        search: debouncedSearch || undefined,
+        minPrice: priceRange[0],
+        maxPrice: priceRange[1]
+      });
     },
   });
 
@@ -163,8 +174,8 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-start lg:items-center">
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
           <Input
             placeholder="Search listings..."
             value={searchInput}
@@ -235,78 +246,107 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
             </Select>
           )}
         </div>
+
+        <div className="w-full max-w-xs space-y-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground font-medium uppercase tracking-wider">Price Range (NGN)</span>
+            <span className="font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+              ₦{priceRange[0].toLocaleString()} - ₦{priceRange[1].toLocaleString()}
+            </span>
+          </div>
+          <Slider
+            defaultValue={[0, 500000]}
+            max={500000}
+            step={1000}
+            value={priceRange}
+            onValueChange={(val) => {
+              setPriceRange(val);
+              setPage(1);
+            }}
+            className="py-2"
+          />
+        </div>
       </div>
 
-      {isLoading && !data ? (
-        <div className="flex min-h-[320px] items-center justify-center">
-          <Spinner className="size-8" />
-        </div>
-      ) : isError || !data ? (
-        <div className="rounded-lg border border-dashed p-8 text-center">
-          <p className="text-muted-foreground">
-            {error instanceof Error ? error.message : (data?.error ?? "Failed to load listings. Sync suppliers first.")}
-          </p>
-        </div>
-      ) : items.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-12 text-center">
-          <p className="text-muted-foreground">
-            No listings yet. Contact support if you need products added.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className={isLoading ? "opacity-60 pointer-events-none" : ""}>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((item: Record<string, unknown>) => {
-                const listing: ListingItem = {
-                  id: String(item.id),
-                  slug: String(item.slug),
-                  title: String(item.title),
-                  description: item.description as string | null,
-                  price: String(item.price),
-                  currency: String(item.currency),
-                  stock: Number(item.stock),
-                  platform: String(item.platform),
-                  categoryName: (item.categoryName as string) ?? null,
-                  supplierName: String(item.supplierName),
-                };
-                return (
-                  <ListingCard
-                    key={listing.id}
-                    {...listing}
-                    onViewClick={() => openListingModal(listing)}
-                  />
-                );
-              })}
-            </div>
+      <div className="relative">
+        {isFetching && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/20 backdrop-blur-[1px] rounded-lg">
+            <Spinner className="size-8" />
           </div>
-          {pagination && pagination.totalPages > 1 && (
-            <div className="flex justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-full"
-              >
-                Previous
-              </Button>
-              <span className="flex items-center px-4 text-sm">
-                {page} / {pagination.totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= pagination.totalPages}
-                onClick={() => setPage((p) => p + 1)}
-                className="rounded-full"
-              >
-                Next
-              </Button>
+        )}
+        
+        {isLoading && !data ? (
+          <div className="flex min-h-[320px] items-center justify-center">
+            <Spinner className="size-8" />
+          </div>
+        ) : isError || !data ? (
+          <div className="rounded-lg border border-dashed p-8 text-center">
+            <p className="text-muted-foreground">
+              {error instanceof Error ? error.message : "Failed to load listings"}
+            </p>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="rounded-lg border border-dashed p-12 text-center">
+            <p className="text-muted-foreground">
+              No listings found matching your criteria.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className={isFetching ? "opacity-40 pointer-events-none grayscale-[0.5] transition-all duration-300" : "transition-all duration-300"}>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {items.map((item: any) => {
+                  const listing: ListingItem = {
+                    id: String(item.id),
+                    slug: String(item.slug),
+                    title: String(item.title),
+                    description: item.description,
+                    price: String(item.price),
+                    currency: String(item.currency),
+                    stock: Number(item.stock),
+                    platform: String(item.platform),
+                    categoryName: item.categoryName,
+                    supplierName: String(item.supplierName),
+                  };
+                  return (
+                    <ListingCard
+                      key={listing.id}
+                      {...listing}
+                      onViewClick={() => openListingModal(listing)}
+                    />
+                  );
+                })}
+              </div>
             </div>
-          )}
-        </>
-      )}
+            {pagination && pagination.totalPages > 1 && (
+              <div className="mt-6 flex justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="rounded-full"
+                >
+                  Previous
+                </Button>
+                <span className="flex items-center px-4 text-sm">
+                  {page} / {pagination.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= pagination.totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="rounded-full"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       <ListingDetailModal
         listing={selectedListing}
         open={modalOpen}
