@@ -33,6 +33,14 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const [creatingLog, setCreatingLog] = useState(false);
+  const [logTitle, setLogTitle] = useState("");
+  const [logPlatform, setLogPlatform] = useState("");
+  const [logCategory, setLogCategory] = useState("");
+  const [logPrice, setLogPrice] = useState("");
+  const [logStock, setLogStock] = useState("1");
+  const [logDescription, setLogDescription] = useState("");
+
   useEffect(() => {
     fetch("/api/admin/settings")
       .then((r) => r.json())
@@ -184,6 +192,143 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Manual Marketplace Logs */}
+      <Card className="border shadow-none">
+        <CardHeader>
+          <h2 className="font-medium">Manual Marketplace Logs</h2>
+          <p className="text-muted-foreground text-sm">
+            Create custom logs that do not rely on any external supplier. These
+            appear in the marketplace and are fulfilled manually from the admin
+            orders page.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <FieldSet>
+            <FieldGroup>
+              <Field>
+                <FieldLabel>Title</FieldLabel>
+                <Input
+                  placeholder="Instagram aged 2015 - USA"
+                  value={logTitle}
+                  onChange={(e) => setLogTitle(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <FieldLabel>Platform</FieldLabel>
+                <Input
+                  placeholder="instagram, facebook, tiktok..."
+                  value={logPlatform}
+                  onChange={(e) => setLogPlatform(e.target.value)}
+                />
+              </Field>
+            </FieldGroup>
+            <FieldGroup>
+              <Field>
+                <FieldLabel>Category (optional)</FieldLabel>
+                <Input
+                  placeholder="Aged, Fresh, Business..."
+                  value={logCategory}
+                  onChange={(e) => setLogCategory(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <FieldLabel>Price (₦)</FieldLabel>
+                <Input
+                  type="number"
+                  min={1}
+                  step={50}
+                  value={logPrice}
+                  onChange={(e) => setLogPrice(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <FieldLabel>Stock</FieldLabel>
+                <Input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={logStock}
+                  onChange={(e) => setLogStock(e.target.value)}
+                />
+              </Field>
+            </FieldGroup>
+            <FieldGroup>
+              <Field>
+                <FieldLabel>Description (optional)</FieldLabel>
+                <Textarea
+                  rows={3}
+                  className="resize-none"
+                  placeholder="Short notes about this log. Users will see this on the marketplace."
+                  value={logDescription}
+                  onChange={(e) => setLogDescription(e.target.value)}
+                />
+              </Field>
+            </FieldGroup>
+          </FieldSet>
+
+          <div className="mt-4 flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={creatingLog}
+              onClick={async () => {
+                const price = parseFloat(logPrice);
+                const stock = parseInt(logStock, 10);
+                if (!logTitle.trim() || !logPlatform.trim()) {
+                  toast.error("Title and platform are required");
+                  return;
+                }
+                if (!Number.isFinite(price) || price <= 0) {
+                  toast.error("Enter a valid price in Naira");
+                  return;
+                }
+                if (!Number.isInteger(stock) || stock <= 0) {
+                  toast.error("Stock must be a positive whole number");
+                  return;
+                }
+
+                setCreatingLog(true);
+                try {
+                  const res = await fetch("/api/admin/listings", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      title: logTitle.trim(),
+                      platform: logPlatform.trim(),
+                      categoryName: logCategory.trim() || undefined,
+                      description: logDescription.trim() || undefined,
+                      priceNgn: price,
+                      stock,
+                    }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) {
+                    throw new Error(data.error || "Failed to create log");
+                  }
+                  toast.success(
+                    "Manual log created and published to marketplace",
+                  );
+                  setLogTitle("");
+                  setLogPlatform("");
+                  setLogCategory("");
+                  setLogPrice("");
+                  setLogStock("1");
+                  setLogDescription("");
+                } catch (e) {
+                  toast.error(
+                    e instanceof Error ? e.message : "Failed to create log",
+                  );
+                } finally {
+                  setCreatingLog(false);
+                }
+              }}
+            >
+              {creatingLog ? "Creating…" : "Create Manual Log"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Button
         size="lg"
