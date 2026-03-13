@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
       supplierPrice: listing.supplierPrice,
       stock: listing.stock,
       platform: listing.platform,
+      metadata: listing.metadata,
     })
     .from(listing)
     .where(eq(listing.slug, body.listingSlug))
@@ -67,17 +68,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const [sup] = await db
-    .select()
-    .from(supplier)
-    .where(eq(supplier.id, list.supplierId))
-    .limit(1);
+  const isManual =
+    !!(list.metadata && (list.metadata as any).manual === true);
 
-  if (!sup?.apiUrl || !sup?.apiKey) {
-    return NextResponse.json(
-      { error: "Supplier not configured" },
-      { status: 500 }
-    );
+  let sup: (typeof supplier)["$inferSelect"] | undefined;
+  if (!isManual) {
+    [sup] = await db
+      .select()
+      .from(supplier)
+      .where(eq(supplier.id, list.supplierId))
+      .limit(1);
+
+    if (!sup?.apiUrl || !sup?.apiKey) {
+      return NextResponse.json(
+        { error: "Supplier not configured" },
+        { status: 500 }
+      );
+    }
   }
 
   const [markupNaira, rate] = await Promise.all([
@@ -117,16 +124,74 @@ export async function POST(req: NextRequest) {
     id: orderId,
     userId: session.user.id,
     listingId: list.id,
-    status: "processing",
+    status: isManual ? "manual_review" : "processing",
     amount: totalAmount,
     currency: "NGN",
     quantity,
     walletId: walletRow.id,
-    metadata: { coupon: body.coupon },
+    metadata: {
+      coupon: body.coupon,
+      ...(isManual ? { manual: true } : {}),
+    },
   });
 
-  // 3. Talk to Supplier
+  // If this is a manual listing, we stop here and let admin fulfill.
+  if (isManual) {
+    await db.insert(accountDelivery).values({
+      id: crypto.randomUUID(),
+      orderId,
+      platform: list.platform,
+      deliveryStatus: "pending",
+      notes: "Manual listing purchase — awaiting admin delivery.",
+    });
+
+    await db.insert(transaction).values({
+      id: crypto.randomUUID(),
+      walletId: walletRow.id,
+      type: "order_payment",
+      amount: `-${totalAmount}`,
+      currency: "NGN",
+      status: "completed",
+      orderId,
+    });
+
+    try {
+      const [usr] = await db
+        .select()
+        .from(user)
+        .where(eq(user.id, session.user.id))
+        .limit(1);
+      if (usr?.email) {
+        const { sendAdminOrderNotification } = await import("@/lib/email");
+        await sendAdminOrderNotification({
+          orderId,
+          orderType: "marketplace",
+          userEmail: usr.email,
+          userName: usr.name,
+          amount: totalAmount,
+          currency: "NGN",
+          platform: list.platform,
+          status: "manual_review — manual listing",
+        });
+      }
+    } catch {
+      // non-critical
+    }
+
+    return NextResponse.json({
+      orderId,
+      status: "manual_review",
+      message:
+        "Order placed successfully. Admin will deliver the credentials shortly.",
+    });
+  }
+
+  // 3. Talk to Supplier for non-manual listings
   try {
+    if (!sup) {
+      throw new Error("Supplier not configured");
+    }
+
     console.log(`[PurchaseAPI] Calling supplier:`, {
       orderId,
       supplierId: sup.id,
