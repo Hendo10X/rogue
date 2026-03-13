@@ -8,6 +8,8 @@ import { order, listing, supplier, boostingOrder } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { DashboardNavbar } from "@/components/dashboard-navbar";
 import { formatPriceWithCurrency } from "@/lib/format-price";
+import { getSetting } from "@/lib/admin-auth";
+import { AnnouncementBanner } from "@/components/announcement-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -57,19 +59,22 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [walletBalance, recentOrders] = await Promise.all([
+  const [walletBalance, recentOrders, announcementStr] = await Promise.all([
     (async () => {
       await getOrCreateWallet(session!.user!.id, "NGN");
       const b = await getWalletBalance(session!.user!.id);
       return Array.isArray(b) ? b : [b];
     })(),
     getRecentOrders(session.user.id),
+    getSetting("site_announcement"),
   ]);
 
   const primaryBalance = walletBalance.find((w) => w.currency === "NGN") ?? walletBalance[0];
+  const announcement = announcementStr ? JSON.parse(announcementStr) : null;
 
   return (
     <div className="min-h-screen bg-background font-display">
+      {announcement?.active && <AnnouncementBanner announcement={announcement} />}
       <DashboardNavbar
         user={{
           id: session.user.id,
