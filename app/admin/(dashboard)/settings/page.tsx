@@ -40,16 +40,47 @@ export default function AdminSettingsPage() {
   const [logPrice, setLogPrice] = useState("");
   const [logStock, setLogStock] = useState("1");
   const [logDescription, setLogDescription] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [manualListings, setManualListings] = useState<
+    Array<{
+      id: string;
+      title: string;
+      platform: string;
+      categoryName: string | null;
+      price: string;
+      currency: string;
+      stock: number;
+      status: string;
+    }>
+  >([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editPrice, setEditPrice] = useState("");
+  const [editStock, setEditStock] = useState("");
 
   useEffect(() => {
-    fetch("/api/admin/settings")
-      .then((r) => r.json())
-      .then((data) => {
-        setMarketplace(String(data.markupNairaMarketplace ?? 0));
-        setBoosting(String(data.markupNairaBoosting ?? 0));
-        if (data.announcement) {
-          setAnnouncement(data.announcement);
-        }
+    Promise.all([
+      fetch("/api/admin/settings")
+        .then((r) => r.json())
+        .then((data) => {
+          setMarketplace(String(data.markupNairaMarketplace ?? 0));
+          setBoosting(String(data.markupNairaBoosting ?? 0));
+          if (data.announcement) {
+            setAnnouncement(data.announcement);
+          }
+        }),
+      fetch("/api/admin/listings")
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data.categories)) {
+            setCategories(data.categories);
+          }
+          if (Array.isArray(data.manualListings)) {
+            setManualListings(data.manualListings);
+          }
+        }),
+    ])
+      .catch(() => {
+        toast.error("Failed to load admin configuration");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -226,11 +257,21 @@ export default function AdminSettingsPage() {
             <FieldGroup>
               <Field>
                 <FieldLabel>Category (optional)</FieldLabel>
-                <Input
-                  placeholder="Aged, Fresh, Business..."
+                <Select
                   value={logCategory}
-                  onChange={(e) => setLogCategory(e.target.value)}
-                />
+                  onValueChange={(v) => setLogCategory(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select or leave empty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
               <Field>
                 <FieldLabel>Price (₦)</FieldLabel>
@@ -315,6 +356,19 @@ export default function AdminSettingsPage() {
                   setLogPrice("");
                   setLogStock("1");
                   setLogDescription("");
+                  if (Array.isArray(data.manualListings)) {
+                    setManualListings(data.manualListings);
+                  } else {
+                    // fallback: refetch manual listings
+                    fetch("/api/admin/listings")
+                      .then((r) => r.json())
+                      .then((payload) => {
+                        if (Array.isArray(payload.manualListings)) {
+                          setManualListings(payload.manualListings);
+                        }
+                      })
+                      .catch(() => {});
+                  }
                 } catch (e) {
                   toast.error(
                     e instanceof Error ? e.message : "Failed to create log",
@@ -329,6 +383,212 @@ export default function AdminSettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Existing Manual Logs */}
+      {manualListings.length > 0 && (
+        <Card className="border shadow-none">
+          <CardHeader>
+            <h2 className="font-medium">Existing Manual Logs</h2>
+            <p className="text-muted-foreground text-sm">
+              Edit price / stock or remove logs from the marketplace.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2">
+              {manualListings.map((log) => {
+                const isEditing = editingId === log.id;
+                return (
+                  <div
+                    key={log.id}
+                    className="rounded-lg border bg-card p-4 space-y-2"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-medium">{log.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {log.platform}
+                          {log.categoryName
+                            ? ` • ${log.categoryName}`
+                            : null}
+                        </p>
+                      </div>
+                      <span className="text-xs rounded-full bg-muted px-2 py-0.5 capitalize">
+                        {log.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      {isEditing ? (
+                        <>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs text-muted-foreground">
+                              Price (₦)
+                            </span>
+                            <Input
+                              type="number"
+                              min={1}
+                              step={50}
+                              value={editPrice}
+                              onChange={(e) => setEditPrice(e.target.value)}
+                              className="h-8 w-28"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs text-muted-foreground">
+                              Stock
+                            </span>
+                            <Input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={editStock}
+                              onChange={(e) => setEditStock(e.target.value)}
+                              className="h-8 w-20"
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-semibold">
+                            ₦{Number(log.price).toLocaleString("en-NG")}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            Stock: {log.stock}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <div className="flex justify-end gap-2 pt-1">
+                      {isEditing ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              const price = parseFloat(editPrice);
+                              const stock = parseInt(editStock, 10);
+                              if (!Number.isFinite(price) || price <= 0) {
+                                toast.error("Enter a valid price");
+                                return;
+                              }
+                              if (!Number.isInteger(stock) || stock <= 0) {
+                                toast.error(
+                                  "Stock must be a positive whole number",
+                                );
+                                return;
+                              }
+                              try {
+                                const res = await fetch(
+                                  `/api/admin/listings/${log.id}`,
+                                  {
+                                    method: "PATCH",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      priceNgn: price,
+                                      stock,
+                                    }),
+                                  },
+                                );
+                                const data = await res.json();
+                                if (!res.ok) {
+                                  throw new Error(
+                                    data.error || "Failed to update log",
+                                  );
+                                }
+                                toast.success("Log updated");
+                                setManualListings((prev) =>
+                                  prev.map((l) =>
+                                    l.id === log.id
+                                      ? {
+                                          ...l,
+                                          price: String(price),
+                                          stock,
+                                        }
+                                      : l,
+                                  ),
+                                );
+                                setEditingId(null);
+                              } catch (e) {
+                                toast.error(
+                                  e instanceof Error
+                                    ? e.message
+                                    : "Failed to update log",
+                                );
+                              }
+                            }}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingId(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingId(log.id);
+                              setEditPrice(String(log.price));
+                              setEditStock(String(log.stock));
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={async () => {
+                              if (
+                                !window.confirm(
+                                  "Remove this log from the marketplace?",
+                                )
+                              ) {
+                                return;
+                              }
+                              try {
+                                const res = await fetch(
+                                  `/api/admin/listings/${log.id}`,
+                                  { method: "DELETE" },
+                                );
+                                const data = await res.json();
+                                if (!res.ok) {
+                                  throw new Error(
+                                    data.error || "Failed to delete log",
+                                  );
+                                }
+                                toast.success("Log removed");
+                                setManualListings((prev) =>
+                                  prev.filter((l) => l.id !== log.id),
+                                );
+                              } catch (e) {
+                                toast.error(
+                                  e instanceof Error
+                                    ? e.message
+                                    : "Failed to delete log",
+                                );
+                              }
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Button
         size="lg"
