@@ -56,8 +56,11 @@ export async function POST(req: NextRequest) {
     getUSDtoNGNRate(),
   ]);
 
-  const rateUsd = parseFloat(service.rate) || 0;
-  const unitPriceNgn = rateUsd * rate + markupNaira;
+  // ReallySimpleSocial returns `rate` as price per 1000 units in USD.
+  // Convert that to a per-unit NGN price before applying quantity.
+  const rateUsdPerThousand = parseFloat(service.rate) || 0;
+  const supplierUnitNgn = (rateUsdPerThousand / 1000) * rate;
+  const unitPriceNgn = supplierUnitNgn + markupNaira;
   const totalAmountNgn = unitPriceNgn * qty;
 
   const walletRow = await getOrCreateWallet(session.user.id, "NGN");

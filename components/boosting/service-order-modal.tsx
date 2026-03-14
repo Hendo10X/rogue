@@ -109,7 +109,8 @@ export function ServiceOrderModal({
             {service.name}
           </AlertDialogTitle>
           <AlertDialogDescription className="text-left text-xs">
-            ₦{Math.round(rate).toLocaleString("en-NG")}/unit · Min {min} – Max {max}
+            ₦{Math.round(rate).toLocaleString("en-NG")}/unit · Min {min} – Max{" "}
+            {max}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-4 py-2">
@@ -146,12 +147,10 @@ export function ServiceOrderModal({
             <div>
               <p className="text-muted-foreground text-xs">Your balance</p>
               <p className="font-medium">
-                 ₦{Math.round(parseFloat(userBalance)).toLocaleString("en-NG")}
+                ₦{Math.round(parseFloat(userBalance)).toLocaleString("en-NG")}
               </p>
               {!canAfford && (
-                <p className="text-destructive text-xs">
-                  Insufficient balance
-                </p>
+                <p className="text-destructive text-xs">Insufficient balance</p>
               )}
             </div>
           </div>
@@ -159,11 +158,14 @@ export function ServiceOrderModal({
             size="lg"
             className="w-full rounded-full"
             disabled={loading || !link.trim() || !canAfford}
-            onClick={handleOrder}
-          >
+            onClick={handleOrder}>
             {loading ? (
               <>
-                <HugeiconsIcon icon={Loading03Icon} size={16} className="mr-2 size-4 animate-spin" />
+                <HugeiconsIcon
+                  icon={Loading03Icon}
+                  size={16}
+                  className="mr-2 size-4 animate-spin"
+                />
                 Placing order...
               </>
             ) : (

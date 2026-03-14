@@ -32,10 +32,12 @@ export async function GET(req: NextRequest) {
     const categories = Array.from(new Set(services.map((s) => s.category))).sort();
 
     // Filter services
+    // ReallySimpleSocial-style providers return `rate` as price per 1000 units in USD.
+    // Convert to a per-unit NGN rate and apply fixed Naira markup.
     let filteredServices = services.map((s) => {
-      const supplierRateUsd = parseFloat(s.rate);
-      const supplierRateNgn = supplierRateUsd * rate;
-      const finalRateNgn = supplierRateNgn + markupNaira;
+      const supplierRateUsdPerThousand = parseFloat(s.rate) || 0;
+      const supplierRateNgnPerUnit = (supplierRateUsdPerThousand / 1000) * rate;
+      const finalRateNgn = supplierRateNgnPerUnit + markupNaira;
       return {
         ...s,
         rateNgn: finalRateNgn,
@@ -55,7 +57,19 @@ export async function GET(req: NextRequest) {
     }
     
     // Price filtering
-    filteredServices = filteredServices.filter(s => s.rateNgn >= minPrice && s.rateNgn <= maxPrice);
+    filteredServices = filteredServices.filter(
+      (s) => s.rateNgn >= minPrice && s.rateNgn <= maxPrice,
+    );
+
+    // Sort by cheapest first so lower priced services show before expensive ones
+    filteredServices.sort((a, b) => {
+      const ap = typeof a.rateNgn === "number" ? a.rateNgn : 0;
+      const bp = typeof b.rateNgn === "number" ? b.rateNgn : 0;
+      if (ap === bp) {
+        return a.name.localeCompare(b.name);
+      }
+      return ap - bp;
+    });
 
     const items = filteredServices.slice(offset, offset + limit);
     const total = filteredServices.length;
