@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/db/drizzle";
 import { listing, supplier } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getMarkupNaira } from "@/lib/admin-auth";
 import { getUSDtoNGNRate } from "@/lib/currency";
 import { verifyAdminSession } from "@/lib/admin-auth";
@@ -22,6 +22,43 @@ function slugify(input: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 60);
+}
+
+export async function GET(req: NextRequest) {
+  const admin = await requireAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const [categoriesRows, manualListings] = await Promise.all([
+    db
+      .selectDistinct({ categoryName: listing.categoryName })
+      .from(listing)
+      .where(sql`${listing.categoryName} IS NOT NULL`),
+    db
+      .select({
+        id: listing.id,
+        title: listing.title,
+        platform: listing.platform,
+        categoryName: listing.categoryName,
+        price: listing.price,
+        currency: listing.currency,
+        stock: listing.stock,
+        status: listing.status,
+        metadata: listing.metadata,
+      })
+      .from(listing)
+      .where(sql`${listing.metadata} ->> 'manual' = 'true'`),
+  ]);
+
+  const categories = categoriesRows
+    .map((r: { categoryName: string | null }) => r.categoryName)
+    .filter((c: string | null): c is string => !!c);
+
+  return NextResponse.json({
+    categories,
+    manualListings,
+  });
 }
 
 export async function POST(req: NextRequest) {
