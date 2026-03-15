@@ -22,7 +22,9 @@ interface ServiceCardProps {
 export function ServiceCard({ service, onViewClick }: ServiceCardProps) {
   const min = parseInt(service.min, 10) || 0;
   const max = parseInt(service.max, 10) || 0;
-  const rate = parseFloat(service.rate) || 0;
+  // rate = NGN price for 1000 quantity. Total = rate × (quantity / 1000).
+  const ratePer1000 = parseFloat(service.rate) || 0;
+  const fromTotal = ratePer1000 * (min / 1000);
 
   return (
     <Card className="overflow-hidden shadow-none">
@@ -43,7 +45,7 @@ export function ServiceCard({ service, onViewClick }: ServiceCardProps) {
       </CardHeader>
       <CardContent className="pb-2">
         <p className="text-muted-foreground text-sm">
-          ₦{rate.toLocaleString()}/unit · Min {min} – Max {max}
+          ₦{ratePer1000.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per 1000 · Min {min} – Max {max}
         </p>
         <p className="text-muted-foreground mt-1 text-xs">
           {service.refill && "Refill · "}
@@ -52,7 +54,7 @@ export function ServiceCard({ service, onViewClick }: ServiceCardProps) {
       </CardContent>
       <CardFooter className="flex items-center justify-between border-t pt-4">
         <span className="text-muted-foreground text-sm">
-          from ₦{(rate * min).toLocaleString("en-NG")}
+          from ₦{fromTotal.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
         <Button size="sm" className="rounded-full" onClick={onViewClick}>
           View

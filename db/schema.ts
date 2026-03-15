@@ -140,7 +140,10 @@ export const listing = pgTable(
     title: text("title").notNull(),
     description: text("description"),
     slug: text("slug").notNull().unique(),
-    supplierPrice: numeric("supplier_price", { precision: 18, scale: 8 }).notNull(),
+    supplierPrice: numeric("supplier_price", {
+      precision: 18,
+      scale: 8,
+    }).notNull(),
     price: numeric("price", { precision: 18, scale: 8 }).notNull(),
     currency: text("currency").notNull(),
     stock: integer("stock").default(0).notNull(),
@@ -158,7 +161,7 @@ export const listing = pgTable(
     index("listing_status_idx").on(table.status),
     uniqueIndex("listing_supplier_product_idx").on(
       table.supplierId,
-      table.externalProductId
+      table.externalProductId,
     ),
   ],
 );

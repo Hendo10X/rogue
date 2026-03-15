@@ -5,7 +5,7 @@ import { db } from "@/db/drizzle";
 import { boostingOrder, transaction, wallet, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getMarkupNaira } from "@/lib/admin-auth";
-import { getOrCreateWallet, debitWallet, logTransaction } from "@/lib/wallet";
+import { getOrCreateWallet, debitWallet, creditWallet, logTransaction } from "@/lib/wallet";
 import * as rss from "@/lib/boosting/really-simple-social";
 import * as rp from "@/lib/boosting/reseller-provider";
 import { getUSDtoNGNRate } from "@/lib/currency";
@@ -56,14 +56,19 @@ export async function POST(req: NextRequest) {
     getUSDtoNGNRate(),
   ]);
 
-  const rateUsd = parseFloat(service.rate) || 0;
-  const unitPriceNgn = rateUsd * rate + markupNaira;
-  const totalAmountNgn = unitPriceNgn * qty;
+  // API `rate` = price for 1000 quantity (USD).
+  // Convert to NGN with markup and round to 8dp to avoid tiny float mismatches with the wallet balance.
+  const rateUsdPer1000 = parseFloat(service.rate) || 0;
+  const rateNgnPer1000Raw = rateUsdPer1000 * rate + markupNaira;
+  const rateNgnPer1000 = Number(rateNgnPer1000Raw.toFixed(8));
+  const totalAmountNgnRaw = rateNgnPer1000 * (qty / 1000);
+  const totalAmountNgn = Number(totalAmountNgnRaw.toFixed(8));
 
   const walletRow = await getOrCreateWallet(session.user.id, "NGN");
   const balance = parseFloat(walletRow.balance);
 
-  if (balance < totalAmountNgn) {
+  // Allow for tiny rounding differences between stored balance and computed total.
+  if (balance + 1e-6 < totalAmountNgn) {
     return NextResponse.json(
       { error: "Insufficient wallet balance. Fund your wallet first." },
       { status: 400 }
@@ -71,7 +76,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await debitWallet(walletRow.id, String(totalAmountNgn), "NGN");
+    await debitWallet(walletRow.id, totalAmountNgn.toFixed(8), "NGN");
   } catch {
     return NextResponse.json(
       { error: "Failed to debit wallet. Try again." },
@@ -81,30 +86,40 @@ export async function POST(req: NextRequest) {
 
   let externalOrderId: number;
   try {
+    let result: { order?: number };
     if (provider === "rp") {
-      const result = await rp.addOrder({
+      result = await rp.addOrder({
         service: serviceId,
         link: link.trim(),
         quantity: qty,
       });
-      externalOrderId = result.order;
     } else {
-      const result = await rss.addOrder({
+      result = await rss.addOrder({
         service: serviceId,
         link: link.trim(),
         quantity: qty,
       });
-      externalOrderId = result.order;
     }
+    const orderIdFromApi = result?.order;
+    if (orderIdFromApi == null || (typeof orderIdFromApi === "number" && orderIdFromApi <= 0)) {
+      throw new Error("Supplier did not accept the order. Please check the link and try again.");
+    }
+    externalOrderId = Number(orderIdFromApi);
   } catch (e) {
-    // Refund on failure
-    await db
-      .update(wallet)
-      .set({
-        balance: (balance).toFixed(8),
-        updatedAt: new Date(),
-      })
-      .where(eq(wallet.id, walletRow.id));
+    // Refund: credit back the debited amount so the user is not charged on failure
+    try {
+      await creditWallet(walletRow.id, String(totalAmountNgn), "NGN");
+      await logTransaction({
+        walletId: walletRow.id,
+        type: "refund",
+        amount: String(totalAmountNgn),
+        currency: "NGN",
+        status: "completed",
+        metadata: { reason: "boosting_order_supplier_failed" },
+      });
+    } catch (refundErr) {
+      console.error("[Boosting] Refund failed after supplier error:", refundErr);
+    }
     const msg = e instanceof Error ? e.message : "Failed to place order";
     return NextResponse.json({ error: msg }, { status: 502 });
   }

@@ -32,14 +32,15 @@ export async function GET(req: NextRequest) {
     const categories = Array.from(new Set(services.map((s) => s.category))).sort();
 
     // Filter services
+    // API `rate` = price for 1000 quantity (USD). Convert to NGN and add markup.
+    // We return rate = NGN price for 1000 units. User total = rate × (quantity / 1000).
     let filteredServices = services.map((s) => {
-      const supplierRateUsd = parseFloat(s.rate);
-      const supplierRateNgn = supplierRateUsd * rate;
-      const finalRateNgn = supplierRateNgn + markupNaira;
+      const supplierRateUsdPer1000 = parseFloat(s.rate) || 0;
+      const rateNgnPer1000 = supplierRateUsdPer1000 * rate + markupNaira;
       return {
         ...s,
-        rateNgn: finalRateNgn,
-        rate: finalRateNgn.toFixed(2),
+        rateNgn: rateNgnPer1000,
+        rate: rateNgnPer1000.toFixed(2),
         currency: "NGN",
       };
     });
@@ -55,7 +56,19 @@ export async function GET(req: NextRequest) {
     }
     
     // Price filtering
-    filteredServices = filteredServices.filter(s => s.rateNgn >= minPrice && s.rateNgn <= maxPrice);
+    filteredServices = filteredServices.filter(
+      (s) => s.rateNgn >= minPrice && s.rateNgn <= maxPrice,
+    );
+
+    // Sort by cheapest first so lower priced services show before expensive ones
+    filteredServices.sort((a, b) => {
+      const ap = typeof a.rateNgn === "number" ? a.rateNgn : 0;
+      const bp = typeof b.rateNgn === "number" ? b.rateNgn : 0;
+      if (ap === bp) {
+        return a.name.localeCompare(b.name);
+      }
+      return ap - bp;
+    });
 
     const items = filteredServices.slice(offset, offset + limit);
     const total = filteredServices.length;
