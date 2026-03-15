@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -38,19 +39,31 @@ export function ServiceOrderModal({
   userBalance,
   onSuccess,
 }: ServiceOrderModalProps) {
+  const queryClient = useQueryClient();
   const [link, setLink] = useState("");
   const [quantity, setQuantity] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // When service changes, pre-fill quantity with min so initial total (rate × min) shows
+  useEffect(() => {
+    if (service) {
+      const min = parseInt(service.min, 10) || 1;
+      setQuantity(String(min));
+    }
+  }, [service?.service, service?.min]);
 
   if (!service) return null;
 
   const min = parseInt(service.min, 10) || 1;
   const max = parseInt(service.max, 10) || 10000;
-  const rate = parseFloat(service.rate) || 0;
+  // rate = NGN price for 1000 quantity. Total = rate × (quantity / 1000).
+  const ratePer1000Raw = parseFloat(service.rate) || 0;
+  const ratePer1000 = Number(ratePer1000Raw.toFixed(8));
   const qty = Math.max(min, Math.min(max, parseInt(quantity, 10) || min));
-  const total = (rate * qty).toFixed(2);
+  const totalRaw = ratePer1000 * (qty / 1000);
+  const total = Number(totalRaw.toFixed(8));
   const balance = parseFloat(userBalance);
-  const canAfford = balance >= parseFloat(total);
+  const canAfford = balance >= total;
 
   async function handleOrder() {
     if (!service) return;
@@ -74,18 +87,29 @@ export function ServiceOrderModal({
           provider: service.provider ?? "rss",
         }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error ?? "Order failed");
+      const text = await res.text();
+      let data: { error?: string; orderId?: string } = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        // Non-JSON response (e.g. HTML error page)
+      }
+      if (res.ok) {
+        // Success: server returned 200. Treat as placed even if body was odd.
+        toast.success("Order placed! Check your orders.");
+        onOpenChange(false);
+        setLink("");
+        setQuantity("");
+        onSuccess?.();
+        void queryClient.invalidateQueries({ queryKey: ["orders"] });
         return;
       }
-      toast.success("Order placed! Check your orders.");
-      onOpenChange(false);
-      setLink("");
-      setQuantity("");
-      onSuccess?.();
+      toast.error(data.error ?? "Order failed. Your balance was not charged, or will be refunded.");
     } catch {
-      toast.error("Order failed");
+      // Network error or fetch threw — server might still have placed the order
+      toast.warning("Request didn’t complete. Check your orders — it may have gone through.");
+      onSuccess?.();
+      void queryClient.invalidateQueries({ queryKey: ["orders"] });
     } finally {
       setLoading(false);
     }
@@ -109,8 +133,7 @@ export function ServiceOrderModal({
             {service.name}
           </AlertDialogTitle>
           <AlertDialogDescription className="text-left text-xs">
-            ₦{Math.round(rate).toLocaleString("en-NG")}/unit · Min {min} – Max{" "}
-            {max}
+            ₦{ratePer1000.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per 1000 · Min {min} – Max {max}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-4 py-2">
@@ -118,7 +141,7 @@ export function ServiceOrderModal({
             <Label htmlFor="link">Link</Label>
             <Input
               id="link"
-              placeholder="https://instagram.com/username"
+              placeholder="Paste your profile or post link"
               value={link}
               onChange={(e) => setLink(e.target.value)}
               className="rounded-lg"
@@ -141,13 +164,13 @@ export function ServiceOrderModal({
             <div>
               <p className="text-muted-foreground text-xs">Total</p>
               <p className="text-lg font-semibold">
-                ₦{Math.round(parseFloat(total)).toLocaleString("en-NG")}
+                ₦{total.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Your balance</p>
               <p className="font-medium">
-                ₦{Math.round(parseFloat(userBalance)).toLocaleString("en-NG")}
+                ₦{parseFloat(userBalance).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               {!canAfford && (
                 <p className="text-destructive text-xs">Insufficient balance</p>
@@ -169,7 +192,7 @@ export function ServiceOrderModal({
                 Placing order...
               </>
             ) : (
-              `Order ₦${Math.round(parseFloat(total)).toLocaleString("en-NG")}`
+              `Order ₦${total.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             )}
           </Button>
         </div>

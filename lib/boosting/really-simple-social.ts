@@ -70,14 +70,17 @@ export async function addOrder(params: {
   };
   if (params.runs != null) body.runs = String(params.runs);
   if (params.interval != null) body.interval = String(params.interval);
-  const data = await post(body);
+  const data = (await post(body)) as Record<string, unknown>;
   if (typeof data !== "object" || data === null || !("order" in data)) {
-    throw new Error("Invalid add order response");
+    const msg = typeof data?.error === "string" ? data.error : "Invalid add order response";
+    throw new Error(msg);
   }
   return data as AddOrderResponse;
 }
 
-export async function getOrderStatus(orderId: number): Promise<OrderStatusResponse> {
+export async function getOrderStatus(
+  orderId: number,
+): Promise<OrderStatusResponse> {
   const data = await post({ action: "status", order: String(orderId) });
   if (typeof data !== "object" || data === null) {
     throw new Error("Invalid status response");

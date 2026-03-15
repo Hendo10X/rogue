@@ -32,16 +32,15 @@ export async function GET(req: NextRequest) {
     const categories = Array.from(new Set(services.map((s) => s.category))).sort();
 
     // Filter services
-    // ReallySimpleSocial-style providers return `rate` as price per 1000 units in USD.
-    // Convert to a per-unit NGN rate and apply fixed Naira markup.
+    // API `rate` = price for 1000 quantity (USD). Convert to NGN and add markup.
+    // We return rate = NGN price for 1000 units. User total = rate × (quantity / 1000).
     let filteredServices = services.map((s) => {
-      const supplierRateUsdPerThousand = parseFloat(s.rate) || 0;
-      const supplierRateNgnPerUnit = (supplierRateUsdPerThousand / 1000) * rate;
-      const finalRateNgn = supplierRateNgnPerUnit + markupNaira;
+      const supplierRateUsdPer1000 = parseFloat(s.rate) || 0;
+      const rateNgnPer1000 = supplierRateUsdPer1000 * rate + markupNaira;
       return {
         ...s,
-        rateNgn: finalRateNgn,
-        rate: finalRateNgn.toFixed(2),
+        rateNgn: rateNgnPer1000,
+        rate: rateNgnPer1000.toFixed(2),
         currency: "NGN",
       };
     });
