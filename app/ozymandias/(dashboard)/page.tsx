@@ -24,7 +24,7 @@ export default function AdminOverviewPage() {
           </p>
         </div>
         <Link
-          href="/admin/orders"
+          href="/ozymandias/orders"
           className="rounded-lg border border-border bg-background p-4 shadow-none transition-colors hover:bg-muted/50"
         >
           <h2 className="font-medium">Orders</h2>
@@ -33,7 +33,7 @@ export default function AdminOverviewPage() {
           </p>
         </Link>
         <Link
-          href="/admin/suppliers"
+          href="/ozymandias/suppliers"
           className="rounded-lg border border-border bg-background p-4 shadow-none transition-colors hover:bg-muted/50"
         >
           <h2 className="font-medium">Suppliers</h2>
@@ -42,7 +42,7 @@ export default function AdminOverviewPage() {
           </p>
         </Link>
         <Link
-          href="/admin/settings"
+          href="/ozymandias/settings"
           className="rounded-lg border border-border bg-background p-4 shadow-none transition-colors hover:bg-muted/50"
         >
           <h2 className="font-medium">Settings</h2>

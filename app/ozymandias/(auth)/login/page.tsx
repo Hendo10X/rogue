@@ -44,7 +44,7 @@ export default function AdminLoginPage() {
       setError(json.error ?? "Login failed");
       return;
     }
-    router.replace("/admin");
+    router.replace("/ozymandias");
     router.refresh();
   }
 
