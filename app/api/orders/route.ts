@@ -3,9 +3,29 @@ import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { db } from "@/db/drizzle";
 import { order, listing, supplier, accountDelivery, boostingOrder } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
+import * as rss from "@/lib/boosting/really-simple-social";
+import * as rp from "@/lib/boosting/reseller-provider";
 
 export const dynamic = "force-dynamic";
+
+function toInternalBoostingStatus(params: {
+  supplierStatus?: string;
+  remains?: string;
+}) {
+  const status = (params.supplierStatus ?? "").toLowerCase();
+  const remains = params.remains?.trim();
+
+  if (remains === "0" && status.length === 0) return "completed";
+  if (status.includes("completed")) return "completed";
+  if (status.includes("partial")) return "completed";
+  if (status.includes("canceled") || status.includes("cancelled")) return "failed";
+  if (status.includes("fail") || status.includes("error")) return "failed";
+  if (status.includes("in progress") || status.includes("processing") || status.includes("pending"))
+    return "processing";
+
+  return "processing";
+}
 
 export async function GET() {
   const session = await auth.api.getSession({
@@ -16,7 +36,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [marketplaceOrders, boostOrders] = await Promise.all([
+  const [marketplaceOrders, boostOrdersRaw] = await Promise.all([
     db
       .select({
         id: order.id,
@@ -49,12 +69,81 @@ export async function GET() {
         createdAt: boostingOrder.createdAt,
         serviceName: boostingOrder.serviceName,
         category: boostingOrder.category,
+        provider: boostingOrder.provider,
+        externalOrderId: boostingOrder.externalOrderId,
       })
       .from(boostingOrder)
       .where(eq(boostingOrder.userId, session.user.id))
       .orderBy(desc(boostingOrder.createdAt))
       .limit(100),
   ]);
+
+  // Refresh statuses for recent in-flight boosting orders so "processing" doesn't stick forever.
+  // We keep it small to avoid slowing the page or hitting supplier rate limits.
+  const boostOrders = [...boostOrdersRaw];
+  const toRefresh = boostOrders
+    .filter((o) => (o.status === "processing" || o.status === "pending") && o.externalOrderId != null)
+    .slice(0, 8);
+
+  if (toRefresh.length > 0) {
+    const refreshed: Array<{
+      id: string;
+      status: string;
+      externalStatus?: string;
+      charge?: string;
+      startCount?: string;
+      remains?: string;
+    }> = [];
+
+    for (const o of toRefresh) {
+      try {
+        const orderId = Number(o.externalOrderId);
+        const provider = o.provider === "rp" ? "rp" : "rss";
+        const s =
+          provider === "rp"
+            ? await rp.getOrderStatus(orderId)
+            : await rss.getOrderStatus(orderId);
+
+        const nextStatus = toInternalBoostingStatus({
+          supplierStatus: s.status,
+          remains: s.remains,
+        });
+
+        await db
+          .update(boostingOrder)
+          .set({
+            status: nextStatus,
+            externalStatus: s.status ?? null,
+            charge: s.charge != null ? s.charge : null,
+            startCount: s.start_count ?? null,
+            remains: s.remains ?? null,
+            updatedAt: new Date(),
+          })
+          .where(eq(boostingOrder.id, o.id));
+
+        refreshed.push({
+          id: o.id,
+          status: nextStatus,
+          externalStatus: s.status,
+          charge: s.charge,
+          startCount: s.start_count,
+          remains: s.remains,
+        });
+      } catch {
+        // non-critical: leave as-is; next poll will try again
+      }
+    }
+
+    if (refreshed.length > 0) {
+      const byId = new Map(refreshed.map((r) => [r.id, r]));
+      for (const o of boostOrders) {
+        const r = byId.get(o.id);
+        if (r) {
+          o.status = r.status;
+        }
+      }
+    }
+  }
 
   const mapped = [
     ...marketplaceOrders.map((o: (typeof marketplaceOrders)[number]) => ({

@@ -46,11 +46,11 @@ export async function debitWallet(
 
   const current = parseFloat(w.balance);
   const debit = parseFloat(amount);
-  if (current < debit) {
+  if (current + 0.01 < debit) {
     throw new Error("Insufficient balance");
   }
 
-  const newBalance = (current - debit).toFixed(8);
+  const newBalance = Math.max(0, current - debit).toFixed(8);
   await db
     .update(wallet)
     .set({ balance: newBalance, updatedAt: new Date() })

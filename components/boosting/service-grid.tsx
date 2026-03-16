@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ServiceCard } from "./service-card";
 import { ServiceOrderModal } from "./service-order-modal";
 import { Spinner } from "@/components/ui/spinner";
@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { useState } from "react";
 import type { ReallySimpleSocialService } from "@/lib/boosting/really-simple-social";
 
@@ -42,16 +41,12 @@ async function fetchServices(params: {
   limit?: number;
   q?: string;
   category?: string;
-  minPrice?: number;
-  maxPrice?: number;
 }) {
   const searchParams = new URLSearchParams();
   if (params.page) searchParams.set("page", String(params.page));
   if (params.limit) searchParams.set("limit", String(params.limit));
   if (params.q) searchParams.set("q", params.q);
   if (params.category) searchParams.set("category", params.category);
-  if (params.minPrice !== undefined) searchParams.set("minPrice", String(params.minPrice));
-  if (params.maxPrice !== undefined) searchParams.set("maxPrice", String(params.maxPrice));
 
   const res = await fetch(`/api/boosting/services?${searchParams}`);
   if (!res.ok) {
@@ -59,6 +54,13 @@ async function fetchServices(params: {
     throw new Error(data.error ?? "Failed to fetch services");
   }
   return res.json();
+}
+
+async function fetchWalletBalance(): Promise<{ balance: string; currency: string }[]> {
+  const res = await fetch("/api/wallet/balance");
+  if (!res.ok) return [{ balance: "0", currency: "NGN" }];
+  const data = await res.json();
+  return Array.isArray(data) ? data : [data];
 }
 
 const EMPTY_WALLET: { balance: string; currency: string }[] = [];
@@ -70,37 +72,47 @@ interface ServiceGridProps {
 export function ServiceGrid({
   walletBalance = EMPTY_WALLET,
 }: ServiceGridProps) {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
-  const [priceRange, setPriceRange] = useState([0, 50000]);
   const [selectedService, setSelectedService] =
     useState<ReallySimpleSocialService | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
-    queryKey: ["boosting-services", page, search, category, priceRange],
+    queryKey: ["boosting-services", page, search, category],
     queryFn: () =>
       fetchServices({
         page,
         limit: 50,
         q: search,
         category: category === "all" ? "" : category,
-        minPrice: priceRange[0],
-        maxPrice: priceRange[1],
       }),
+  });
+
+  const { data: liveBalance } = useQuery({
+    queryKey: ["wallet-balance"],
+    queryFn: fetchWalletBalance,
+    initialData: walletBalance,
+    refetchInterval: 15000,
   });
 
   const items = data?.items ?? [];
   const categories = data?.categories ?? [];
   const pagination = data?.pagination;
 
+  const currentBalance = (liveBalance ?? walletBalance);
   const userBalance =
-    walletBalance.find((w) => w.currency === "NGN")?.balance ?? "0";
+    currentBalance.find((w) => w.currency === "NGN")?.balance ?? "0";
 
   function openModal(service: ReallySimpleSocialService) {
     setSelectedService(service);
     setModalOpen(true);
+  }
+
+  function handleOrderSuccess() {
+    void queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
   }
 
   function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -150,26 +162,6 @@ export function ServiceGrid({
               ))}
             </SelectContent>
           </Select>
-        </div>
-
-        <div className="w-full max-w-xs space-y-3">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground font-medium uppercase tracking-wider">Price Range</span>
-            <span className="font-display font-semibold text-primary">
-              ₦{priceRange[0].toLocaleString()} – ₦{priceRange[1].toLocaleString()}
-            </span>
-          </div>
-          <Slider
-            defaultValue={[0, 50000]}
-            max={50000}
-            step={100}
-            value={priceRange}
-            onValueChange={(val) => {
-              setPriceRange(val);
-              setPage(1);
-            }}
-            className="py-2"
-          />
         </div>
       </div>
 
@@ -229,6 +221,7 @@ export function ServiceGrid({
         open={modalOpen}
         onOpenChange={setModalOpen}
         userBalance={userBalance}
+        onSuccess={handleOrderSuccess}
       />
     </>
   );
