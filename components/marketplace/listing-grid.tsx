@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FavouriteIcon } from "@hugeicons/core-free-icons";
 
@@ -83,8 +82,6 @@ async function fetchListings(params: {
   platformGroup?: string;
   category?: string;
   search?: string;
-  minPrice?: number;
-  maxPrice?: number;
 }) {
   const searchParams = new URLSearchParams();
   if (params.page) searchParams.set("page", String(params.page));
@@ -92,8 +89,6 @@ async function fetchListings(params: {
   if (params.platformGroup) searchParams.set("platformGroup", params.platformGroup);
   if (params.category) searchParams.set("category", params.category);
   if (params.search) searchParams.set("search", params.search);
-  if (params.minPrice !== undefined) searchParams.set("minPrice", String(params.minPrice));
-  if (params.maxPrice !== undefined) searchParams.set("maxPrice", String(params.maxPrice));
   const res = await fetch(`/api/marketplace/listings?${searchParams}`);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Failed to fetch");
@@ -133,7 +128,6 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
   const [searchInput, setSearchInput] = useState("");
   const [primaryPlatform, setPrimaryPlatform] = useState("");
   const [facebookCategory, setFacebookCategory] = useState("");
-  const [priceRange, setPriceRange] = useState([0, 500000]);
   const [selectedListing, setSelectedListing] = useState<ListingItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -147,7 +141,7 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
   }
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
-    queryKey: ["listings", page, primaryPlatform, facebookCategory, debouncedSearch, priceRange],
+    queryKey: ["listings", page, primaryPlatform, facebookCategory, debouncedSearch],
     queryFn: () => {
       const params: any = { page };
       if (primaryPlatform === "facebook") {
@@ -156,11 +150,9 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
       } else if (primaryPlatform) {
         params.platform = primaryPlatform;
       }
-      return fetchListings({ 
+      return fetchListings({
         ...params,
         search: debouncedSearch || undefined,
-        minPrice: priceRange[0],
-        maxPrice: priceRange[1]
       });
     },
   });
@@ -247,25 +239,6 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
           )}
         </div>
 
-        <div className="w-full max-w-xs space-y-3">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground font-medium uppercase tracking-wider">Price Range</span>
-            <span className="font-display font-semibold text-primary">
-              ₦{priceRange[0].toLocaleString()} – ₦{priceRange[1].toLocaleString()}
-            </span>
-          </div>
-          <Slider
-            defaultValue={[0, 500000]}
-            max={500000}
-            step={1000}
-            value={priceRange}
-            onValueChange={(val) => {
-              setPriceRange(val);
-              setPage(1);
-            }}
-            className="py-2"
-          />
-        </div>
       </div>
 
       <div className="relative">
