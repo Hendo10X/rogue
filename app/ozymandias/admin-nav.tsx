@@ -15,12 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const links = [
-  { href: "/admin", label: "Overview" },
-  { href: "/admin/orders", label: "Orders" },
-  { href: "/admin/suppliers", label: "Suppliers" },
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/settings", label: "Settings" },
-  { href: "/admin/change-password", label: "Change Password" },
+  { href: "/ozymandias", label: "Overview" },
+  { href: "/ozymandias/orders", label: "Orders" },
+  { href: "/ozymandias/suppliers", label: "Suppliers" },
+  { href: "/ozymandias/users", label: "Users" },
+  { href: "/ozymandias/settings", label: "Settings" },
+  { href: "/ozymandias/change-password", label: "Change Password" },
 ];
 
 interface AdminNavProps {
@@ -66,7 +66,7 @@ export function AdminNav({ username }: AdminNavProps) {
       method: "POST",
       credentials: "include",
     });
-    window.location.href = "/admin/login";
+    window.location.href = "/ozymandias/login";
   }
 
   return (

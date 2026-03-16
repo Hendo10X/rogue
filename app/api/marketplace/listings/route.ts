@@ -4,8 +4,12 @@ import { listing, supplier } from "@/db/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 import { getMarkupNaira } from "@/lib/admin-auth";
 import { getUSDtoNGNRate } from "@/lib/currency";
+import { autoSyncIfStale } from "@/lib/suppliers/auto-sync";
 
 export async function GET(req: NextRequest) {
+  // Fire-and-forget: sync listings in background if stale (>1hr)
+  void autoSyncIfStale();
+
   try {
   const { searchParams } = new URL(req.url);
   const platform = searchParams.get("platform");

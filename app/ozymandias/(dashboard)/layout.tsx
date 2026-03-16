@@ -10,9 +10,9 @@ export default async function DashboardLayout({
 }) {
   const cookieStore = await cookies();
   const token = cookieStore.get("admin_session")?.value;
-  if (!token) redirect("/admin/login");
+  if (!token) redirect("/ozymandias/login");
   const admin = await verifyAdminSession(token);
-  if (!admin) redirect("/admin/login");
+  if (!admin) redirect("/ozymandias/login");
 
   return (
     <div className="min-h-screen bg-muted/30">

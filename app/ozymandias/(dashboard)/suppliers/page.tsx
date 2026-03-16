@@ -30,7 +30,6 @@ function fetchSuppliers() {
 export default function AdminSuppliersPage() {
   const [suppliers, setSuppliers] = useState<SupplierRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
   const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
@@ -38,21 +37,6 @@ export default function AdminSuppliersPage() {
       .then(setSuppliers)
       .finally(() => setLoading(false));
   }, []);
-
-  async function handleSyncListings() {
-    setSyncing(true);
-    try {
-      const res = await fetch("/api/admin/sync-listings", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Sync failed");
-      const total = data.results?.reduce((s: number, r: { upserted: number }) => s + r.upserted, 0) ?? 0;
-      toast.success(total > 0 ? `Synced ${total} listings` : "Sync complete");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Sync failed");
-    } finally {
-      setSyncing(false);
-    }
-  }
 
   async function handleSeedSuppliers() {
     setSeeding(true);
@@ -97,21 +81,6 @@ export default function AdminSuppliersPage() {
               </>
             ) : (
               "Seed Suppliers"
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSyncListings}
-            disabled={syncing}
-          >
-            {syncing ? (
-              <>
-                <Spinner className="mr-2 size-4" />
-                Syncing...
-              </>
-            ) : (
-              "Sync Listings"
             )}
           </Button>
         </div>
