@@ -56,12 +56,9 @@ export function ServiceOrderModal({
 
   const min = parseInt(service.min, 10) || 1;
   const max = parseInt(service.max, 10) || 10000;
-  // rate = NGN price for 1000 quantity. Total = rate × (quantity / 1000).
-  const ratePer1000Raw = parseFloat(service.rate) || 0;
-  const ratePer1000 = Number(ratePer1000Raw.toFixed(8));
+  const ratePer1000 = Number((parseFloat(service.rate) || 0).toFixed(2));
   const qty = Math.max(min, Math.min(max, parseInt(quantity, 10) || min));
-  const totalRaw = ratePer1000 * (qty / 1000);
-  const total = Number(totalRaw.toFixed(8));
+  const total = Number((ratePer1000 * (qty / 1000)).toFixed(2));
   const balance = parseFloat(userBalance);
   const canAfford = balance >= total;
 
@@ -95,13 +92,13 @@ export function ServiceOrderModal({
         // Non-JSON response (e.g. HTML error page)
       }
       if (res.ok) {
-        // Success: server returned 200. Treat as placed even if body was odd.
         toast.success("Order placed! Check your orders.");
         onOpenChange(false);
         setLink("");
         setQuantity("");
         onSuccess?.();
         void queryClient.invalidateQueries({ queryKey: ["orders"] });
+        void queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
         return;
       }
       toast.error(data.error ?? "Order failed. Your balance was not charged, or will be refunded.");

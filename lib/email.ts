@@ -200,3 +200,86 @@ export async function sendAdminDepositNotification({
     console.error("[Admin Deposit Notify] Failed to send:", error);
   }
 }
+
+interface BoostingOrderPlacedEmailParams {
+  to: string;
+  userName: string;
+  orderId: string;
+  serviceName: string;
+  category?: string | null;
+  link: string;
+  quantity: number;
+  amount: string;
+  currency: string;
+  status: string;
+}
+
+export async function sendBoostingOrderPlacedEmail({
+  to,
+  userName,
+  orderId,
+  serviceName,
+  category,
+  link,
+  quantity,
+  amount,
+  currency,
+  status,
+}: BoostingOrderPlacedEmailParams) {
+  const amountFormatted = currency === "NGN"
+    ? `₦${parseFloat(amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}`
+    : `${parseFloat(amount).toFixed(2)} ${currency}`;
+
+  const html = `
+    <div style="font-family: sans-serif; max-width: 640px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
+      <h2 style="color: #111; margin: 0 0 8px;">Boosting order received</h2>
+      <p style="color: #444; margin: 0 0 18px;">Hi ${userName ?? "there"}, we’ve sent your order to our supplier. You can track it in your Orders page.</p>
+      
+      <div style="background: #fafafa; padding: 14px 16px; border-radius: 10px; border: 1px solid #eee;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #666; width: 140px;">Service</td>
+            <td style="padding: 8px 0; font-weight: 600; color: #111;">${serviceName}</td>
+          </tr>
+          ${category ? `
+          <tr>
+            <td style="padding: 8px 0; color: #666;">Category</td>
+            <td style="padding: 8px 0; color: #111;">${category}</td>
+          </tr>` : ""}
+          <tr>
+            <td style="padding: 8px 0; color: #666;">Quantity</td>
+            <td style="padding: 8px 0; color: #111;">${quantity}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #666;">Link</td>
+            <td style="padding: 8px 0; color: #111; word-break: break-all;">${link}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #666;">Amount</td>
+            <td style="padding: 8px 0; font-weight: 700; color: #16a34a;">${amountFormatted}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #666;">Status</td>
+            <td style="padding: 8px 0; font-weight: 600; color: #111;">${status}</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="margin: 18px 0 0; font-size: 12px; color: #999;">Order ID: ${orderId.slice(0, 8)}...</p>
+      <p style="margin: 8px 0 0; font-size: 12px; color: #999;">If you need help, reply to this email.</p>
+    </div>
+  `;
+
+  try {
+    const data = await getResend().emails.send({
+      from: "Rogue <noreply@roguesocials.com>",
+      to,
+      subject: `Boosting order placed (#${orderId.slice(0, 8)})`,
+      html,
+    });
+    return { success: true, data };
+  } catch (error) {
+    console.error("[Boosting Email] Failed to send:", error);
+    return { success: false, error };
+  }
+}
