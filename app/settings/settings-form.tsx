@@ -302,7 +302,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
               className="shrink-0 rounded-full"
               onClick={() =>
                 toast.error(
-                  "Please contact support at support@roguesocials.com to delete your account."
+                  "Please contact support at support@fynixlogs.com to delete your account."
                 )
               }
             >

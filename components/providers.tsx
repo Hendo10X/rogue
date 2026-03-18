@@ -1,7 +1,6 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "next-themes";
 import { LazyMotion, domAnimation } from "framer-motion";
 import { useState } from "react";
 
@@ -18,9 +17,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <LazyMotion features={domAnimation}>{children}</LazyMotion>
-      </ThemeProvider>
+      <LazyMotion features={domAnimation}>{children}</LazyMotion>
     </QueryClientProvider>
   );
 }

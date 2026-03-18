@@ -22,6 +22,13 @@ const SUPPLIERS = [
     apiUrl: "https://shopviaclone22.com",
     apiKey: process.env.SUPPLIER_SHOPVIACLONE_API_KEY ?? "",
   },
+  {
+    id: "supplier-acctshop",
+    name: "AcctShop",
+    slug: "acctshop",
+    apiUrl: process.env.SUPPLIER_ACCTSHOP_API_URL ?? "",
+    apiKey: process.env.SUPPLIER_ACCTSHOP_API_KEY ?? "",
+  },
 ];
 
 export async function POST() {

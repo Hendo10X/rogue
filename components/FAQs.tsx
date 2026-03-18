@@ -20,13 +20,13 @@ const faqItems = [
     id: "item-2",
     question: "How fast is delivery?",
     answer:
-      "Growth services typically start within minutes. Account delivery depends on the order—most are completed within 24–48 hours. You'll get real-time tracking so you know exactly when it's done.",
+      "Growth services typically start within minutes. Account delivery depends on the order — most are completed within minutes. You'll get real-time tracking so you know exactly when it's done.",
   },
   {
     id: "item-3",
-    question: "Are the followers and accounts real?",
+    question: "Are the accounts and logs verified?",
     answer:
-      "Yes. We only work with real, active accounts from verified suppliers. Growth services use organic methods. We do not use bots or fake engagement.",
+      "Yes. Every account is manually verified by our team before listing. You receive full login credentials, recovery info, and a quality guarantee.",
   },
   {
     id: "item-4",
@@ -44,7 +44,7 @@ const faqItems = [
     id: "item-6",
     question: "How does account delivery work?",
     answer:
-      "After you fund your wallet and place an order, we deliver login credentials and recovery info through our secure dashboard. You get full access and can change the password immediately.",
+      "After you fund your wallet and place an order, we deliver login credentials and recovery info through your secure dashboard. You get full access and can change the password immediately.",
   },
   {
     id: "item-7",
@@ -56,46 +56,54 @@ const faqItems = [
 
 export default function FAQs() {
   return (
-    <section className="bg-background @container py-24 font-display">
-      <div className="mx-auto max-w-3xl px-6">
-        <div className="@xl:flex-row @xl:items-start @xl:gap-12 flex flex-col gap-8">
-          <ScrollReveal className="@xl:sticky @xl:top-24 @xl:w-64 shrink-0">
-            <h2 className="font-display text-3xl font-semibold">FAQs</h2>
-            <p className="text-muted-foreground mt-3 text-sm">
-              Common questions about accounts and growth services
+    <section className="relative py-28 font-display">
+      <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 h-px w-2/3 bg-linear-to-r from-transparent via-purple-500/20 to-transparent" />
+
+      <div className="mx-auto max-w-4xl px-6">
+        <div className="grid gap-12 lg:grid-cols-[0.4fr_1fr] lg:gap-16">
+          <ScrollReveal className="lg:sticky lg:top-24 lg:self-start">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-purple-400">
+              FAQ
             </p>
-            <p className="text-muted-foreground @xl:block mt-6 hidden text-sm">
+            <h2 className="font-display text-3xl font-bold">
+              Got questions?
+            </h2>
+            <p className="text-purple-200/50 mt-3 text-sm leading-relaxed">
+              Common questions about Fynix Logs, accounts, and growth services.
+            </p>
+            <p className="mt-6 hidden text-sm text-purple-200/50 lg:block">
               Need more help?{" "}
               <Link
-                href="https://t.me/rogue4l"
-                className="text-foreground font-medium hover:underline">
+                href="https://t.me/fynixlogs"
+                className="text-purple-400 font-medium hover:text-purple-300 transition-colors">
                 Contact us
               </Link>
             </p>
           </ScrollReveal>
+
           <ScrollReveal className="flex-1">
             <Accordion type="single" collapsible>
               {faqItems.map((item) => (
                 <AccordionItem
                   key={item.id}
                   value={item.id}
-                  className="border-dashed">
-                  <AccordionTrigger className="cursor-pointer py-4 text-sm font-medium hover:no-underline">
+                  className="border-purple-500/10 border-dashed">
+                  <AccordionTrigger className="cursor-pointer py-5 text-sm font-medium text-purple-100/80 hover:no-underline hover:text-purple-100 transition-colors">
                     {item.question}
                   </AccordionTrigger>
                   <AccordionContent>
-                    <p className="text-muted-foreground pb-2 text-sm">
+                    <p className="pb-2 text-sm leading-relaxed text-purple-300/50">
                       {item.answer}
                     </p>
                   </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
-            <p className="text-muted-foreground @xl:hidden mt-6 text-sm">
+            <p className="mt-6 text-sm text-purple-200/50 lg:hidden">
               Need more help?{" "}
               <Link
-                href="https://t.me/rogue4l"
-                className="text-foreground font-medium hover:underline">
+                href="https://t.me/fynixlogs"
+                className="text-purple-400 font-medium hover:text-purple-300 transition-colors">
                 Contact us
               </Link>
             </p>

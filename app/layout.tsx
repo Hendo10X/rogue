@@ -17,8 +17,8 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Rogue",
-  description: "Rogue is a platform for buying and selling social media accounts.",
+  title: "Fynix Logs",
+  description: "Fynix Logs is a platform for buying and selling social media accounts.",
 };
 
 export default function RootLayout({
@@ -27,9 +27,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body
-        className={`${dmSans.variable} ${geistMono.variable} antialiased`}
+        className={`${dmSans.variable} ${geistMono.variable} antialiased bg-[#05021a]`}
       >
         <Providers>
           {children}

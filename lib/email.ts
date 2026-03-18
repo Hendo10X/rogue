@@ -55,7 +55,7 @@ export async function sendOrderDeliveryEmail({
 
   try {
     const data = await getResend().emails.send({
-      from: "Rogue <noreply@roguesocials.com>",
+      from: "Fynix Logs <noreply@fynixlogs.com>",
       to,
       subject: `Order Delivered: ${platform} (#${orderId.slice(0, 8)})`,
       html,
@@ -125,13 +125,13 @@ export async function sendAdminOrderNotification({
         </tr>
       </table>
       
-      <p style="font-size: 0.85em; color: #999;">This is an automated notification from Rogue.</p>
+      <p style="font-size: 0.85em; color: #999;">This is an automated notification from Fynix Logs.</p>
     </div>
   `;
 
   try {
     await getResend().emails.send({
-      from: "Rogue <noreply@roguesocials.com>",
+      from: "Fynix Logs <noreply@fynixlogs.com>",
       to: ADMIN_EMAIL,
       subject: `New ${orderType} order — ${amountFormatted} from ${userName}`,
       html,
@@ -185,13 +185,13 @@ export async function sendAdminDepositNotification({
         </tr>
       </table>
       
-      <p style="font-size: 0.85em; color: #999;">This is an automated notification from Rogue.</p>
+      <p style="font-size: 0.85em; color: #999;">This is an automated notification from Fynix Logs.</p>
     </div>
   `;
 
   try {
     await getResend().emails.send({
-      from: "Rogue <noreply@roguesocials.com>",
+      from: "Fynix Logs <noreply@fynixlogs.com>",
       to: ADMIN_EMAIL,
       subject: `Wallet funded — ${amountFormatted} by ${userName} via ${provider}`,
       html,

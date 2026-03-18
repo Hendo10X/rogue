@@ -5,7 +5,7 @@ export default function TermsPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background font-display">
       <Navbar />
-      <main className="flex-grow container mx-auto px-6 py-12 lg:py-24 max-w-4xl">
+      <main className="grow container mx-auto px-6 py-12 lg:py-24 max-w-4xl">
         <h1 className="text-4xl md:text-5xl font-bold mb-8 text-foreground tracking-tight">Terms and Services</h1>
         
         <div className="space-y-12 prose dark:prose-invert prose-green max-w-none">
@@ -16,19 +16,19 @@ export default function TermsPage() {
               <div>
                 <h3 className="font-semibold text-lg">Introduction</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Welcome to Rogue Socials. These Terms and Conditions govern your use of our website and services. By accessing or purchasing from Rogue Socials, you agree to comply with these terms. If you do not agree with any part of these terms, you should not use our website or services.
+                  Welcome to Fynix Logs. These Terms and Conditions govern your use of our website and services. By accessing or purchasing from Fynix Logs, you agree to comply with these terms. If you do not agree with any part of these terms, you should not use our website or services.
                 </p>
               </div>
               <div>
                 <h3 className="font-semibold text-lg">Our Services</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Rogue Socials provides digital products and social media marketing related services. These may include social media accounts, digital goods, and marketing tools intended for lawful online marketing and promotional activities. All services provided on this platform are intended strictly for legitimate use.
+                  Fynix Logs provides digital products and social media marketing related services. These may include social media accounts, digital goods, and marketing tools intended for lawful online marketing and promotional activities. All services provided on this platform are intended strictly for legitimate use.
                 </p>
               </div>
               <div>
                 <h3 className="font-semibold text-lg">User Responsibilities</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  By using Rogue Socials, you agree that you will:
+                  By using Fynix Logs, you agree that you will:
                 </p>
                 <ul className="list-disc pl-5 mt-2 space-y-1 text-muted-foreground">
                   <li>Use the platform only for lawful purposes</li>
@@ -41,22 +41,22 @@ export default function TermsPage() {
               <div>
                 <h3 className="font-semibold text-lg">Disclaimer</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Rogue Socials does not support or promote fraud, scams, impersonation, or illegal activities of any kind. All products offered on the platform are sourced through legitimate and lawful means to the best of our knowledge.
+                  Fynix Logs does not support or promote fraud, scams, impersonation, or illegal activities of any kind. All products offered on the platform are sourced through legitimate and lawful means to the best of our knowledge.
                 </p>
                 <p className="mt-2 text-muted-foreground leading-relaxed">
-                  Once a product has been delivered, the buyer becomes fully responsible for how the product is used. Rogue Socials will not be held liable for misuse, abuse, or illegal activities carried out using products purchased from this platform. Users are responsible for complying with all applicable laws and platform policies when using purchased products.
+                  Once a product has been delivered, the buyer becomes fully responsible for how the product is used. Fynix Logs will not be held liable for misuse, abuse, or illegal activities carried out using products purchased from this platform. Users are responsible for complying with all applicable laws and platform policies when using purchased products.
                 </p>
               </div>
               <div>
                 <h3 className="font-semibold text-lg">Intellectual Property</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  All content on this website including logos, branding, design, and text belongs to Rogue Socials and may not be copied, reproduced, or distributed without permission.
+                  All content on this website including logos, branding, design, and text belongs to Fynix Logs and may not be copied, reproduced, or distributed without permission.
                 </p>
               </div>
               <div>
                 <h3 className="font-semibold text-lg">Limitation of Liability</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Rogue Socials shall not be liable for any loss, damages, account suspensions, or restrictions that occur as a result of how customers use purchased products. Use of the website and its services is entirely at the user's own risk.
+                  Fynix Logs shall not be liable for any loss, damages, account suspensions, or restrictions that occur as a result of how customers use purchased products. Use of the website and its services is entirely at the user's own risk.
                 </p>
               </div>
               <div>
@@ -75,7 +75,7 @@ export default function TermsPage() {
               <div>
                 <h3 className="font-semibold text-lg">Introduction</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Rogue Socials respects your privacy and is committed to protecting your personal information. This policy explains how we collect, use, and safeguard your data.
+                  Fynix Logs respects your privacy and is committed to protecting your personal information. This policy explains how we collect, use, and safeguard your data.
                 </p>
               </div>
               <div>
@@ -105,7 +105,7 @@ export default function TermsPage() {
               <div>
                 <h3 className="font-semibold text-lg">Third-Party Services</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Our website may use third-party tools or services. These services operate under their own privacy policies and Rogue Socials is not responsible for their practices.
+                  Our website may use third-party tools or services. These services operate under their own privacy policies and Fynix Logs is not responsible for their practices.
                 </p>
               </div>
             </div>
@@ -118,13 +118,13 @@ export default function TermsPage() {
               <div>
                 <h3 className="font-semibold text-lg">Digital Products Policy</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  Rogue Socials sells digital goods. Due to the nature of digital products, most purchases are non-refundable once delivered. However, we provide a limited warranty for certain products.
+                  Fynix Logs sells digital goods. Due to the nature of digital products, most purchases are non-refundable once delivered. However, we provide a limited warranty for certain products.
                 </p>
               </div>
               <div>
                 <h3 className="font-semibold text-lg">Account Warranty</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  All accounts purchased from Rogue Socials include a 1-hour warranty period starting immediately after purchase. During this time, customers may report issues such as incorrect login details, non-working accounts, or accounts inaccessible at delivery.
+                  All accounts purchased from Fynix Logs include a 1-hour warranty period starting immediately after purchase. During this time, customers may report issues such as incorrect login details, non-working accounts, or accounts inaccessible at delivery.
                 </p>
                 <p className="mt-2 text-muted-foreground leading-relaxed">
                   If the issue is verified within the warranty period, we may provide a replacement account, or a refund/store credit depending on the situation.
@@ -144,7 +144,7 @@ export default function TermsPage() {
               <div>
                 <h3 className="font-semibold text-lg">No Refund After Warranty Period</h3>
                 <p className="text-muted-foreground leading-relaxed">
-                  After the 1-hour warranty window has passed, Rogue Socials cannot guarantee replacements or refunds.
+                  After the 1-hour warranty window has passed, Fynix Logs cannot guarantee replacements or refunds.
                 </p>
               </div>
             </div>

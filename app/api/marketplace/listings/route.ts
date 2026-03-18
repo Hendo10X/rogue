@@ -12,8 +12,6 @@ export async function GET(req: NextRequest) {
   const platformGroup = searchParams.get("platformGroup");
   const category = searchParams.get("category");
   const search = searchParams.get("search");
-  const minPrice = parseFloat(searchParams.get("minPrice") ?? "0");
-  const maxPrice = parseFloat(searchParams.get("maxPrice") ?? "1000000");
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "24", 10)));
   const offset = (page - 1) * limit;
@@ -23,20 +21,10 @@ export async function GET(req: NextRequest) {
     getUSDtoNGNRate(),
   ]);
 
-  // Convert NGN price filters to USD supplier price filters
-  // finalPrice = (supplierPrice * rate) + markupNaira
-  // supplierPrice = (finalPrice - markupNaira) / rate
-  const minUsd = (minPrice - markupNaira) / rate;
-  const maxUsd = (maxPrice - markupNaira) / rate;
-
   const baseConditions = [eq(listing.status, "active")];
   if (platform) baseConditions.push(eq(listing.platform, platform));
   if (platformGroup === "facebook") baseConditions.push(sql`(${listing.platform} ILIKE '%facebook%')`);
   if (category) baseConditions.push(eq(listing.categoryName, category));
-  
-  // Apply price range filter
-  baseConditions.push(sql`${listing.supplierPrice} >= ${minUsd}`);
-  baseConditions.push(sql`${listing.supplierPrice} <= ${maxUsd}`);
 
   const whereClause =
     baseConditions.length === 1

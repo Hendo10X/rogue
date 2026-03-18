@@ -23,7 +23,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { ThemeToggle } from "@/components/theme-toggle";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -54,16 +53,15 @@ interface DashboardNavbarProps {
 
 const NAV_LINKS = [
   { title: "Marketplace", url: "/marketplace" },
-  { title: "Boosting", url: "/boosting" },
   { title: "Orders", url: "/orders" },
-  { title: "Support", url: "https://t.me/rogue4l" },
+  { title: "Support", url: "https://t.me/fynixlogs" },
 ];
 
 export function DashboardNavbar({
   user,
   walletBalance,
   logoUrl = "/dashboard",
-  logoSrc = "/Roguelong.svg",
+  logoSrc = "/Fynixlogs.svg",
 }: DashboardNavbarProps) {
   const router = useRouter();
 
@@ -79,32 +77,23 @@ export function DashboardNavbar({
   return (
     <header className="bg-background pt-4 font-display md:pt-8">
       <div className="container relative flex h-14 items-center justify-between px-4 pb-4 md:px-6">
-        {/* Logo - Rogue.svg on mobile (both modes), Roguelong on desktop */}
         <Link href={logoUrl} className="ml-0 flex shrink-0 items-center">
           <Image
-            src="/Rogue.svg"
-            className="max-h-9 md:hidden"
-            alt="Rogue"
-            width={36}
-            height={36}
+            src="/Fynixlogs.svg"
+            className="h-16 w-auto md:hidden"
+            alt="Fynix Logs"
+            width={222}
+            height={85}
           />
           <Image
             src={logoSrc}
-            className="hidden max-h-10 md:block md:max-h-14 md:max-w-64 dark:hidden"
-            alt="Rogue"
-            width={256}
-            height={56}
-          />
-          <Image
-            src="/Roguelong-darkmode.svg"
-            className="hidden max-h-10 dark:md:block md:max-h-14 md:max-w-64"
-            alt="Rogue"
-            width={256}
-            height={56}
+            className="hidden h-20 w-auto md:block"
+            alt="Fynix Logs"
+            width={222}
+            height={85}
           />
         </Link>
 
-        {/* Nav Links - center on desktop */}
         <nav className="absolute left-1/2 hidden -translate-x-1/2 md:flex">
           <NavigationMenu>
             <NavigationMenuList className="gap-6">
@@ -126,7 +115,6 @@ export function DashboardNavbar({
           </NavigationMenu>
         </nav>
 
-        {/* Right: Mobile menu + User Avatar + Dropdown */}
         <div className="flex shrink-0 items-center gap-2">
           <Sheet>
             <SheetTrigger asChild>
@@ -223,7 +211,7 @@ export function DashboardNavbar({
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link
-                  href="https://t.me/rogue4l"
+                  href="https://t.me/fynixlogs"
                   className="flex cursor-pointer items-center gap-2">
                   <HugeiconsIcon
                     icon={Information}
@@ -233,7 +221,6 @@ export function DashboardNavbar({
                   Help & Support
                 </Link>
               </DropdownMenuItem>
-              <ThemeToggle asDropdownItem />
               <DropdownMenuItem
                 onClick={handleLogout}
                 className="flex cursor-pointer items-center gap-2 text-destructive focus:text-destructive">

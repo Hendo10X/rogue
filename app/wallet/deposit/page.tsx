@@ -4,8 +4,8 @@ import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 
 export const dynamic = "force-dynamic";
-import { DashboardNavbar } from "@/components/dashboard-navbar";
 import { DepositForm } from "@/components/deposit-form";
+import { DashboardShell } from "@/components/dashboard-shell";
 
 export default async function DepositPage() {
   const session = await auth.api.getSession({
@@ -21,30 +21,27 @@ export default async function DepositPage() {
   const walletBalance = Array.isArray(balance) ? balance : [balance];
 
   return (
-    <div className="min-h-screen bg-background font-display">
-      <DashboardNavbar
-        user={{
-          id: session.user.id,
-          name: session.user.name ?? "User",
-          email: session.user.email ?? "",
-          image: session.user.image,
-        }}
-        walletBalance={walletBalance}
-      />
-      <main className="container mx-auto max-w-md px-4 py-12">
-        <div className="space-y-6">
-          <div className="text-center">
-            <h1 className="font-display text-2xl font-semibold">
-              Fund your wallet
-            </h1>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Deposit via crypto (Plisio) or card/bank transfer (Korapay).
-              Payments are secure and encrypted.
-            </p>
-          </div>
-          <DepositForm />
+    <DashboardShell
+      user={{
+        id: session.user.id,
+        name: session.user.name ?? "User",
+        email: session.user.email ?? "",
+        image: session.user.image,
+      }}
+      walletBalance={walletBalance}
+    >
+      <div className="mx-auto max-w-md space-y-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-purple-50">
+            Fund your wallet
+          </h1>
+          <p className="mt-2 text-sm text-purple-300/50">
+            Deposit via crypto (Plisio) or card/bank transfer (Korapay).
+            Payments are secure and encrypted.
+          </p>
         </div>
-      </main>
-    </div>
+        <DepositForm />
+      </div>
+    </DashboardShell>
   );
 }

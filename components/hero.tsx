@@ -5,137 +5,193 @@ import Image from "next/image";
 import { m } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight, Shield, Zap, Clock } from "lucide-react";
 
 const SMOOTH_EASING = [0.22, 1, 0.36, 1] as const;
 
-const GRID_ITEMS = [
-  { name: "X", src: "/svgs/x.svg", darkSrc: "/svgs/x_dark.svg", blur: false },
-  { name: "Instagram", src: "/svgs/instagram-icon.svg", blur: false },
-  { name: "Facebook", src: "/svgs/facebook-icon.svg", blur: false },
-  { name: "Telegram", src: "/svgs/telegram.svg", blur: false },
-  { name: "Threads", src: "/svgs/threads.svg", darkSrc: "/svgs/threads_dark.svg", blur: false },
-  { name: "TikTok", src: "/svgs/tiktok-icon-light.svg", darkSrc: "/svgs/tiktok-icon-dark.svg", blur: false },
-  { name: "WhatsApp", src: "/svgs/whatsapp-icon.svg", blur: false },
-  { name: "Messenger", src: "/svgs/messenger.svg", blur: false },
+const PLATFORMS = [
+  { name: "X", src: "/svgs/x.svg", darkSrc: "/svgs/x_dark.svg" },
+  { name: "Instagram", src: "/svgs/instagram-icon.svg" },
+  { name: "Facebook", src: "/svgs/facebook-icon.svg" },
+  { name: "Telegram", src: "/svgs/telegram.svg" },
+  { name: "Threads", src: "/svgs/threads.svg", darkSrc: "/svgs/threads_dark.svg" },
+  { name: "TikTok", src: "/svgs/tiktok-icon-light.svg", darkSrc: "/svgs/tiktok-icon-dark.svg" },
+  { name: "WhatsApp", src: "/svgs/whatsapp-icon.svg" },
+  { name: "Messenger", src: "/svgs/messenger.svg" },
+] as const;
+
+const TRUST_PILLS = [
+  { icon: Zap, label: "Instant Delivery" },
+  { icon: Shield, label: "Verified Logs" },
+  { icon: Clock, label: "24/7 Support" },
 ] as const;
 
 export default function HeroSection() {
   return (
     <main className="overflow-hidden font-display">
-      <section className="bg-background">
-        <div className="relative pt-16 pb-16 md:pt-20 md:pb-20">
-          <div className="mask-radial-from-45% mask-radial-to-75% mask-radial-at-top mask-radial-[75%_100%] mask-t-from-50% lg:aspect-9/4 absolute inset-0 aspect-square bg-linear-to-b from-muted/30 to-transparent lg:top-24 dark:opacity-50" />
-          <div className="relative z-10 mx-auto w-full max-w-5xl px-6">
-            <m.div
-              className="mx-auto max-w-md text-center"
-              initial="hidden"
-              animate="visible"
-              variants={{
-                hidden: {},
-                visible: {
-                  transition: {
-                    staggerChildren: 0.1,
-                    delayChildren: 0.1,
-                  },
-                },
-              }}>
-              <m.h1
-                className="text-balance font-display text-4xl font-semibold sm:text-5xl"
-                variants={{
-                  hidden: { opacity: 0, y: 20 },
-                  visible: {
-                    opacity: 1,
-                    y: 0,
-                    transition: { duration: 0.6, ease: SMOOTH_EASING },
-                  },
-                }}>
-                Buy & Boost Social Media Accounts.
-              </m.h1>
-              <m.p
-                className="text-muted-foreground mt-4 text-balance"
-                variants={{
-                  hidden: { opacity: 0, y: 20 },
-                  visible: {
-                    opacity: 1,
-                    y: 0,
-                    transition: { duration: 0.6, ease: SMOOTH_EASING },
-                  },
-                }}>
-                A powerful marketplace for buying premium social media
-                accounts and instant growth services, for any platform.
-              </m.p>
+      <section className="relative">
+        {/* Asymmetric glow - shifted right */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute right-0 top-0 h-[600px] w-[500px] rounded-full bg-purple-600/12 blur-[140px]" />
+          <div className="absolute -left-20 bottom-0 h-[300px] w-[400px] rounded-full bg-violet-700/8 blur-[120px]" />
+        </div>
+
+        <div className="relative pt-20 pb-10 md:pt-28 md:pb-16 lg:pt-36 lg:pb-24">
+          <div className="relative z-10 mx-auto w-full max-w-6xl px-6">
+            {/* Two-column asymmetric layout */}
+            <div className="grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
+              {/* Left: Text content */}
               <m.div
+                initial="hidden"
+                animate="visible"
                 variants={{
-                  hidden: { opacity: 0, y: 20 },
+                  hidden: {},
                   visible: {
-                    opacity: 1,
-                    y: 0,
-                    transition: { duration: 0.6, ease: SMOOTH_EASING },
+                    transition: { staggerChildren: 0.1, delayChildren: 0.05 },
                   },
                 }}>
-                <Button asChild className="mt-6 pr-1.5">
-                  <Link href="/login">
-                    <span className="text-nowrap">Start Growing</span>
-                    <ChevronRight className="opacity-50" />
-                  </Link>
-                </Button>
+                <m.div
+                  className="mb-6 inline-flex items-center gap-2 rounded-full border border-purple-500/20 bg-purple-900/30 px-4 py-1.5 text-xs font-medium text-purple-300 backdrop-blur-sm"
+                  style={{ boxShadow: "0 0 20px rgba(139,92,246,0.1)" }}
+                  variants={{
+                    hidden: { opacity: 0, x: -20 },
+                    visible: {
+                      opacity: 1,
+                      x: 0,
+                      transition: { duration: 0.6, ease: SMOOTH_EASING },
+                    },
+                  }}>
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-purple-400 opacity-75" />
+                    <span className="relative inline-flex size-2 rounded-full bg-purple-400" />
+                  </span>
+                  Trusted by 1,000+ users
+                </m.div>
+
+                <m.h1
+                  className="font-display text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
+                  variants={{
+                    hidden: { opacity: 0, y: 30 },
+                    visible: {
+                      opacity: 1,
+                      y: 0,
+                      transition: { duration: 0.7, ease: SMOOTH_EASING },
+                    },
+                  }}>
+                  Premium Social
+                  <br />
+                  <span className="text-gradient-purple">Media Logs.</span>
+                </m.h1>
+
+                <m.p
+                  className="mt-5 max-w-lg text-base leading-relaxed text-purple-200/60 sm:text-lg"
+                  variants={{
+                    hidden: { opacity: 0, y: 20 },
+                    visible: {
+                      opacity: 1,
+                      y: 0,
+                      transition: { duration: 0.6, ease: SMOOTH_EASING },
+                    },
+                  }}>
+                  Buy verified social media accounts and supercharge your profiles
+                  with real followers, likes, and views. Automated, secure, and
+                  delivered instantly.
+                </m.p>
+
+                {/* Trust pills row */}
+                <m.div
+                  className="mt-6 flex flex-wrap gap-3"
+                  variants={{
+                    hidden: { opacity: 0, y: 20 },
+                    visible: {
+                      opacity: 1,
+                      y: 0,
+                      transition: { duration: 0.6, ease: SMOOTH_EASING },
+                    },
+                  }}>
+                  {TRUST_PILLS.map((pill) => (
+                    <div
+                      key={pill.label}
+                      className="flex items-center gap-1.5 rounded-full border border-purple-500/10 bg-purple-950/40 px-3 py-1.5 text-xs font-medium text-purple-300/80">
+                      <pill.icon className="size-3.5" />
+                      {pill.label}
+                    </div>
+                  ))}
+                </m.div>
+
+                <m.div
+                  className="mt-8 flex flex-wrap items-center gap-3"
+                  variants={{
+                    hidden: { opacity: 0, y: 20 },
+                    visible: {
+                      opacity: 1,
+                      y: 0,
+                      transition: { duration: 0.6, ease: SMOOTH_EASING },
+                    },
+                  }}>
+                  <Button asChild size="lg" className="gap-2">
+                    <Link href="/signup">
+                      Get Started
+                      <ArrowRight className="size-4" />
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" size="lg">
+                    <Link href="/login">Browse Marketplace</Link>
+                  </Button>
+                </m.div>
               </m.div>
-            </m.div>
-            <m.div
-              className="mx-auto mt-24 max-w-2xl"
-              initial="hidden"
-              animate="visible"
-              variants={{
-                hidden: {},
-                visible: {
-                  transition: {
-                    staggerChildren: 0.06,
-                    delayChildren: 0.4,
+
+              {/* Right: Platform grid - tilted perspective */}
+              <m.div
+                className="relative"
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: {},
+                  visible: {
+                    transition: { staggerChildren: 0.06, delayChildren: 0.35 },
                   },
-                },
-              }}>
-              <div className="grid scale-95 grid-cols-4 gap-6 sm:grid-cols-4 sm:gap-8">
-                {GRID_ITEMS.map((item) => (
-                  <m.div
-                    key={item.name}
-                    className={cn(item.blur && "blur-[2px]")}
-                    variants={{
-                      hidden: { opacity: 0, y: 16 },
-                      visible: {
-                        opacity: 1,
-                        y: 0,
-                        transition: { duration: 0.55, ease: SMOOTH_EASING },
-                      },
-                    }}>
-                    <Card className="border-0 shadow-foreground/10 flex min-w-0 flex-col items-center justify-center gap-2 rounded-xl px-4 py-4 sm:px-5 sm:py-5">
-                      <div className="relative flex size-10 shrink-0 items-center justify-center sm:size-12">
-                        <Image
-                          src={item.src}
-                          alt={item.name}
-                          width={24}
-                          height={24}
-                          className={cn("size-6 object-contain sm:size-8", "darkSrc" in item && item.darkSrc && "dark:hidden")}
-                        />
-                        {"darkSrc" in item && item.darkSrc && (
+                }}>
+                {/* Glow behind the card grid */}
+                <div className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center">
+                  <div className="h-[350px] w-[350px] rounded-full bg-purple-600/10 blur-[100px]" />
+                </div>
+
+                <div className="grid grid-cols-4 gap-3 sm:gap-4 perspective-midrange">
+                  {PLATFORMS.map((item, i) => (
+                    <m.div
+                      key={item.name}
+                      className={cn(
+                        i % 2 === 0 && "translate-y-3"
+                      )}
+                      variants={{
+                        hidden: { opacity: 0, y: 24, rotateX: 15 },
+                        visible: {
+                          opacity: 1,
+                          y: 0,
+                          rotateX: 0,
+                          transition: { duration: 0.6, ease: SMOOTH_EASING },
+                        },
+                      }}>
+                      <div className="glow-card glow-card-hover group flex flex-col items-center justify-center gap-2 rounded-2xl border border-purple-500/12 bg-purple-950/25 p-4 backdrop-blur-sm transition-all duration-300 hover:border-purple-500/25 hover:bg-purple-900/20 sm:p-5">
+                        <div className="relative flex size-9 shrink-0 items-center justify-center sm:size-11">
                           <Image
-                            src={item.darkSrc}
+                            src={item.darkSrc ?? item.src}
                             alt={item.name}
-                            width={24}
-                            height={24}
-                            className="hidden size-6 object-contain sm:size-8 dark:block"
+                            width={28}
+                            height={28}
+                            className="size-7 object-contain sm:size-8"
                           />
-                        )}
+                        </div>
+                        <span className="text-center text-[11px] font-medium text-purple-300/60 sm:text-xs">
+                          {item.name}
+                        </span>
                       </div>
-                      <span className="text-center text-xs font-medium sm:text-sm">
-                        {item.name}
-                      </span>
-                    </Card>
-                  </m.div>
-                ))}
-              </div>
-            </m.div>
+                    </m.div>
+                  ))}
+                </div>
+              </m.div>
+            </div>
           </div>
         </div>
       </section>

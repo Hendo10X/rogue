@@ -133,7 +133,6 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
   const [searchInput, setSearchInput] = useState("");
   const [primaryPlatform, setPrimaryPlatform] = useState("");
   const [facebookCategory, setFacebookCategory] = useState("");
-  const [priceRange, setPriceRange] = useState([0, 500000]);
   const [selectedListing, setSelectedListing] = useState<ListingItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const debouncedSearch = useDebounce(searchInput, 300);
@@ -147,7 +146,7 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
   }
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
-    queryKey: ["listings", page, primaryPlatform, facebookCategory, debouncedSearch, priceRange],
+    queryKey: ["listings", page, primaryPlatform, facebookCategory, debouncedSearch],
     queryFn: () => {
       const params: any = { page };
       if (primaryPlatform === "facebook") {
@@ -156,11 +155,9 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
       } else if (primaryPlatform) {
         params.platform = primaryPlatform;
       }
-      return fetchListings({ 
+      return fetchListings({
         ...params,
         search: debouncedSearch || undefined,
-        minPrice: priceRange[0],
-        maxPrice: priceRange[1]
       });
     },
   });
@@ -247,25 +244,7 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
           )}
         </div>
 
-        <div className="w-full max-w-xs space-y-3">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground font-medium uppercase tracking-wider">Price Range</span>
-            <span className="font-display font-semibold text-primary">
-              ₦{priceRange[0].toLocaleString()} – ₦{priceRange[1].toLocaleString()}
-            </span>
-          </div>
-          <Slider
-            defaultValue={[0, 500000]}
-            max={500000}
-            step={1000}
-            value={priceRange}
-            onValueChange={(val) => {
-              setPriceRange(val);
-              setPage(1);
-            }}
-            className="py-2"
-          />
-        </div>
+        {/* Price range controls removed as requested */}
       </div>
 
       <div className="relative">

@@ -3,8 +3,8 @@ import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { formatPriceWithCurrency } from "@/lib/format-price";
-import { DashboardNavbar } from "@/components/dashboard-navbar";
 import { PurchaseButton } from "@/components/marketplace/purchase-button";
+import { DashboardShell } from "@/components/dashboard-shell";
 
 async function getListing(slug: string) {
   const base =
@@ -45,57 +45,56 @@ export default async function ListingPage({
   }
 
   return (
-    <div className="min-h-screen bg-background font-display">
-      <DashboardNavbar
-        user={{
-          id: session.user.id,
-          name: session.user.name ?? "User",
-          email: session.user.email ?? "",
-          image: session.user.image,
-        }}
-        walletBalance={walletBalance}
-      />
-      <main className="container mx-auto max-w-2xl px-4 py-8">
-        <div className="space-y-6">
-          <div>
-            <p className="text-muted-foreground text-sm">
-              {listing.platform}
-              {listing.categoryName && ` · ${listing.categoryName}`}
-            </p>
-            <h1 className="mt-2 font-display text-2xl font-semibold">
-              {listing.title}
-            </h1>
-            <p className="text-muted-foreground text-sm">{listing.supplierName}</p>
-          </div>
-          <div className="rounded-lg border p-4">
-            <p className="text-muted-foreground whitespace-pre-wrap text-sm">
-              {listing.description?.trim() ? listing.description : "No description"}
-            </p>
-          </div>
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="text-muted-foreground text-sm">Price</p>
-              <p className="text-xl font-semibold">
-                {formatPriceWithCurrency(listing.price, listing.currency)}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">In stock</p>
-              <p className="font-medium">{listing.stock}</p>
-            </div>
-          </div>
-          <PurchaseButton
-            slug={listing.slug}
-            price={listing.price}
-            currency={listing.currency}
-            stock={listing.stock}
-            title={listing.title}
-            userBalance={
-              walletBalance.find((w) => w.currency === "NGN")?.balance ?? "0"
-            }
-          />
+    <DashboardShell
+      user={{
+        id: session.user.id,
+        name: session.user.name ?? "User",
+        email: session.user.email ?? "",
+        image: session.user.image,
+      }}
+      walletBalance={walletBalance}
+    >
+      <div className="mx-auto max-w-2xl space-y-6">
+        <div>
+          <p className="text-sm text-purple-300/60">
+            {listing.platform}
+            {listing.categoryName && ` · ${listing.categoryName}`}
+          </p>
+          <h1 className="mt-2 font-display text-2xl font-semibold text-purple-50">
+            {listing.title}
+          </h1>
+          <p className="text-sm text-purple-300/60">{listing.supplierName}</p>
         </div>
-      </main>
-    </div>
+        <div className="rounded-xl border border-purple-500/20 bg-purple-950/30 p-4">
+          <p className="whitespace-pre-wrap text-sm text-purple-200/80">
+            {listing.description?.trim()
+              ? listing.description
+              : "No description"}
+          </p>
+        </div>
+        <div className="flex items-center justify-between rounded-xl border border-purple-500/20 bg-purple-950/30 p-4">
+          <div>
+            <p className="text-sm text-purple-300/60">Price</p>
+            <p className="text-xl font-semibold text-purple-50">
+              {formatPriceWithCurrency(listing.price, listing.currency)}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-purple-300/60">In stock</p>
+            <p className="font-medium text-purple-50">{listing.stock}</p>
+          </div>
+        </div>
+        <PurchaseButton
+          slug={listing.slug}
+          price={listing.price}
+          currency={listing.currency}
+          stock={listing.stock}
+          title={listing.title}
+          userBalance={
+            walletBalance.find((w) => w.currency === "NGN")?.balance ?? "0"
+          }
+        />
+      </div>
+    </DashboardShell>
   );
 }
