@@ -10,12 +10,12 @@ import { ArrowRight, Shield, Zap, Clock } from "lucide-react";
 const SMOOTH_EASING = [0.22, 1, 0.36, 1] as const;
 
 const PLATFORMS = [
-  { name: "X", src: "/svgs/x.svg", darkSrc: "/svgs/x_dark.svg" },
+  { name: "X", src: "/svgs/x.svg" },
   { name: "Instagram", src: "/svgs/instagram-icon.svg" },
   { name: "Facebook", src: "/svgs/facebook-icon.svg" },
   { name: "Telegram", src: "/svgs/telegram.svg" },
-  { name: "Threads", src: "/svgs/threads.svg", darkSrc: "/svgs/threads_dark.svg" },
-  { name: "TikTok", src: "/svgs/tiktok-icon-light.svg", darkSrc: "/svgs/tiktok-icon-dark.svg" },
+  { name: "Threads", src: "/svgs/threads.svg" },
+  { name: "TikTok", src: "/svgs/tiktok-icon-light.svg" },
   { name: "WhatsApp", src: "/svgs/whatsapp-icon.svg" },
   { name: "Messenger", src: "/svgs/messenger.svg" },
 ] as const;
@@ -176,7 +176,7 @@ export default function HeroSection() {
                       <div className="glow-card glow-card-hover group flex flex-col items-center justify-center gap-2 rounded-2xl border border-purple-500/12 bg-purple-950/25 p-4 backdrop-blur-sm transition-all duration-300 hover:border-purple-500/25 hover:bg-purple-900/20 sm:p-5">
                         <div className="relative flex size-9 shrink-0 items-center justify-center sm:size-11">
                           <Image
-                            src={item.darkSrc ?? item.src}
+                            src={item.src}
                             alt={item.name}
                             width={28}
                             height={28}
