@@ -13,7 +13,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import { useState, useEffect } from "react";
 import type { ReallySimpleSocialService } from "@/lib/boosting/really-simple-social";
 
 function getCategoryIcon(category: string) {
@@ -80,6 +89,25 @@ export function ServiceGrid({
     useState<ReallySimpleSocialService | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  // Boosting announcement dialog
+  const [announcementOpen, setAnnouncementOpen] = useState(false);
+  const [announcementMsg, setAnnouncementMsg] = useState("");
+
+  useEffect(() => {
+    fetch("/api/boosting/announcement")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.active && data?.message) {
+          const dismissedId = sessionStorage.getItem("boosting_announcement_dismissed");
+          if (dismissedId !== data.id) {
+            setAnnouncementMsg(data.message);
+            setAnnouncementOpen(true);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["boosting-services", page, search, category],
     queryFn: () =>
@@ -132,6 +160,34 @@ export function ServiceGrid({
 
   return (
     <>
+      {/* Boosting-specific announcement dialog */}
+      <AlertDialog open={announcementOpen} onOpenChange={setAnnouncementOpen}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>📢 Boosting Notice</AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-pre-wrap text-sm leading-relaxed">
+              {announcementMsg}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                // Store dismissed state in sessionStorage so it doesn't re-show this session
+                fetch("/api/boosting/announcement")
+                  .then((r) => r.json())
+                  .then((d) => {
+                    if (d?.id) sessionStorage.setItem("boosting_announcement_dismissed", d.id);
+                  })
+                  .catch(() => {});
+                setAnnouncementOpen(false);
+              }}
+            >
+              Got it
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="mb-6 flex flex-col gap-6 sm:flex-row sm:items-start lg:items-center">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
           <Input

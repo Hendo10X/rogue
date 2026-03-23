@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
-import { verifyAdminSession } from "@/lib/admin-auth";
+import { cookies, headers } from "next/headers";
+import { verifyAdminSession, getSetting, setSetting } from "@/lib/admin-auth";
 import { AdminNav } from "../admin-nav";
+
+const MAX_IP_ENTRIES = 200;
 
 export default async function DashboardLayout({
   children,
@@ -13,6 +15,27 @@ export default async function DashboardLayout({
   if (!token) redirect("/ozymandias/login");
   const admin = await verifyAdminSession(token);
   if (!admin) redirect("/ozymandias/login");
+
+  // Log IP access (non-blocking)
+  try {
+    const reqHeaders = await headers();
+    const ip =
+      reqHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      reqHeaders.get("x-real-ip") ||
+      "unknown";
+    const userAgent = reqHeaders.get("user-agent") || "unknown";
+
+    const raw = await getSetting("admin_ip_log");
+    const entries: { ip: string; userAgent: string; timestamp: string; adminId: string }[] = raw
+      ? JSON.parse(raw)
+      : [];
+
+    entries.push({ ip, userAgent, timestamp: new Date().toISOString(), adminId: admin.id });
+    if (entries.length > MAX_IP_ENTRIES) {
+      entries.splice(0, entries.length - MAX_IP_ENTRIES);
+    }
+    await setSetting("admin_ip_log", JSON.stringify(entries));
+  } catch { /* non-critical */ }
 
   return (
     <div className="min-h-screen bg-muted/30">

@@ -7,7 +7,6 @@ import { eq } from "drizzle-orm";
 import { getMarkupNaira } from "@/lib/admin-auth";
 import { getOrCreateWallet, debitWallet, creditWallet, logTransaction } from "@/lib/wallet";
 import * as rss from "@/lib/boosting/really-simple-social";
-import * as rp from "@/lib/boosting/reseller-provider";
 import { getUSDtoNGNRate } from "@/lib/currency";
 
 export async function POST(req: NextRequest) {
@@ -34,13 +33,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Fetch services from the specific provider
-  let services;
-  if (provider === "rp") {
-    services = await rp.fetchServices();
-  } else {
-    services = await rss.fetchServices();
-  }
+  // Fetch services (always use ReallySimpleSocial)
+  const services = await rss.fetchServices();
 
   const service = services.find((s) => s.service === serviceId);
   if (!service) {
@@ -84,20 +78,11 @@ export async function POST(req: NextRequest) {
 
   let externalOrderId: number;
   try {
-    let result: { order?: number };
-    if (provider === "rp") {
-      result = await rp.addOrder({
-        service: serviceId,
-        link: link.trim(),
-        quantity: qty,
-      });
-    } else {
-      result = await rss.addOrder({
-        service: serviceId,
-        link: link.trim(),
-        quantity: qty,
-      });
-    }
+    const result = await rss.addOrder({
+      service: serviceId,
+      link: link.trim(),
+      quantity: qty,
+    });
     const orderIdFromApi = result?.order;
     if (orderIdFromApi == null || (typeof orderIdFromApi === "number" && orderIdFromApi <= 0)) {
       throw new Error("Supplier did not accept the order. Please check the link and try again.");

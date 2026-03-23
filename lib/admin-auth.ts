@@ -1,6 +1,6 @@
 import { db } from "@/db/drizzle";
-import { admin, adminSession, adminSettings, user } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { admin, adminSession, adminSettings, user, deposit, order, boostingOrder } from "@/db/schema";
+import { eq, sql, gte, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -115,11 +115,42 @@ export async function setSetting(key: string, value: string): Promise<void> {
 }
 
 export async function getAdminStats() {
-  const [u] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(user);
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const [totalUsers, newUsersWeek, newUsersMonth] = await Promise.all([
+    db.select({ count: sql<number>`count(*)::int` }).from(user),
+    db.select({ count: sql<number>`count(*)::int` }).from(user).where(gte(user.createdAt, weekAgo)),
+    db.select({ count: sql<number>`count(*)::int` }).from(user).where(gte(user.createdAt, monthAgo)),
+  ]);
+
+  // Revenue = sum of completed deposits
+  const [weekRevenue, monthRevenue, totalRevenue] = await Promise.all([
+    db.select({ sum: sql<string>`coalesce(sum(amount::numeric), 0)::text` }).from(deposit).where(and(eq(deposit.status, "completed"), gte(deposit.createdAt, weekAgo))),
+    db.select({ sum: sql<string>`coalesce(sum(amount::numeric), 0)::text` }).from(deposit).where(and(eq(deposit.status, "completed"), gte(deposit.createdAt, monthAgo))),
+    db.select({ sum: sql<string>`coalesce(sum(amount::numeric), 0)::text` }).from(deposit).where(eq(deposit.status, "completed")),
+  ]);
+
+  // Order counts
+  const [weekOrders, monthOrders] = await Promise.all([
+    db.select({ count: sql<number>`count(*)::int` }).from(order).where(gte(order.createdAt, weekAgo)),
+    db.select({ count: sql<number>`count(*)::int` }).from(order).where(gte(order.createdAt, monthAgo)),
+  ]);
+  const [weekBoostOrders, monthBoostOrders] = await Promise.all([
+    db.select({ count: sql<number>`count(*)::int` }).from(boostingOrder).where(gte(boostingOrder.createdAt, weekAgo)),
+    db.select({ count: sql<number>`count(*)::int` }).from(boostingOrder).where(gte(boostingOrder.createdAt, monthAgo)),
+  ]);
+
   return {
-    userCount: u?.count ?? 0,
+    userCount: totalUsers[0]?.count ?? 0,
+    newUsersWeek: newUsersWeek[0]?.count ?? 0,
+    newUsersMonth: newUsersMonth[0]?.count ?? 0,
+    revenueWeek: weekRevenue[0]?.sum ?? "0",
+    revenueMonth: monthRevenue[0]?.sum ?? "0",
+    revenueTotal: totalRevenue[0]?.sum ?? "0",
+    ordersWeek: (weekOrders[0]?.count ?? 0) + (weekBoostOrders[0]?.count ?? 0),
+    ordersMonth: (monthOrders[0]?.count ?? 0) + (monthBoostOrders[0]?.count ?? 0),
   };
 }
 

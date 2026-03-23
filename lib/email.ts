@@ -141,9 +141,66 @@ export async function sendAdminOrderNotification({
   }
 }
 
+// ─── New user signup notification ────────────────────────────────────────────
+
+export async function sendAdminSignupNotification({
+  userId,
+  userName,
+  userEmail,
+  phoneNumber,
+}: {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  phoneNumber?: string;
+}) {
+  const html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+      <h2 style="color: #333;">🎉 New User Sign-Up</h2>
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+          <td style="padding: 8px 0; color: #666; width: 130px;">Name</td>
+          <td style="padding: 8px 0; font-weight: 600;">${userName}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #666;">Email</td>
+          <td style="padding: 8px 0;">${userEmail}</td>
+        </tr>
+        ${phoneNumber ? `
+        <tr>
+          <td style="padding: 8px 0; color: #666;">Phone</td>
+          <td style="padding: 8px 0;">${phoneNumber}</td>
+        </tr>` : ""}
+        <tr>
+          <td style="padding: 8px 0; color: #666;">User ID</td>
+          <td style="padding: 8px 0; font-family: monospace; font-size: 0.85em;">${userId}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #666;">Signed up</td>
+          <td style="padding: 8px 0;">${new Date().toLocaleString("en-NG", { timeZone: "Africa/Lagos" })} (WAT)</td>
+        </tr>
+      </table>
+      <p style="font-size: 0.85em; color: #999;">This is an automated notification from Rogue.</p>
+    </div>
+  `;
+
+  try {
+    await getResend().emails.send({
+      from: "Rogue <noreply@roguesocials.com>",
+      to: ADMIN_EMAIL,
+      subject: `New sign-up — ${userName} (${userEmail})`,
+      html,
+    });
+  } catch (error) {
+    console.error("[Admin Signup Notify] Failed to send:", error);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface AdminDepositNotifyParams {
   depositId: string;
-  provider: "korapay" | "plisio";
+  provider: string;
   userEmail: string;
   userName: string;
   amount: string;
