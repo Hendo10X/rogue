@@ -30,6 +30,18 @@ export default function AdminSettingsPage() {
     message: "",
     id: crypto.randomUUID(),
   });
+  const [boostingAnnouncement, setBoostingAnnouncement] = useState<{
+    active: boolean;
+    message: string;
+    id: string;
+  }>({
+    active: false,
+    message: "",
+    id: crypto.randomUUID(),
+  });
+  const [actionPin, setActionPin] = useState("");
+  const [hasActionPin, setHasActionPin] = useState(false);
+  const [savingPin, setSavingPin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -64,9 +76,9 @@ export default function AdminSettingsPage() {
         .then((data) => {
           setMarketplace(String(data.markupNairaMarketplace ?? 0));
           setBoosting(String(data.markupNairaBoosting ?? 0));
-          if (data.announcement) {
-            setAnnouncement(data.announcement);
-          }
+          if (data.announcement) setAnnouncement(data.announcement);
+          if (data.boostingAnnouncement) setBoostingAnnouncement(data.boostingAnnouncement);
+          setHasActionPin(!!data.hasActionPin);
         }),
       fetch("/api/admin/listings")
         .then((r) => r.json())
@@ -93,31 +105,53 @@ export default function AdminSettingsPage() {
       return;
     }
     
-    // Always assign a new ID when saving so the client knows it's a "new" version
-    // even if they dismissed the exact same message previously.
-    const payloadAnnouncement = {
-      ...announcement,
-      id: crypto.randomUUID(),
-    };
+    const payloadAnnouncement = { ...announcement, id: crypto.randomUUID() };
+    const payloadBoostingAnnouncement = { ...boostingAnnouncement, id: crypto.randomUUID() };
 
     setSaving(true);
     try {
       const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          marketplace: m, 
+        body: JSON.stringify({
+          marketplace: m,
           boosting: b,
-          announcement: payloadAnnouncement
+          announcement: payloadAnnouncement,
+          boostingAnnouncement: payloadBoostingAnnouncement,
         }),
       });
       if (!res.ok) throw new Error("Failed to save");
       setAnnouncement(payloadAnnouncement);
+      setBoostingAnnouncement(payloadBoostingAnnouncement);
       toast.success("Settings saved");
     } catch {
       toast.error("Failed to save settings");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSavePin() {
+    const pin = actionPin.trim();
+    if (pin && !/^\d{4}$/.test(pin)) {
+      toast.error("PIN must be exactly 4 digits");
+      return;
+    }
+    setSavingPin(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actionPin: pin }),
+      });
+      if (!res.ok) throw new Error("Failed to save PIN");
+      setHasActionPin(!!pin);
+      setActionPin("");
+      toast.success(pin ? "Security PIN saved" : "Security PIN cleared");
+    } catch {
+      toast.error("Failed to save PIN");
+    } finally {
+      setSavingPin(false);
     }
   }
 
@@ -223,6 +257,76 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Security PIN */}
+      <Card className="border shadow-none">
+        <CardHeader>
+          <h2 className="font-medium">Security PIN</h2>
+          <p className="text-muted-foreground text-sm">
+            Set a 4-digit PIN required for sensitive actions like funding or deleting users.
+            {hasActionPin && <span className="ml-1 text-green-600 dark:text-green-400 font-medium">PIN is currently set.</span>}
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-end gap-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {hasActionPin ? "Change PIN (leave blank to clear)" : "Set PIN"}
+              </label>
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="••••"
+                value={actionPin}
+                onChange={(e) => setActionPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                className="w-28 tracking-[0.5em] text-center text-lg"
+              />
+            </div>
+            <Button
+              variant="outline"
+              disabled={savingPin}
+              onClick={handleSavePin}
+            >
+              {savingPin ? "Saving…" : hasActionPin ? "Update PIN" : "Save PIN"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Boosting Announcement */}
+      <Card className="border shadow-none">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-medium">Boosting Announcement</h2>
+              <p className="text-muted-foreground text-sm">
+                Display a modal announcement specifically on the Boosting page when users land on it.
+              </p>
+            </div>
+            <Switch
+              checked={boostingAnnouncement.active}
+              onCheckedChange={(c: boolean) => setBoostingAnnouncement(prev => ({ ...prev, active: c }))}
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <FieldSet disabled={!boostingAnnouncement.active}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel>Message Content</FieldLabel>
+                <Textarea
+                  rows={4}
+                  className="resize-none"
+                  placeholder="⚡ Boosting orders may take 24–72 hours depending on service load..."
+                  value={boostingAnnouncement.message}
+                  onChange={(e) => setBoostingAnnouncement(prev => ({ ...prev, message: e.target.value }))}
+                />
+              </Field>
+            </FieldGroup>
+          </FieldSet>
+        </CardContent>
+      </Card>
 
       {/* Manual Marketplace Logs */}
       <Card className="border shadow-none">

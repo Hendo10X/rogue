@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { amount: number; currency?: string; provider?: "plisio" | "korapay" };
+  let body: { amount: number; currency?: string; provider?: "plisio" | "korapay" | "flutterwave" };
   try {
     body = await req.json();
   } catch {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
   const provider = body.provider ?? "plisio";
   const amount = Number(body.amount);
-  const maxAmount = provider === "korapay" ? 10000000 : 100000;
+  const maxAmount = provider === "korapay" || provider === "flutterwave" ? 10000000 : 100000;
 
   if (!Number.isFinite(amount) || amount < 1 || amount > maxAmount) {
     return NextResponse.json(
@@ -85,6 +85,42 @@ export async function POST(req: NextRequest) {
         email: session.user.email ?? "",
       },
       notificationUrl: `${baseUrl}/api/webhooks/korapay`,
+    });
+  }
+
+  if (provider === "flutterwave") {
+    const publicKey = process.env.FLUTTERWAVE_PUBLIC_KEY;
+    if (!publicKey) {
+      return NextResponse.json(
+        { error: "Flutterwave payment provider not configured" },
+        { status: 500 }
+      );
+    }
+
+    const amountNgn = Math.round(amount);
+
+    await db.insert(deposit).values({
+      id: depositId,
+      userId: session.user.id,
+      walletId: wallet.id,
+      amount: amountNgn.toString(),
+      currency: "NGN",
+      provider: "flutterwave",
+      plisioOrderNumber: orderNumber,
+      status: "pending",
+    });
+
+    return NextResponse.json({
+      provider: "flutterwave",
+      depositId,
+      orderNumber,
+      amount: amountNgn,
+      currency: "NGN",
+      publicKey,
+      customer: {
+        name: session.user.name ?? "Customer",
+        email: session.user.email ?? "",
+      },
     });
   }
 

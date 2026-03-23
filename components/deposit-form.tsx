@@ -11,15 +11,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
-type PaymentProvider = "plisio" | "korapay";
+type PaymentProvider = "korapay" | "flutterwave" | "plisio" | "manual";
 
 const KORAPAY_SCRIPT_URL =
   "https://korablobstorage.blob.core.windows.net/modal-bucket/korapay-collections.min.js";
+const FLUTTERWAVE_SCRIPT_URL = "https://checkout.flutterwave.com/v3.js";
 
 declare global {
   interface Window {
@@ -36,8 +43,26 @@ declare global {
         onClose?: () => void;
       }) => void;
     };
+    FlutterwaveCheckout?: (config: {
+      public_key: string;
+      tx_ref: string;
+      amount: number;
+      currency: string;
+      payment_options?: string;
+      customer: { email: string; name: string };
+      customizations?: { title: string; description: string };
+      callback: (data: { status: string; transaction_id: number; tx_ref: string }) => void;
+      onclose: () => void;
+    }) => void;
   }
 }
+
+const PAYMENT_OPTIONS: { value: PaymentProvider; label: string }[] = [
+  { value: "korapay", label: "Card & Bank Transfer (Korapay)" },
+  { value: "flutterwave", label: "Card & Bank Transfer (Flutterwave)" },
+  { value: "plisio", label: "Crypto — USDT, BTC, ETH (Plisio)" },
+  { value: "manual", label: "Manual Bank Transfer" },
+];
 
 export function DepositForm() {
   const router = useRouter();
@@ -47,22 +72,28 @@ export function DepositForm() {
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (provider !== "korapay") return;
-    if (document.querySelector(`script[src="${KORAPAY_SCRIPT_URL}"]`)) return;
-    const script = document.createElement("script");
-    script.src = KORAPAY_SCRIPT_URL;
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      script.remove();
-    };
+    if (provider === "korapay") {
+      if (document.querySelector(`script[src="${KORAPAY_SCRIPT_URL}"]`)) return;
+      const script = document.createElement("script");
+      script.src = KORAPAY_SCRIPT_URL;
+      script.async = true;
+      document.body.appendChild(script);
+    }
+    if (provider === "flutterwave") {
+      if (document.querySelector(`script[src="${FLUTTERWAVE_SCRIPT_URL}"]`)) return;
+      const script = document.createElement("script");
+      script.src = FLUTTERWAVE_SCRIPT_URL;
+      script.async = true;
+      document.body.appendChild(script);
+    }
   }, [provider]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const num = parseFloat(amount);
+    const isNaira = provider === "korapay" || provider === "flutterwave";
     if (!Number.isFinite(num) || num < 1) {
-      toast.error(provider === "korapay" ? "Enter a valid amount (min 1 NGN)" : "Enter a valid amount (min $1)");
+      toast.error(isNaira ? "Enter a valid amount (min 1 NGN)" : "Enter a valid amount (min $1)");
       return;
     }
     setLoading(true);
@@ -72,7 +103,7 @@ export function DepositForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: num,
-          currency: provider === "korapay" ? "NGN" : "USDT",
+          currency: isNaira ? "NGN" : "USDT",
           provider,
         }),
       });
@@ -106,6 +137,43 @@ export function DepositForm() {
             setLoading(false);
           },
           onClose: () => {
+            router.refresh();
+            setLoading(false);
+          },
+        });
+        return;
+      }
+
+      if (data.provider === "flutterwave") {
+        if (!window.FlutterwaveCheckout) {
+          toast.error("Payment gateway loading... Please try again.");
+          setLoading(false);
+          return;
+        }
+        window.FlutterwaveCheckout({
+          public_key: data.publicKey,
+          tx_ref: data.orderNumber,
+          amount: data.amount,
+          currency: "NGN",
+          payment_options: "card,banktransfer,ussd",
+          customer: data.customer,
+          customizations: {
+            title: "Rogue Socials",
+            description: "Wallet deposit",
+          },
+          callback: (response) => {
+            if (response.status === "successful") {
+              toast.success("Payment successful! Confirming deposit...");
+              setTimeout(() => {
+                router.refresh();
+                router.push("/wallet/deposit/success");
+              }, 3000);
+            } else {
+              toast.error("Payment failed. Please try again.");
+              setLoading(false);
+            }
+          },
+          onclose: () => {
             router.refresh();
             setLoading(false);
           },
@@ -151,69 +219,96 @@ export function DepositForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex gap-2 rounded-lg border p-1">
-            <button
-              type="button"
-              onClick={() => setProvider("korapay")}
-              className={cn(
-                "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                provider === "korapay"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}>
-              Card & Bank (Korapay)
-            </button>
-            <button
-              type="button"
-              onClick={() => setProvider("plisio")}
-              className={cn(
-                "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                provider === "plisio"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}>
-              Crypto (Plisio)
-            </button>
-          </div>
           <div className="space-y-2">
-            <label htmlFor="amount" className="text-sm font-medium">
-              Amount ({provider === "korapay" ? "NGN" : "USD"})
-            </label>
-            <Input
-              id="amount"
-              type="number"
-              min={1}
-              max={10000000} // Increased max for NGN
-              step={provider === "korapay" ? 1 : 0.01}
-              placeholder={provider === "korapay" ? "1000" : "50"}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              disabled={loading}
-              className="rounded-lg"
-            />
-            <p className="text-muted-foreground text-xs">
-              {provider === "korapay"
-                ? "Pay with card or bank transfer (Naira)"
-                : "Pay with USDT, BTC, ETH, etc."}
-            </p>
+            <label className="text-sm font-medium">Payment method</label>
+            <Select
+              value={provider}
+              onValueChange={(v) => setProvider(v as PaymentProvider)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select payment method" />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-full">
-            {loading ? (
-              <>
-                <HugeiconsIcon
-                  icon={Loading03Icon}
-                  size={16}
-                  className="mr-2 size-4 animate-spin"
+
+          {provider === "manual" ? (
+            <div className="rounded-lg border p-4 space-y-3">
+              <p className="text-sm font-medium">Bank Transfer Details</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Account Name</span>
+                  <span className="font-medium">Rogue Socials Marketplace</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Account Number</span>
+                  <span className="font-mono font-semibold tracking-wider">4005379809</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Bank</span>
+                  <span className="font-medium">Moniepoint MFB</span>
+                </div>
+              </div>
+              <p className="text-muted-foreground text-xs pt-1 border-t">
+                After payment, send your receipt to our support on{" "}
+                <a
+                  href="https://t.me/rogue4l"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline">
+                  Telegram
+                </a>{" "}
+                for manual crediting.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <label htmlFor="amount" className="text-sm font-medium">
+                  Amount ({provider === "plisio" ? "USD" : "NGN"})
+                </label>
+                <Input
+                  id="amount"
+                  type="number"
+                  min={1}
+                  max={10000000}
+                  step={provider === "plisio" ? 0.01 : 1}
+                  placeholder={provider === "plisio" ? "50" : "1000"}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  disabled={loading}
+                  className="rounded-lg"
                 />
-                Creating payment...
-              </>
-            ) : (
-              "Continue to payment"
-            )}
-          </Button>
+                <p className="text-muted-foreground text-xs">
+                  {provider === "plisio"
+                    ? "Pay with USDT, BTC, ETH, etc."
+                    : "Pay with card or bank transfer (Naira)"}
+                </p>
+              </div>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-full">
+                {loading ? (
+                  <>
+                    <HugeiconsIcon
+                      icon={Loading03Icon}
+                      size={16}
+                      className="mr-2 size-4 animate-spin"
+                    />
+                    Creating payment...
+                  </>
+                ) : (
+                  "Continue to payment"
+                )}
+              </Button>
+            </>
+          )}
         </form>
       </CardContent>
     </Card>

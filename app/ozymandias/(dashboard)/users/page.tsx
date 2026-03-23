@@ -78,16 +78,37 @@ function TruncatedIp({ ip }: { ip: string }) {
   );
 }
 
+function PinInput({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium">Security PIN</label>
+      <Input
+        type="password"
+        inputMode="numeric"
+        maxLength={4}
+        placeholder="••••"
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 4))}
+        disabled={disabled}
+        className="tracking-[0.5em] text-center text-lg w-32"
+      />
+      <p className="text-xs text-muted-foreground">Enter your 4-digit admin security PIN to continue.</p>
+    </div>
+  );
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  
+
   // Modal State
   const [adjustingUser, setAdjustingUser] = useState<UserRow | null>(null);
   const [adjustmentAmount, setAdjustmentAmount] = useState("");
   const [adjustmentType, setAdjustmentType] = useState<"credit" | "debit">("credit");
+  const [adjustPin, setAdjustPin] = useState("");
   const [deletingUser, setDeletingUser] = useState<UserRow | null>(null);
+  const [deletePin, setDeletePin] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   function fetchUsers() {
@@ -107,14 +128,17 @@ export default function AdminUsersPage() {
   async function handleAdjustBalance() {
     if (!adjustingUser) return;
     const amount = parseFloat(adjustmentAmount);
-    
+
     if (isNaN(amount) || amount <= 0) {
       toast.error("Please enter a valid amount greater than 0");
       return;
     }
-
     if (adjustmentType === "debit" && amount > parseFloat(adjustingUser.balance)) {
       toast.error("Cannot debit more than the user's current balance");
+      return;
+    }
+    if (adjustPin.length !== 4) {
+      toast.error("Enter your 4-digit security PIN");
       return;
     }
 
@@ -123,7 +147,7 @@ export default function AdminUsersPage() {
       const res = await fetch(`/api/admin/users/${adjustingUser.id}/wallet`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, type: adjustmentType }),
+        body: JSON.stringify({ amount, type: adjustmentType, pin: adjustPin }),
       });
 
       const data = await res.json();
@@ -131,7 +155,8 @@ export default function AdminUsersPage() {
 
       toast.success(`Successfully ${adjustmentType}ed ₦${amount.toLocaleString("en-NG", { minimumFractionDigits: 2 })}`);
       setAdjustingUser(null);
-      fetchUsers(); // Refresh list to show new balance
+      setAdjustPin("");
+      fetchUsers();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "An error occurred");
     } finally {
@@ -141,11 +166,17 @@ export default function AdminUsersPage() {
 
   async function handleDeleteUser() {
     if (!deletingUser) return;
-    
+    if (deletePin.length !== 4) {
+      toast.error("Enter your 4-digit security PIN");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch(`/api/admin/users/${deletingUser.id}`, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: deletePin }),
       });
 
       const data = await res.json();
@@ -153,6 +184,7 @@ export default function AdminUsersPage() {
 
       toast.success("User successfully deleted");
       setDeletingUser(null);
+      setDeletePin("");
       fetchUsers();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "An error occurred");
@@ -227,9 +259,7 @@ export default function AdminUsersPage() {
                     <TruncatedIp ip={user.ipAddress} />
                   </TableCell>
                   <TableCell>
-                    {formatDistanceToNow(new Date(user.createdAt), {
-                      addSuffix: true,
-                    })}
+                    {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     ₦{parseFloat(user.balance).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -242,6 +272,7 @@ export default function AdminUsersPage() {
                         setAdjustingUser(user);
                         setAdjustmentAmount("");
                         setAdjustmentType("credit");
+                        setAdjustPin("");
                       }}
                     >
                       Adjust
@@ -252,6 +283,7 @@ export default function AdminUsersPage() {
                       className="ml-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
                       onClick={() => {
                         setDeletingUser(user);
+                        setDeletePin("");
                       }}
                     >
                       Delete
@@ -307,6 +339,7 @@ export default function AdminUsersPage() {
                     setAdjustingUser(user);
                     setAdjustmentAmount("");
                     setAdjustmentType("credit");
+                    setAdjustPin("");
                   }}
                 >
                   Adjust
@@ -315,7 +348,10 @@ export default function AdminUsersPage() {
                   variant="ghost"
                   size="sm"
                   className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => setDeletingUser(user)}
+                  onClick={() => {
+                    setDeletingUser(user);
+                    setDeletePin("");
+                  }}
                 >
                   Delete
                 </Button>
@@ -325,24 +361,29 @@ export default function AdminUsersPage() {
         )}
       </div>
 
-      {/* Deletion Confirmation Modal */}
+      {/* ── Deletion Confirmation Modal ─────────────────────────────── */}
       <AlertDialog
         open={!!deletingUser}
-        onOpenChange={(open) => !open && setDeletingUser(null)}
+        onOpenChange={(open) => {
+          if (!open) { setDeletingUser(null); setDeletePin(""); }
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete user account?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete <strong>{deletingUser?.name}</strong>'s
-              account and remove all associated data, including wallets, orders, and sessions.
+              This permanently deletes <strong>{deletingUser?.name}</strong>'s account
+              and all associated data (wallets, orders, sessions). This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="py-3">
+            <PinInput value={deletePin} onChange={setDeletePin} disabled={submitting} />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={submitting}
+              disabled={submitting || deletePin.length !== 4}
               onClick={(e) => {
                 e.preventDefault();
                 handleDeleteUser();
@@ -354,10 +395,12 @@ export default function AdminUsersPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Adjustment Modal */}
+      {/* ── Adjustment Modal ────────────────────────────────────────── */}
       <AlertDialog
         open={!!adjustingUser}
-        onOpenChange={(open) => !open && setAdjustingUser(null)}
+        onOpenChange={(open) => {
+          if (!open) { setAdjustingUser(null); setAdjustPin(""); }
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -367,25 +410,25 @@ export default function AdminUsersPage() {
               Current balance: ₦{parseFloat(adjustingUser?.balance || "0").toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          
+
           <div className="py-4 space-y-4">
             <div className="flex gap-2">
-              <Button 
-                variant={adjustmentType === "credit" ? "default" : "outline"} 
+              <Button
+                variant={adjustmentType === "credit" ? "default" : "outline"}
                 className="flex-1"
                 onClick={() => setAdjustmentType("credit")}
               >
                 Add Funds (Credit)
               </Button>
-              <Button 
-                variant={adjustmentType === "debit" ? "destructive" : "outline"} 
+              <Button
+                variant={adjustmentType === "debit" ? "destructive" : "outline"}
                 className="flex-1"
                 onClick={() => setAdjustmentType("debit")}
               >
                 Remove Funds (Debit)
               </Button>
             </div>
-            
+
             <div className="space-y-2">
               <label className="text-sm font-medium">Amount (NGN)</label>
               <Input
@@ -398,12 +441,14 @@ export default function AdminUsersPage() {
                 disabled={submitting}
               />
             </div>
+
+            <PinInput value={adjustPin} onChange={setAdjustPin} disabled={submitting} />
           </div>
 
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitting}>Cancel</AlertDialogCancel>
             <Button
-              disabled={submitting || !adjustmentAmount}
+              disabled={submitting || !adjustmentAmount || adjustPin.length !== 4}
               onClick={handleAdjustBalance}
               variant={adjustmentType === "debit" ? "destructive" : "default"}
             >

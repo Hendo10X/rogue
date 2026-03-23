@@ -214,8 +214,8 @@ export default function AdminOrdersPage() {
                   <p className="font-medium">{o.amount} {o.currency}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-xs">Date</p>
-                  <p>{new Date(o.createdAt).toLocaleDateString()}</p>
+                  <p className="text-muted-foreground text-xs">Date &amp; Time</p>
+                  <p className="text-xs">{new Date(o.createdAt).toLocaleString()}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">

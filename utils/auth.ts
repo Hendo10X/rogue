@@ -40,6 +40,16 @@ export const auth = betterAuth({
       create: {
         after: async (user) => {
           await createWallet(user.id);
+          // Notify admin of new sign-up (non-blocking)
+          try {
+            const { sendAdminSignupNotification } = await import("@/lib/email");
+            await sendAdminSignupNotification({
+              userId: user.id,
+              userName: user.name ?? "Unknown",
+              userEmail: user.email ?? "",
+              phoneNumber: (user as { phoneNumber?: string }).phoneNumber,
+            });
+          } catch { /* non-critical */ }
         },
       },
     },

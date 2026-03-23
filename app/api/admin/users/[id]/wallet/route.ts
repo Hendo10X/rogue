@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import { cookies } from "next/headers";
-import { verifyAdminSession } from "@/lib/admin-auth";
+import { verifyAdminSession, getSetting } from "@/lib/admin-auth";
 import { db } from "@/db/drizzle";
 import { wallet, transaction, user } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -24,10 +24,18 @@ export async function POST(
 
   try {
     const { id } = await params;
-    const body: { amount: number; type: "credit" | "debit" } = await req.json();
+    const body: { amount: number; type: "credit" | "debit"; pin?: string } = await req.json();
 
     if (!body.amount || body.amount <= 0 || !["credit", "debit"].includes(body.type)) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    // PIN verification
+    const storedPin = await getSetting("action_pin");
+    if (storedPin) {
+      if (!body.pin || body.pin !== storedPin) {
+        return NextResponse.json({ error: "Incorrect security PIN" }, { status: 403 });
+      }
     }
 
     // Verify user exists

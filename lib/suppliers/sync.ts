@@ -1,6 +1,6 @@
 import { db } from "@/db/drizzle";
 import { supplier, listing } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getMarkupNaira } from "@/lib/admin-auth";
 import { fetchSupplierProducts } from "./adapter";
 import { getUSDtoNGNRate } from "../currency";
@@ -82,18 +82,6 @@ export async function syncListingsForSupplier(supplierId: string) {
     }))
   );
 
-  // If this is AcctShop, immediately hide all non-IG/TikTok listings first
-  if (sup.name.toLowerCase().includes("acctshop")) {
-    await db.update(listing)
-      .set({ status: "inactive" })
-      .where(
-        and(
-          eq(listing.supplierId, supplierId),
-          sql`${listing.platform} NOT IN ('instagram', 'tiktok')`
-        )
-      );
-  }
-
   let upserted = 0;
   for (const p of products) {
     const [existing] = await db
@@ -112,14 +100,6 @@ export async function syncListingsForSupplier(supplierId: string) {
     const ourPriceNgn = supplierPriceNgn + markupNaira;
     
     const platform = inferPlatform(p.categoryName || "", p.name);
-
-    if (
-      sup.name.toLowerCase().includes("acctshop") &&
-      platform !== "instagram" &&
-      platform !== "tiktok"
-    ) {
-      continue;
-    }
 
     const slug = `listing-${supplierId}-${p.id}`;
 
