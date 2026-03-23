@@ -66,9 +66,10 @@ export default function Footer() {
             </p>
             <ThemeToggle className="text-white hover:text-white/80" />
           </div>
-          <p className="text-center text-xs text-white/40">
-            A Rogue Socials Energy Company
-          </p>
+          <div className="text-center space-y-1">
+            <p className="text-sm font-semibold text-white/70">Rogue Socials</p>
+            <p className="text-xs text-white/40">A Rogue Energy Company</p>
+          </div>
         </div>
       </div>
     </footer>
