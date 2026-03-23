@@ -44,7 +44,11 @@ export default function Footer() {
                   href={item.href}
                   className="text-white hover:opacity-80 flex size-8 items-center justify-center transition-colors"
                   aria-label={item.label}>
-                  <HugeiconsIcon icon={item.icon} size={18} className="size-4" />
+                  <HugeiconsIcon
+                    icon={item.icon}
+                    size={18}
+                    className="size-4"
+                  />
                 </Link>
               ))}
             </div>
@@ -66,9 +70,10 @@ export default function Footer() {
             </p>
             <ThemeToggle className="text-white hover:text-white/80" />
           </div>
-          <p className="text-center text-xs text-white/40">
-            A Rogue Socials Energy Company
-          </p>
+          <div className="text-center space-y-1">
+            <p className="text-sm font-semibold text-white/70">Rogue Socials</p>
+            <p className="text-xs text-white/40">A Rogue Energy Company</p>
+          </div>
         </div>
       </div>
     </footer>
