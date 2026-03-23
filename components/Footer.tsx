@@ -44,7 +44,11 @@ export default function Footer() {
                   href={item.href}
                   className="text-white hover:opacity-80 flex size-8 items-center justify-center transition-colors"
                   aria-label={item.label}>
-                  <HugeiconsIcon icon={item.icon} size={18} className="size-4" />
+                  <HugeiconsIcon
+                    icon={item.icon}
+                    size={18}
+                    className="size-4"
+                  />
                 </Link>
               ))}
             </div>
