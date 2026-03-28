@@ -130,7 +130,6 @@ function OrderViewModal({
         </AlertDialogHeader>
         <div className="flex flex-col gap-4 py-4">
           <div>
-            <p className="text-muted-foreground mb-1 text-xs">{order.supplierName}</p>
             <p className="text-xl font-semibold">
               {formatPriceWithCurrency(order.amount, order.currency)}
             </p>
@@ -236,7 +235,7 @@ export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
                 </button>
               </CardTitle>
               <CardDescription className="text-xs">
-                {o.supplierName} · Qty: {o.quantity}
+                Qty: {o.quantity}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">

@@ -59,12 +59,12 @@
   /* No box shadows - use shadow-none throughout */
   /* Buttons: fully rounded (rounded-full / pill shape) */
   --rogue-bg: #f6f8fa;
-  --rogue-green: #19F469;
-  --rogue-green-foreground: #000;
-  --rogue-lime: #19F469;
-  --rogue-lime-foreground: #000;
-  --rogue-accent: #0d5b3b;
-  --rogue-link: #0d9460;
+  --rogue-green: #E54D1B;
+  --rogue-green-foreground: #fff;
+  --rogue-lime: #E54D1B;
+  --rogue-lime-foreground: #fff;
+  --rogue-accent: #FFE814;
+  --rogue-link: #E54D1B;
 
   --radius: 0.625rem;
   --background: var(--rogue-bg);
@@ -77,11 +77,11 @@
   --primary-foreground: var(--rogue-green-foreground);
   --link: var(--rogue-link);
   --secondary: var(--rogue-accent);
-  --secondary-foreground: oklch(0.985 0 0);
+  --secondary-foreground: #000;
   --muted: oklch(0.967 0.001 286.375);
   --muted-foreground: oklch(0.552 0.016 285.938);
   --accent: var(--rogue-accent);
-  --accent-foreground: oklch(0.985 0 0);
+  --accent-foreground: #000;
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
@@ -108,9 +108,9 @@
   --card-foreground: oklch(0.98 0 0);
   --popover: oklch(0.18 0.01 265);
   --popover-foreground: oklch(0.98 0 0);
-  --primary: #19F469;
-  --primary-foreground: #000;
-  --link: #0d9460;
+  --primary: #E54D1B;
+  --primary-foreground: #fff;
+  --link: #E54D1B;
   --secondary: oklch(0.22 0.01 265);
   --secondary-foreground: oklch(0.98 0 0);
   --muted: oklch(0.22 0.01 265);
