@@ -33,9 +33,9 @@ export default function Footer() {
               <Image
                 src="/Roguesocialsyellow.svg"
                 alt="Logo"
-                width={400}
-                height={112}
-                className="h-28 w-auto"
+                width={500}
+                height={140}
+                className="h-36 w-auto"
               />
             </Link>
             <div className="-ml-2 mt-6 flex gap-2">

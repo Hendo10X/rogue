@@ -83,10 +83,10 @@ export function DashboardNavbar({
         <Link href={logoUrl} className="ml-0 flex shrink-0 items-center">
           <Image
             src="/Roguesocialsyellow.svg"
-            className="h-16 w-auto md:h-20"
+            className="h-20 w-auto md:h-28"
             alt="Rogue"
-            width={360}
-            height={80}
+            width={480}
+            height={112}
           />
         </Link>
 
