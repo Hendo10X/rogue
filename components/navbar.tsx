@@ -107,10 +107,10 @@ const Navbar = ({
             <Link href={logo.url} className="flex items-center gap-2">
               <Image
                 src="/Roguesocialsyellow.svg"
-                className="h-20 w-auto"
+                className="h-28 w-auto"
                 alt={logo.alt}
-                width={360}
-                height={80}
+                width={480}
+                height={112}
               />
             </Link>
             <div className="flex items-center">
@@ -192,10 +192,10 @@ const Navbar = ({
             <Link href={logo.url} className="flex items-center gap-2">
               <Image
                 src="/Roguesocialsyellow.svg"
-                className="h-16 w-auto"
+                className="h-20 w-auto"
                 alt={logo.alt}
-                width={280}
-                height={64}
+                width={360}
+                height={80}
               />
             </Link>
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -222,10 +222,10 @@ const Navbar = ({
                     <Link href={logo.url} className="flex items-center gap-2">
                       <Image
                         src="/Roguesocialsyellow.svg"
-                        className="h-16 w-auto"
+                        className="h-20 w-auto"
                         alt={logo.alt}
-                        width={280}
-                        height={64}
+                        width={360}
+                        height={80}
                       />
                     </Link>
                   </SheetTitle>
