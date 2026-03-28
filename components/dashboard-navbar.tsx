@@ -63,7 +63,7 @@ export function DashboardNavbar({
   user,
   walletBalance,
   logoUrl = "/dashboard",
-  logoSrc = "/Roguelong.svg",
+  logoSrc: _logoSrc = "/Roguesocialsyellow.svg",
 }: DashboardNavbarProps) {
   const router = useRouter();
 
@@ -82,25 +82,11 @@ export function DashboardNavbar({
         {/* Logo - Rogue.svg on mobile (both modes), Roguelong on desktop */}
         <Link href={logoUrl} className="ml-0 flex shrink-0 items-center">
           <Image
-            src="/Rogue.svg"
-            className="max-h-9 md:hidden"
+            src="/Roguesocialsyellow.svg"
+            className="h-16 w-auto md:h-20"
             alt="Rogue"
-            width={36}
-            height={36}
-          />
-          <Image
-            src={logoSrc}
-            className="hidden max-h-10 md:block md:max-h-14 md:max-w-64 dark:hidden"
-            alt="Rogue"
-            width={256}
-            height={56}
-          />
-          <Image
-            src="/Roguelong-darkmode.svg"
-            className="hidden max-h-10 dark:md:block md:max-h-14 md:max-w-64"
-            alt="Rogue"
-            width={256}
-            height={56}
+            width={360}
+            height={80}
           />
         </Link>
 

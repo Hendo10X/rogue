@@ -25,16 +25,17 @@ const social = [
 
 export default function Footer() {
   return (
-    <footer className="bg-secondary border-t border-white/10 py-12 text-white @container">
+    <footer className="bg-[#E54D1B] dark:bg-secondary border-t border-white/10 py-12 text-white @container">
       <div className="mx-auto max-w-3xl px-6">
         <div className="grid gap-8">
           <div className="col-span-full border-b border-white/20 pb-8">
             <Link href="/" className="flex items-center gap-2">
               <Image
-                src="/Roguelong-white.svg"
+                src="/Roguesocialsyellow.svg"
                 alt="Logo"
-                width={150}
-                height={150}
+                width={400}
+                height={112}
+                className="h-28 w-auto"
               />
             </Link>
             <div className="-ml-2 mt-6 flex gap-2">

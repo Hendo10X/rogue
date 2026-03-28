@@ -106,18 +106,11 @@ const Navbar = ({
             {/* Logo - desktop: Roguelong.svg (light), Roguelong-darkmode.svg (dark) */}
             <Link href={logo.url} className="flex items-center gap-2">
               <Image
-                src="/Roguelong.svg"
-                className="max-h-12 max-w-56 dark:hidden"
+                src="/Roguesocialsyellow.svg"
+                className="h-20 w-auto"
                 alt={logo.alt}
-                width={224}
-                height={48}
-              />
-              <Image
-                src="/Roguelong-darkmode.svg"
-                className="hidden max-h-12 max-w-56 dark:block"
-                alt={logo.alt}
-                width={224}
-                height={48}
+                width={360}
+                height={80}
               />
             </Link>
             <div className="flex items-center">
@@ -195,14 +188,14 @@ const Navbar = ({
         {/* Mobile Menu */}
         <div className="block lg:hidden text-lg">
           <div className="flex items-center justify-between">
-            {/* Logo - mobile: Rogue.svg always, pulled to edge */}
+            {/* Logo - mobile */}
             <Link href={logo.url} className="flex items-center gap-2">
               <Image
-                src="/Rogue.svg"
-                className="max-h-9 md:max-h-12"
+                src="/Roguesocialsyellow.svg"
+                className="h-16 w-auto"
                 alt={logo.alt}
-                width={36}
-                height={36}
+                width={280}
+                height={64}
               />
             </Link>
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -228,11 +221,11 @@ const Navbar = ({
                   <SheetTitle>
                     <Link href={logo.url} className="flex items-center gap-2">
                       <Image
-                        src="/Rogue.svg"
-                        className="max-h-9"
+                        src="/Roguesocialsyellow.svg"
+                        className="h-16 w-auto"
                         alt={logo.alt}
-                        width={36}
-                        height={36}
+                        width={280}
+                        height={64}
                       />
                     </Link>
                   </SheetTitle>
