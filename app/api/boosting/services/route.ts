@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMarkupNaira } from "@/lib/admin-auth";
-import { fetchServices as fetchRSS } from "@/lib/boosting/really-simple-social";
-import { fetchServices as fetchRP } from "@/lib/boosting/reseller-provider";
-import { getUSDtoNGNRate } from "@/lib/currency";
+import { fetchServices } from "@/lib/boosting/socially";
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,25 +11,19 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10)));
     const offset = (page - 1) * limit;
 
-    const [rssServices, rpServices, markupNaira, rate] = await Promise.all([
-      fetchRSS().catch(() => []),
-      fetchRP().catch(() => []),
+    const [services, markupNaira] = await Promise.all([
+      fetchServices().catch(() => []),
       getMarkupNaira("boosting"),
-      getUSDtoNGNRate(),
     ]);
-
-    const services = [
-      ...rssServices.map(s => ({ ...s, provider: "rss" })),
-      ...rpServices.map(s => ({ ...s, provider: "rp" })),
-    ];
 
     const categories = Array.from(new Set(services.map((s) => s.category))).sort();
 
     let filteredServices = services.map((s) => {
-      const supplierRateUsdPer1000 = parseFloat(s.rate) || 0;
-      const rateNgnPer1000 = supplierRateUsdPer1000 * rate + markupNaira;
+      // socially.ng returns rates already in NGN — no USD conversion needed
+      const rateNgnPer1000 = (parseFloat(s.rate) || 0) + markupNaira;
       return {
         ...s,
+        provider: "socially",
         rate: rateNgnPer1000.toFixed(2),
         currency: "NGN",
         _sortRate: rateNgnPer1000,

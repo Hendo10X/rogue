@@ -6,8 +6,7 @@ import { boostingOrder, transaction, wallet, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getMarkupNaira } from "@/lib/admin-auth";
 import { getOrCreateWallet, debitWallet, creditWallet, logTransaction } from "@/lib/wallet";
-import * as rss from "@/lib/boosting/really-simple-social";
-import { getUSDtoNGNRate } from "@/lib/currency";
+import * as socially from "@/lib/boosting/socially";
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({
@@ -25,7 +24,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { serviceId, link, quantity, provider = "rss" } = body;
+  const { serviceId, link, quantity, provider = "socially" } = body;
   if (!serviceId || !link?.trim() || !quantity || quantity < 1) {
     return NextResponse.json(
       { error: "serviceId, link, and quantity are required" },
@@ -33,8 +32,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Fetch services (always use ReallySimpleSocial)
-  const services = await rss.fetchServices();
+  const services = await socially.fetchServices();
 
   const service = services.find((s) => s.service === serviceId);
   if (!service) {
@@ -45,15 +43,10 @@ export async function POST(req: NextRequest) {
   const max = parseInt(service.max, 10) || 10000;
   const qty = Math.max(min, Math.min(max, quantity));
 
-  const [markupNaira, rate] = await Promise.all([
-    getMarkupNaira("boosting"),
-    getUSDtoNGNRate(),
-  ]);
+  const markupNaira = await getMarkupNaira("boosting");
 
-  // The services API sends rate rounded to 2dp. We must use the same rounding
-  // so the total here matches exactly what the user saw in the modal.
-  const rateUsdPer1000 = parseFloat(service.rate) || 0;
-  const rateNgnPer1000 = Number((rateUsdPer1000 * rate + markupNaira).toFixed(2));
+  // socially.ng returns rates already in NGN — no USD conversion needed
+  const rateNgnPer1000 = Number(((parseFloat(service.rate) || 0) + markupNaira).toFixed(2));
   const totalAmountNgn = Number((rateNgnPer1000 * (qty / 1000)).toFixed(2));
 
   const walletRow = await getOrCreateWallet(session.user.id, "NGN");
@@ -78,7 +71,7 @@ export async function POST(req: NextRequest) {
 
   let externalOrderId: number;
   try {
-    const result = await rss.addOrder({
+    const result = await socially.addOrder({
       service: serviceId,
       link: link.trim(),
       quantity: qty,

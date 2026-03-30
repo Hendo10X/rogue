@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { db } from "@/db/drizzle";
 import { supplier } from "@/db/schema";
 import { verifyAdminSession } from "@/lib/admin-auth";
-import { getBalance } from "@/lib/boosting/really-simple-social";
+import { getBalance as getSociallyBalance } from "@/lib/boosting/socially";
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -13,8 +13,6 @@ async function requireAdmin() {
   if (!token) return null;
   return verifyAdminSession(token);
 }
-
-const BOOSTING_SLUG = "reallysimplesocial";
 
 async function getShopViaCloneBalance(): Promise<string> {
   const apiKey = process.env.SUPPLIER_SHOPVIACLONE_API_KEY?.trim();
@@ -24,7 +22,6 @@ async function getShopViaCloneBalance(): Promise<string> {
     const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    // Try common response shapes
     const balance =
       data?.balance ??
       data?.data?.balance ??
@@ -49,10 +46,10 @@ export async function GET() {
   const suppliers = await db.select().from(supplier).orderBy(supplier.name);
 
   // Fetch balances in parallel
-  const [rssBalance, svcBalance] = await Promise.all([
+  const [sociallyBalance, svcBalance] = await Promise.all([
     (async () => {
-      if (!process.env.REALLYSIMPLESOCIAL_API_KEY?.trim()) return null;
-      try { return await getBalance(); } catch { return { balance: "N/A", currency: "USD" }; }
+      if (!process.env.SOCIALLY_API_KEY?.trim()) return null;
+      try { return await getSociallyBalance(); } catch { return { balance: "N/A", currency: "NGN" }; }
     })(),
     getShopViaCloneBalance(),
   ]);
@@ -65,13 +62,13 @@ export async function GET() {
     balance: s.slug === "shopviaclone" ? svcBalance : "N/A",
   }));
 
-  if (rssBalance) {
+  if (sociallyBalance) {
     rows.unshift({
-      id: "boosting-reallysimplesocial",
-      name: "ReallySimpleSocial (Boosting)",
-      slug: BOOSTING_SLUG,
+      id: "boosting-socially",
+      name: "Socially.ng (Boosting)",
+      slug: "socially",
       status: "active",
-      balance: `${rssBalance.balance} ${rssBalance.currency}`,
+      balance: `${sociallyBalance.balance} ${sociallyBalance.currency}`,
     });
   }
 
