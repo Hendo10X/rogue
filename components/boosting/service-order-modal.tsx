@@ -18,9 +18,9 @@ import { Label } from "@/components/ui/label";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
-import type { ReallySimpleSocialService } from "@/lib/boosting/really-simple-social";
+import type { SociallyService } from "@/lib/boosting/socially";
 
-interface ExtendedService extends ReallySimpleSocialService {
+interface ExtendedService extends SociallyService {
   provider?: string;
 }
 
@@ -30,6 +30,27 @@ interface ServiceOrderModalProps {
   onOpenChange: (open: boolean) => void;
   userBalance: string;
   onSuccess?: () => void;
+}
+
+function friendlyError(msg?: string): string {
+  if (!msg) return "Order failed. Your wallet has been refunded.";
+  const m = msg.toLowerCase();
+  if (m.includes("503") || m.includes("service unavailable") || m.includes("temporarily"))
+    return "The service is temporarily unavailable. Please try again in a few minutes.";
+  if (m.includes("insufficient balance") || m.includes("not enough balance"))
+    return "This service is currently unavailable. Please try again later or contact support.";
+  if (m.includes("invalid link") || m.includes("incorrect link") || m.includes("wrong link"))
+    return "The link you entered is invalid. Please check and try again.";
+  if (m.includes("invalid service") || m.includes("service not found"))
+    return "This service is no longer available. Please choose a different one.";
+  if (m.includes("unauthorized") || m.includes("invalid key"))
+    return "Service configuration error. Please contact support.";
+  if (m.includes("insufficient") || m.includes("balance"))
+    return "Insufficient wallet balance. Please fund your wallet and try again.";
+  if (m.includes("timeout") || m.includes("timed out"))
+    return "The request timed out. Please try again.";
+  // Strip any "Socially.ng:" or "API error" prefixes before showing
+  return msg.replace(/^(socially\.ng:|api error\s*\d*:?\s*)/i, "").trim() || "Order failed. Please try again.";
 }
 
 export function ServiceOrderModal({
@@ -81,7 +102,7 @@ export function ServiceOrderModal({
           serviceId: service.service,
           link: link.trim(),
           quantity: qty,
-          provider: service.provider ?? "rss",
+          provider: service.provider ?? "socially",
         }),
       });
       const text = await res.text();
@@ -101,10 +122,9 @@ export function ServiceOrderModal({
         void queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
         return;
       }
-      toast.error(data.error ?? "Order failed. Your balance was not charged, or will be refunded.");
+      toast.error(friendlyError(data.error));
     } catch {
-      // Network error or fetch threw — server might still have placed the order
-      toast.warning("Request didn’t complete. Check your orders — it may have gone through.");
+      toast.warning("Network issue. Check your orders — it may have gone through.");
       onSuccess?.();
       void queryClient.invalidateQueries({ queryKey: ["orders"] });
     } finally {

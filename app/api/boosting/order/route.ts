@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
     }
     externalOrderId = Number(orderIdFromApi);
   } catch (e) {
+    console.error("[Boosting] Socially.ng addOrder failed:", e);
     // Refund: credit back the debited amount so the user is not charged on failure
     try {
       await creditWallet(walletRow.id, totalAmountNgn.toFixed(2), "NGN");
@@ -96,7 +97,10 @@ export async function POST(req: NextRequest) {
     } catch (refundErr) {
       console.error("[Boosting] Refund failed after supplier error:", refundErr);
     }
-    const msg = e instanceof Error ? e.message : "Failed to place order";
+    const raw = e instanceof Error ? e.message : "";
+    // Pass clean supplier error through — the client will translate to user-friendly text
+    const msg = raw || "Failed to place order with supplier";
+    console.error("[Boosting] Supplier error detail:", raw);
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 

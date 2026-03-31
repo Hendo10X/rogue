@@ -1,5 +1,9 @@
 const API_BASE = "https://socially.ng/api/v1";
 
+// Simple in-memory cache to avoid re-fetching all services on every order
+let servicesCache: { data: SociallyService[]; ts: number } | null = null;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 export interface SociallyService {
   service: number;
   name: string;
@@ -43,14 +47,28 @@ async function post(params: Record<string, string>): Promise<unknown> {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: body.toString(),
   });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
-  return res.json();
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Socially.ng API error ${res.status}: ${text}`);
+  }
+  const json = await res.json().catch(() => null);
+  if (json === null) throw new Error("Socially.ng returned non-JSON response");
+  // Surface API-level errors (e.g. { "error": "..." })
+  if (typeof json === "object" && json !== null && "error" in json) {
+    throw new Error(`Socially.ng: ${(json as { error: string }).error}`);
+  }
+  return json;
 }
 
 export async function fetchServices(): Promise<SociallyService[]> {
+  if (servicesCache && Date.now() - servicesCache.ts < CACHE_TTL_MS) {
+    return servicesCache.data;
+  }
   const data = await post({ action: "services" });
   if (!Array.isArray(data)) throw new Error("Invalid services response");
-  return data as SociallyService[];
+  const services = data as SociallyService[];
+  servicesCache = { data: services, ts: Date.now() };
+  return services;
 }
 
 export async function addOrder(params: {
@@ -70,14 +88,14 @@ export async function addOrder(params: {
   if (params.interval != null) body.interval = String(params.interval);
   const raw = (await post(body)) as unknown;
   if (typeof raw !== "object" || raw === null || !("order" in raw)) {
-    const maybeError = raw as { error?: unknown };
-    const msg =
-      typeof maybeError.error === "string"
-        ? maybeError.error
-        : "Invalid add order response";
-    throw new Error(msg);
+    throw new Error(`Unexpected response from Socially.ng: ${JSON.stringify(raw)}`);
   }
-  return raw as AddOrderResponse;
+  const data = raw as AddOrderResponse;
+  const orderId = Number(data.order);
+  if (!Number.isFinite(orderId) || orderId <= 0) {
+    throw new Error(`Socially.ng rejected the order (order=${data.order}). Check the link and try again.`);
+  }
+  return { order: orderId };
 }
 
 export async function getOrderStatus(orderId: number): Promise<OrderStatusResponse> {
