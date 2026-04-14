@@ -51,7 +51,7 @@ declare global {
       payment_options?: string;
       customer: { email: string; name: string };
       customizations?: { title: string; description: string };
-      callback: (data: { status: string; transaction_id: number; tx_ref: string }) => void;
+      callback: (data: { status: string; transaction_id: number; tx_ref: string; flw_ref: string }) => void;
       onclose: () => void;
     }) => void;
   }
@@ -161,20 +161,37 @@ export function DepositForm() {
             title: "Rogue Socials",
             description: "Wallet deposit",
           },
-          callback: (response) => {
+          callback: async (response) => {
             if (response.status === "successful") {
-              toast.success("Payment successful! Confirming deposit...");
-              setTimeout(() => {
-                router.refresh();
-                router.push("/wallet/deposit/success");
-              }, 3000);
+              toast.success("Payment received! Crediting your wallet...");
+              try {
+                const verifyRes = await fetch("/api/wallet/deposit/flutterwave-verify", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    transaction_id: response.transaction_id,
+                    tx_ref: response.tx_ref,
+                  }),
+                });
+                const verifyData = await verifyRes.json();
+                if (verifyRes.ok) {
+                  toast.success("Wallet credited successfully!");
+                  router.refresh();
+                  router.push("/wallet/deposit/success");
+                } else {
+                  toast.error(verifyData.error ?? "Payment received but crediting failed. Contact support.");
+                  setLoading(false);
+                }
+              } catch {
+                toast.error("Payment received but couldn't confirm. Contact support if balance isn't updated.");
+                setLoading(false);
+              }
             } else {
-              toast.error("Payment failed. Please try again.");
+              toast.error("Payment was not completed. Please try again.");
               setLoading(false);
             }
           },
           onclose: () => {
-            router.refresh();
             setLoading(false);
           },
         });
