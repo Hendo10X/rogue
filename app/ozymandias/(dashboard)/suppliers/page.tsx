@@ -27,10 +27,18 @@ function fetchSuppliers() {
     .then((data) => (Array.isArray(data) ? data : []));
 }
 
+interface SyncResult {
+  supplierId: string;
+  upserted: number;
+  total: number;
+  error?: string;
+}
+
 export default function AdminSuppliersPage() {
   const [suppliers, setSuppliers] = useState<SupplierRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetchSuppliers()
@@ -54,6 +62,38 @@ export default function AdminSuppliersPage() {
     }
   }
 
+  async function handleResync() {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/admin/sync-listings", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Re-sync failed");
+
+      const results: SyncResult[] = Array.isArray(data.results) ? data.results : [];
+      const totalUpserted = results.reduce((sum, r) => sum + (r.upserted ?? 0), 0);
+      const failed = results.filter((r) => r.error);
+
+      if (failed.length > 0) {
+        toast.warning(
+          `Synced ${totalUpserted} listing${totalUpserted === 1 ? "" : "s"}; ${failed.length} supplier${failed.length === 1 ? "" : "s"} failed: ${failed
+            .map((r) => `${r.supplierId} (${r.error})`)
+            .join(", ")}`
+        );
+      } else {
+        toast.success(
+          `Re-synced ${totalUpserted} listing${totalUpserted === 1 ? "" : "s"} from ${results.length} supplier${results.length === 1 ? "" : "s"}`
+        );
+      }
+
+      const next = await fetchSuppliers();
+      setSuppliers(next);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Re-sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -72,7 +112,7 @@ export default function AdminSuppliersPage() {
             variant="outline"
             size="sm"
             onClick={handleSeedSuppliers}
-            disabled={seeding}
+            disabled={seeding || syncing}
           >
             {seeding ? (
               <>
@@ -81,6 +121,20 @@ export default function AdminSuppliersPage() {
               </>
             ) : (
               "Seed Suppliers"
+            )}
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleResync}
+            disabled={syncing || seeding}
+          >
+            {syncing ? (
+              <>
+                <Spinner className="mr-2 size-4" />
+                Re-syncing...
+              </>
+            ) : (
+              "Re-sync Listings"
             )}
           </Button>
         </div>

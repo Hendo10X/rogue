@@ -211,6 +211,26 @@ export default function AdminUsersPage() {
       )
     : users;
 
+  function copyAllEmails() {
+    const emails = Array.from(
+      new Set(
+        filteredUsers
+          .map((u) => u.email?.trim())
+          .filter((e): e is string => !!e)
+      )
+    );
+
+    if (emails.length === 0) {
+      toast.error("No emails to copy");
+      return;
+    }
+
+    navigator.clipboard.writeText(emails.join(", "));
+    toast.success(
+      `Copied ${emails.length} email${emails.length === 1 ? "" : "s"} to clipboard`
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -218,12 +238,18 @@ export default function AdminUsersPage() {
         <span className="text-muted-foreground text-sm">{users.length} total</span>
       </div>
 
-      <Input
-        placeholder="Search by name, email, or phone..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-sm"
-      />
+      <div className="flex flex-wrap items-center gap-3">
+        <Input
+          placeholder="Search by name, email, or phone..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+        <Button variant="outline" onClick={copyAllEmails}>
+          Copy {query ? "matching" : "all"} emails
+          {filteredUsers.length > 0 ? ` (${filteredUsers.length})` : ""}
+        </Button>
+      </div>
 
       {/* Desktop table */}
       <div className="hidden md:block rounded-md border bg-card">

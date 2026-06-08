@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(npx tsc *)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(seed)",
+      "Bash(sync\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Hendo\\\\Documents\\\\rogue\" -Directory)",
+      "Bash(Select-Object Name)"
     ]
   }
 }
