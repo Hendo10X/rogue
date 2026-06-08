@@ -221,20 +221,6 @@ export default function AdminUsersPage() {
     );
   }
 
-  function copyAllEmails() {
-    const emails = uniqueEmails();
-
-    if (emails.length === 0) {
-      toast.error("No emails to copy");
-      return;
-    }
-
-    navigator.clipboard.writeText(emails.join(", "));
-    toast.success(
-      `Copied ${emails.length} email${emails.length === 1 ? "" : "s"} to clipboard`
-    );
-  }
-
   // Broadcast helper: split all emails into 3 roughly equal segments (RS1, RS2,
   // RS3) so the admin can send a broadcast in batches without hitting per-email
   // recipient/BCC limits. `segment` is 1-based (1, 2, or 3).
@@ -261,6 +247,52 @@ export default function AdminUsersPage() {
     );
   }
 
+  // Build & download a .vcf (vCard) file of every user's phone number so the
+  // admin can open it on their phone and bulk-import all numbers into their
+  // phonebook. Each contact is named R1, R2, R3 ... in order.
+  function downloadContactsVcf() {
+    const numbers = Array.from(
+      new Set(
+        filteredUsers
+          .map((u) => u.phoneNumber?.trim())
+          .filter((n): n is string => !!n)
+      )
+    );
+
+    if (numbers.length === 0) {
+      toast.error("No phone numbers to export");
+      return;
+    }
+
+    const vcards = numbers
+      .map((number, i) => {
+        const name = `R${i + 1}`;
+        return [
+          "BEGIN:VCARD",
+          "VERSION:3.0",
+          `N:;${name};;;`,
+          `FN:${name}`,
+          `TEL;TYPE=CELL:${number}`,
+          "END:VCARD",
+        ].join("\r\n");
+      })
+      .join("\r\n");
+
+    const blob = new Blob([vcards], { type: "text/vcard;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "contacts.vcf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(
+      `Exported ${numbers.length} contact${numbers.length === 1 ? "" : "s"} (R1–R${numbers.length})`
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -275,8 +307,9 @@ export default function AdminUsersPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm"
         />
-        <Button variant="outline" onClick={copyAllEmails}>
-          Copy {query ? "matching" : "all"} emails
+        {/* Export all phone numbers as a .vcf to bulk-add into a phonebook */}
+        <Button variant="outline" onClick={downloadContactsVcf}>
+          Export contacts (.vcf)
           {filteredUsers.length > 0 ? ` (${filteredUsers.length})` : ""}
         </Button>
 
