@@ -211,14 +211,18 @@ export default function AdminUsersPage() {
       )
     : users;
 
-  function copyAllEmails() {
-    const emails = Array.from(
+  function uniqueEmails() {
+    return Array.from(
       new Set(
         filteredUsers
           .map((u) => u.email?.trim())
           .filter((e): e is string => !!e)
       )
     );
+  }
+
+  function copyAllEmails() {
+    const emails = uniqueEmails();
 
     if (emails.length === 0) {
       toast.error("No emails to copy");
@@ -228,6 +232,32 @@ export default function AdminUsersPage() {
     navigator.clipboard.writeText(emails.join(", "));
     toast.success(
       `Copied ${emails.length} email${emails.length === 1 ? "" : "s"} to clipboard`
+    );
+  }
+
+  // Broadcast helper: split all emails into 3 roughly equal segments (RS1, RS2,
+  // RS3) so the admin can send a broadcast in batches without hitting per-email
+  // recipient/BCC limits. `segment` is 1-based (1, 2, or 3).
+  function copyBroadcastSegment(segment: 1 | 2 | 3) {
+    const emails = uniqueEmails();
+
+    if (emails.length === 0) {
+      toast.error("No emails to copy");
+      return;
+    }
+
+    const segmentSize = Math.ceil(emails.length / 3);
+    const start = (segment - 1) * segmentSize;
+    const batch = emails.slice(start, start + segmentSize);
+
+    if (batch.length === 0) {
+      toast.error(`RS${segment} is empty`);
+      return;
+    }
+
+    navigator.clipboard.writeText(batch.join(", "));
+    toast.success(
+      `Copied RS${segment}: ${batch.length} email${batch.length === 1 ? "" : "s"} to clipboard`
     );
   }
 
@@ -249,6 +279,20 @@ export default function AdminUsersPage() {
           Copy {query ? "matching" : "all"} emails
           {filteredUsers.length > 0 ? ` (${filteredUsers.length})` : ""}
         </Button>
+
+        {/* Broadcast batches: copy emails in 3 segments to send in batches */}
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground text-sm">Broadcast:</span>
+          {([1, 2, 3] as const).map((segment) => (
+            <Button
+              key={segment}
+              variant="secondary"
+              onClick={() => copyBroadcastSegment(segment)}
+            >
+              RS{segment}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Desktop table */}
