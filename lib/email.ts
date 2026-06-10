@@ -1,5 +1,6 @@
 
 import { Resend } from "resend";
+import { sendTelegramMessage, escapeHtml } from "./telegram";
 
 let _resend: Resend | null = null;
 export function getResend() {
@@ -8,8 +9,6 @@ export function getResend() {
   }
   return _resend;
 }
-
-const ADMIN_EMAIL = "Vinseven8@gmail.com";
 
 interface OrderEmailParams {
   to: string;
@@ -98,47 +97,17 @@ export async function sendAdminOrderNotification({
     ? `Marketplace — ${platform ?? "N/A"}`
     : `Boosting — ${serviceName ?? "N/A"}`;
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-      <h2 style="color: #333;">New Order Received</h2>
-      
-      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-        <tr>
-          <td style="padding: 8px 0; color: #666; width: 130px;">Order ID</td>
-          <td style="padding: 8px 0; font-weight: 600;">${orderId.slice(0, 8)}...</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #666;">Type</td>
-          <td style="padding: 8px 0; font-weight: 600;">${productLabel}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #666;">Amount</td>
-          <td style="padding: 8px 0; font-weight: 600; color: #16a34a;">${amountFormatted}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #666;">Customer</td>
-          <td style="padding: 8px 0;">${userName} (${userEmail})</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #666;">Status</td>
-          <td style="padding: 8px 0; font-weight: 600;">${status}</td>
-        </tr>
-      </table>
-      
-      <p style="font-size: 0.85em; color: #999;">This is an automated notification from Rogue.</p>
-    </div>
-  `;
+  const text = [
+    `🛒 <b>New Order Received</b>`,
+    ``,
+    `<b>Order ID:</b> ${escapeHtml(orderId.slice(0, 8))}...`,
+    `<b>Type:</b> ${escapeHtml(productLabel)}`,
+    `<b>Amount:</b> ${escapeHtml(amountFormatted)}`,
+    `<b>Customer:</b> ${escapeHtml(userName)} (${escapeHtml(userEmail)})`,
+    `<b>Status:</b> ${escapeHtml(status)}`,
+  ].join("\n");
 
-  try {
-    await getResend().emails.send({
-      from: "Rogue <noreply@roguesocials.com>",
-      to: ADMIN_EMAIL,
-      subject: `New ${orderType} order — ${amountFormatted} from ${userName}`,
-      html,
-    });
-  } catch (error) {
-    console.error("[Admin Notify] Failed to send:", error);
-  }
+  await sendTelegramMessage(text);
 }
 
 // ─── New user signup notification ────────────────────────────────────────────
@@ -154,46 +123,17 @@ export async function sendAdminSignupNotification({
   userEmail: string;
   phoneNumber?: string;
 }) {
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-      <h2 style="color: #333;">🎉 New User Sign-Up</h2>
-      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-        <tr>
-          <td style="padding: 8px 0; color: #666; width: 130px;">Name</td>
-          <td style="padding: 8px 0; font-weight: 600;">${userName}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #666;">Email</td>
-          <td style="padding: 8px 0;">${userEmail}</td>
-        </tr>
-        ${phoneNumber ? `
-        <tr>
-          <td style="padding: 8px 0; color: #666;">Phone</td>
-          <td style="padding: 8px 0;">${phoneNumber}</td>
-        </tr>` : ""}
-        <tr>
-          <td style="padding: 8px 0; color: #666;">User ID</td>
-          <td style="padding: 8px 0; font-family: monospace; font-size: 0.85em;">${userId}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #666;">Signed up</td>
-          <td style="padding: 8px 0;">${new Date().toLocaleString("en-NG", { timeZone: "Africa/Lagos" })} (WAT)</td>
-        </tr>
-      </table>
-      <p style="font-size: 0.85em; color: #999;">This is an automated notification from Rogue.</p>
-    </div>
-  `;
+  const text = [
+    `🎉 <b>New User Sign-Up</b>`,
+    ``,
+    `<b>Name:</b> ${escapeHtml(userName)}`,
+    `<b>Email:</b> ${escapeHtml(userEmail)}`,
+    ...(phoneNumber ? [`<b>Phone:</b> ${escapeHtml(phoneNumber)}`] : []),
+    `<b>User ID:</b> <code>${escapeHtml(userId)}</code>`,
+    `<b>Signed up:</b> ${new Date().toLocaleString("en-NG", { timeZone: "Africa/Lagos" })} (WAT)`,
+  ].join("\n");
 
-  try {
-    await getResend().emails.send({
-      from: "Rogue <noreply@roguesocials.com>",
-      to: ADMIN_EMAIL,
-      subject: `New sign-up — ${userName} (${userEmail})`,
-      html,
-    });
-  } catch (error) {
-    console.error("[Admin Signup Notify] Failed to send:", error);
-  }
+  await sendTelegramMessage(text);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -219,43 +159,23 @@ export async function sendAdminDepositNotification({
     ? `₦${parseFloat(amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}`
     : `${parseFloat(amount).toFixed(2)} ${currency}`;
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-      <h2 style="color: #333;">Wallet Funded</h2>
-      
-      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-        <tr>
-          <td style="padding: 8px 0; color: #666; width: 130px;">Customer</td>
-          <td style="padding: 8px 0; font-weight: 600;">${userName} (${userEmail})</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #666;">Amount</td>
-          <td style="padding: 8px 0; font-weight: 600; color: #16a34a;">${amountFormatted}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #666;">Provider</td>
-          <td style="padding: 8px 0; font-weight: 600;">${provider === "korapay" ? "Korapay (Card/Bank)" : "Plisio (Crypto)"}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #666;">Deposit ID</td>
-          <td style="padding: 8px 0;">${depositId.slice(0, 8)}...</td>
-        </tr>
-      </table>
-      
-      <p style="font-size: 0.85em; color: #999;">This is an automated notification from Rogue.</p>
-    </div>
-  `;
+  const providerLabels: Record<string, string> = {
+    korapay: "Korapay (Card/Bank)",
+    flutterwave: "Flutterwave (Card/Bank)",
+    plisio: "Plisio (Crypto)",
+  };
+  const providerLabel = providerLabels[provider] ?? provider;
 
-  try {
-    await getResend().emails.send({
-      from: "Rogue <noreply@roguesocials.com>",
-      to: ADMIN_EMAIL,
-      subject: `Wallet funded — ${amountFormatted} by ${userName} via ${provider}`,
-      html,
-    });
-  } catch (error) {
-    console.error("[Admin Deposit Notify] Failed to send:", error);
-  }
+  const text = [
+    `💰 <b>Wallet Funded</b>`,
+    ``,
+    `<b>Customer:</b> ${escapeHtml(userName)} (${escapeHtml(userEmail)})`,
+    `<b>Amount:</b> ${escapeHtml(amountFormatted)}`,
+    `<b>Provider:</b> ${escapeHtml(providerLabel)}`,
+    `<b>Deposit ID:</b> ${escapeHtml(depositId.slice(0, 8))}...`,
+  ].join("\n");
+
+  await sendTelegramMessage(text);
 }
 
 interface BoostingOrderPlacedEmailParams {
