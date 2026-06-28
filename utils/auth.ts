@@ -16,11 +16,28 @@ function getTrustedOrigins(): string[] {
   return origins;
 }
 
+function getSocialProviders() {
+  const googleId = process.env.GOOGLE_CLIENT_ID?.trim();
+  const googleSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+  // Only register Google when both env vars are present so the app keeps
+  // booting in environments where Google sign-in isn't configured yet.
+  if (googleId && googleSecret) {
+    return {
+      google: {
+        clientId: googleId,
+        clientSecret: googleSecret,
+      },
+    };
+  }
+  return undefined;
+}
+
 export const auth = betterAuth({
   trustedOrigins: getTrustedOrigins(),
   emailAndPassword: {
     enabled: true,
   },
+  socialProviders: getSocialProviders(),
   database: drizzleAdapter(db, {
     provider: "pg",
     schema,

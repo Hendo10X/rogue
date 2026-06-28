@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { GoogleSignInButton } from "@/components/google-signin-button";
 import { z } from "zod";
 import { useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -145,6 +146,12 @@ export function LoginForm({
               </FieldGroup>
             </form>
           </Form>
+          <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            OR
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <GoogleSignInButton callbackURL="/dashboard" />
         </CardContent>
       </Card>
     </div>

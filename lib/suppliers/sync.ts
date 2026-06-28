@@ -1,9 +1,9 @@
 import { db } from "@/db/drizzle";
 import { supplier, listing } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { getMarkupNaira } from "@/lib/admin-auth";
 import { fetchSupplierProducts } from "./adapter";
 import { getUSDtoNGNRate } from "../currency";
+import { getMarketplacePricing, computeMarketplacePriceNgn } from "../pricing";
 import type { SupplierProduct } from "./types";
 
 function inferPlatform(categoryName: string, productName: string): string {
@@ -69,8 +69,8 @@ export async function syncListingsForSupplier(supplierId: string) {
     throw new Error("Invalid supplier response");
   }
 
-  const [markupNaira, rate] = await Promise.all([
-    getMarkupNaira("marketplace"),
+  const [pricing, rate] = await Promise.all([
+    getMarketplacePricing(),
     getUSDtoNGNRate(),
   ]);
 
@@ -96,9 +96,8 @@ export async function syncListingsForSupplier(supplierId: string) {
       .limit(1);
 
     const supplierPriceUsd = parseFloat(p.price);
-    const supplierPriceNgn = supplierPriceUsd * rate;
-    const ourPriceNgn = supplierPriceNgn + markupNaira;
-    
+    const ourPriceNgn = computeMarketplacePriceNgn(supplierPriceUsd, rate, pricing);
+
     const platform = inferPlatform(p.categoryName || "", p.name);
 
     const slug = `listing-${supplierId}-${p.id}`;

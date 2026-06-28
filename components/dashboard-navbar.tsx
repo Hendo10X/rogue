@@ -38,7 +38,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { formatPriceWithCurrency } from "@/lib/format-price";
+import { useCurrency } from "@/components/currency-provider";
+import { CurrencySwitcher } from "@/components/currency-switcher";
 
 interface DashboardNavbarProps {
   user: {
@@ -66,6 +67,7 @@ export function DashboardNavbar({
   logoSrc: _logoSrc = "/Roguesocialsyellow.svg",
 }: DashboardNavbarProps) {
   const router = useRouter();
+  const { format } = useCurrency();
 
   async function handleLogout() {
     await authClient.signOut();
@@ -114,6 +116,7 @@ export function DashboardNavbar({
 
         {/* Right: Mobile menu + User Avatar + Dropdown */}
         <div className="flex shrink-0 items-center gap-2">
+          <CurrencySwitcher />
           <Sheet>
             <SheetTrigger asChild>
               <Button
@@ -175,9 +178,7 @@ export function DashboardNavbar({
                   <div>
                     <p className="text-muted-foreground text-xs">Balance</p>
                     <p className="text-sm font-semibold">
-                      {primaryBalance
-                        ? formatPriceWithCurrency(primaryBalance.balance, "NGN")
-                        : "₦0"}
+                      {format(primaryBalance ? parseFloat(primaryBalance.balance) : 0)}
                     </p>
                   </div>
                 </div>

@@ -3,6 +3,8 @@ import { Geist_Mono, DM_Sans } from "next/font/google";
 import "./globals.css";
 import Toaster from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
+import { CurrencyProvider } from "@/components/currency-provider";
+import { resolveCurrency } from "@/lib/detect-currency";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -21,11 +23,12 @@ export const metadata: Metadata = {
   description: "Rogue is a platform for buying and selling social media accounts.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { currency, rates } = await resolveCurrency();
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -43,8 +46,10 @@ export default function RootLayout({
         className={`${dmSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          {children}
-          <Toaster />
+          <CurrencyProvider initialCurrency={currency} rates={rates}>
+            {children}
+            <Toaster />
+          </CurrencyProvider>
         </Providers>
       </body>
     </html>

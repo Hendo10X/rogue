@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useCurrency } from "@/components/currency-provider";
 import type { ReallySimpleSocialService } from "@/lib/boosting/really-simple-social";
 
 interface ExtendedService extends ReallySimpleSocialService {
@@ -20,6 +21,7 @@ interface ServiceCardProps {
 }
 
 export function ServiceCard({ service, onViewClick }: ServiceCardProps) {
+  const { format } = useCurrency();
   const min = parseInt(service.min, 10) || 0;
   const max = parseInt(service.max, 10) || 0;
   // rate = NGN price for 1000 quantity. Total = rate × (quantity / 1000).
@@ -45,7 +47,7 @@ export function ServiceCard({ service, onViewClick }: ServiceCardProps) {
       </CardHeader>
       <CardContent className="pb-2">
         <p className="text-muted-foreground text-sm">
-          ₦{ratePer1000.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per 1000 · Min {min} – Max {max}
+          {format(ratePer1000)} per 1000 · Min {min} – Max {max}
         </p>
         <p className="text-muted-foreground mt-1 text-xs">
           {service.refill && "Refill · "}
@@ -54,7 +56,7 @@ export function ServiceCard({ service, onViewClick }: ServiceCardProps) {
       </CardContent>
       <CardFooter className="flex items-center justify-between border-t pt-4">
         <span className="text-muted-foreground text-sm">
-          from ₦{fromTotal.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          from {format(fromTotal)}
         </span>
         <Button size="sm" className="rounded-full" onClick={onViewClick}>
           View

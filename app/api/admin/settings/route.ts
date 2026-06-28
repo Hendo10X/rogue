@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import { cookies } from "next/headers";
 import { verifyAdminSession, getSetting, setSetting } from "@/lib/admin-auth";
+import { MARKETPLACE_PRICING_DEFAULTS } from "@/lib/pricing";
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -17,13 +18,34 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [marketplace, boosting, announcement, boostingAnnouncement, actionPin] = await Promise.all([
+  const [
+    marketplace,
+    boosting,
+    announcement,
+    boostingAnnouncement,
+    actionPin,
+    mpFlatFee,
+    mpThreshold,
+    mpPercent,
+    mpPriceCap,
+    apiDiscount,
+  ] = await Promise.all([
     getSetting("markup_naira_marketplace"),
     getSetting("markup_naira_boosting"),
     getSetting("site_announcement"),
     getSetting("boosting_announcement"),
     getSetting("action_pin"),
+    getSetting("mp_flat_fee_naira"),
+    getSetting("mp_threshold_naira"),
+    getSetting("mp_percent"),
+    getSetting("mp_price_cap_naira"),
+    getSetting("api_user_discount_percent"),
   ]);
+
+  const numOr = (v: string | null, d: number) => {
+    const n = v != null ? parseFloat(v) : NaN;
+    return Number.isFinite(n) ? n : d;
+  };
 
   return NextResponse.json({
     markupNairaMarketplace: marketplace ? parseFloat(marketplace) : 0,
@@ -31,6 +53,13 @@ export async function GET() {
     announcement: announcement ? JSON.parse(announcement) : null,
     boostingAnnouncement: boostingAnnouncement ? JSON.parse(boostingAnnouncement) : null,
     hasActionPin: !!actionPin,
+    pricing: {
+      flatFeeNaira: numOr(mpFlatFee, MARKETPLACE_PRICING_DEFAULTS.flatFeeNaira),
+      thresholdNaira: numOr(mpThreshold, MARKETPLACE_PRICING_DEFAULTS.thresholdNaira),
+      percent: numOr(mpPercent, MARKETPLACE_PRICING_DEFAULTS.percent),
+      priceCapNaira: numOr(mpPriceCap, MARKETPLACE_PRICING_DEFAULTS.priceCapNaira),
+    },
+    apiUserDiscountPercent: numOr(apiDiscount, 0),
   });
 }
 
@@ -55,6 +84,13 @@ export async function POST(req: NextRequest) {
       id: string;
     } | null;
     actionPin?: string;
+    pricing?: {
+      flatFeeNaira?: number;
+      thresholdNaira?: number;
+      percent?: number;
+      priceCapNaira?: number;
+    };
+    apiUserDiscountPercent?: number;
   };
   try {
     body = await req.json();
@@ -82,6 +118,30 @@ export async function POST(req: NextRequest) {
       await setSetting("boosting_announcement", JSON.stringify(body.boostingAnnouncement));
     }
   }
+  if (body.pricing) {
+    const p = body.pricing;
+    if (typeof p.flatFeeNaira === "number" && p.flatFeeNaira >= 0) {
+      await setSetting("mp_flat_fee_naira", String(p.flatFeeNaira));
+    }
+    if (typeof p.thresholdNaira === "number" && p.thresholdNaira >= 0) {
+      await setSetting("mp_threshold_naira", String(p.thresholdNaira));
+    }
+    if (typeof p.percent === "number" && p.percent >= 0) {
+      await setSetting("mp_percent", String(p.percent));
+    }
+    if (typeof p.priceCapNaira === "number" && p.priceCapNaira >= 0) {
+      await setSetting("mp_price_cap_naira", String(p.priceCapNaira));
+    }
+  }
+
+  if (
+    typeof body.apiUserDiscountPercent === "number" &&
+    body.apiUserDiscountPercent >= 0 &&
+    body.apiUserDiscountPercent <= 100
+  ) {
+    await setSetting("api_user_discount_percent", String(body.apiUserDiscountPercent));
+  }
+
   if (typeof body.actionPin === "string") {
     const pin = body.actionPin.trim();
     if (pin === "") {

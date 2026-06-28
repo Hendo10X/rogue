@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import { ApiKeysManager } from "@/components/api-keys-manager";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   UserIcon,
@@ -276,6 +277,9 @@ export function SettingsForm({ user }: SettingsFormProps) {
           </form>
         </CardContent>
       </Card>
+
+      {/* API Access */}
+      <ApiKeysManager />
 
       {/* Danger Zone */}
       <Card className="border border-destructive/20 shadow-none">

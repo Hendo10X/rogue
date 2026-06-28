@@ -233,6 +233,36 @@ Open [http://localhost:3000](http://localhost:3000) to view the app.
 
 ---
 
+## Rogue API (for resellers / API users)
+
+Users generate API keys under **Settings → API Access**. The admin sets an
+API-user discount in the admin dashboard (Settings → Rogue API). Authenticate
+every request with the key:
+
+```
+Authorization: Bearer rk_live_xxxxxxxxxxxxxxxx
+```
+
+| Method & path            | Description                                        |
+| ------------------------ | -------------------------------------------------- |
+| `GET /api/v1/services`   | List boosting services with discounted API pricing |
+| `POST /api/v1/orders`    | Place an order `{ service, link, quantity }`       |
+| `GET /api/v1/orders`     | List your orders                                   |
+| `GET /api/v1/orders/:id` | Live status of one order                           |
+| `GET /api/v1/balance`    | Your NGN wallet balance                            |
+
+```bash
+curl -X POST https://YOUR_DOMAIN/api/v1/orders \
+  -H "Authorization: Bearer rk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"service": 123, "link": "https://instagram.com/you", "quantity": 1000}'
+```
+
+Apply the new `api_key` table with `npm run db:push`, or run
+`migrations/0004_add_api_key_table.sql` against the database.
+
+---
+
 ## Next Steps
 
 1. Lock in Phase 1 tasks and schema

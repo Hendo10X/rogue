@@ -21,6 +21,8 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
+import { useCurrency } from "@/components/currency-provider";
+import { formatMoney } from "@/lib/currency";
 
 type PaymentProvider = "korapay" | "flutterwave" | "plisio" | "manual";
 
@@ -66,10 +68,20 @@ const PAYMENT_OPTIONS: { value: PaymentProvider; label: string }[] = [
 
 export function DepositForm() {
   const router = useRouter();
+  const { currency, convert } = useCurrency();
   const [amount, setAmount] = useState("");
   const [provider, setProvider] = useState<PaymentProvider>("korapay");
   const [loading, setLoading] = useState(false);
   const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
+
+  // Naira providers settle in NGN; show the equivalent in the visitor's
+  // currency so international customers know what they're paying.
+  const enteredNgn = parseFloat(amount);
+  const showEquivalent =
+    (provider === "korapay" || provider === "flutterwave") &&
+    currency !== "NGN" &&
+    Number.isFinite(enteredNgn) &&
+    enteredNgn > 0;
 
   useEffect(() => {
     if (provider === "korapay") {
@@ -306,6 +318,11 @@ export function DepositForm() {
                     ? "Pay with USDT, BTC, ETH, etc."
                     : "Pay with card or bank transfer (Naira)"}
                 </p>
+                {showEquivalent && (
+                  <p className="text-muted-foreground text-xs">
+                    ≈ {formatMoney(convert(enteredNgn), currency)} at today&apos;s rate
+                  </p>
+                )}
               </div>
               <Button
                 type="submit"
