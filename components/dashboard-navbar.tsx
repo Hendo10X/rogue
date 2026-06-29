@@ -57,7 +57,7 @@ const NAV_LINKS = [
   { title: "Marketplace", url: "/marketplace" },
   { title: "Boosting", url: "/boosting" },
   { title: "Orders", url: "/orders" },
-  { title: "In-Game Currency & Numbers", url: "https://www.roguearena.gg" },
+  { title: "Game assets", url: "https://www.roguearena.gg" },
   { title: "Support", url: "https://t.me/rogue4l" },
 ];
 
@@ -81,7 +81,9 @@ export function DashboardNavbar({
 
   return (
     <header className="bg-background pt-4 font-display md:pt-8">
-      <div className="container relative flex h-14 items-center justify-between px-4 pb-4 md:px-6">
+      <div className="flex h-14 w-full items-center justify-between px-4 pb-4 md:px-6">
+        {/* Left: logo + desktop nav links */}
+        <div className="flex items-center gap-4 lg:gap-6">
         {/* Logo - Rogue.svg on mobile (both modes), Roguelong on desktop */}
         <Link href={logoUrl} className="ml-0 flex shrink-0 items-center">
           <Image
@@ -93,8 +95,8 @@ export function DashboardNavbar({
           />
         </Link>
 
-        {/* Nav Links - center on desktop */}
-        <nav className="absolute left-1/2 hidden -translate-x-1/2 md:flex">
+        {/* Nav Links - left, next to logo */}
+        <nav className="hidden md:flex">
           <NavigationMenu>
             <NavigationMenuList className="gap-6">
               {NAV_LINKS.map((item) => (
@@ -114,6 +116,7 @@ export function DashboardNavbar({
             </NavigationMenuList>
           </NavigationMenu>
         </nav>
+        </div>
 
         {/* Right: Mobile menu + User Avatar + Dropdown */}
         <div className="flex shrink-0 items-center gap-2">
