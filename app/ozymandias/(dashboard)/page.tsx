@@ -22,6 +22,15 @@ interface IpEntry {
   adminId: string;
 }
 
+interface SupplierBalance {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  balance: string;
+  low?: boolean;
+}
+
 function fmt(n: string) {
   return `₦${parseFloat(n).toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
@@ -29,6 +38,7 @@ function fmt(n: string) {
 export default function AdminOverviewPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [ipLog, setIpLog] = useState<IpEntry[]>([]);
+  const [supplierBalances, setSupplierBalances] = useState<SupplierBalance[]>([]);
 
   useEffect(() => {
     fetch("/api/admin/stats")
@@ -39,6 +49,11 @@ export default function AdminOverviewPage() {
     fetch("/api/admin/ip-log")
       .then((r) => r.json())
       .then((d) => setIpLog(Array.isArray(d) ? d.slice(0, 20) : []))
+      .catch(() => {});
+
+    fetch("/api/admin/suppliers")
+      .then((r) => r.json())
+      .then((d) => setSupplierBalances(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, []);
 
@@ -90,6 +105,39 @@ export default function AdminOverviewPage() {
           <p className="text-muted-foreground text-xs mt-1">all-time deposits</p>
         </div>
       </div>
+
+      {/* ── Supplier balances ─────────────────────────────── */}
+      {supplierBalances.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold mb-3">Supplier Balances</h2>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {supplierBalances.map((s) => (
+              <div
+                key={s.id}
+                className={`rounded-lg border p-4 shadow-none ${
+                  s.low
+                    ? "border-red-500/40 bg-red-500/5"
+                    : "border-border bg-background"
+                }`}
+              >
+                <p className="text-muted-foreground text-xs uppercase tracking-wide">
+                  {s.name}
+                </p>
+                <p
+                  className={`text-2xl font-bold mt-1 ${
+                    s.low ? "text-red-600 dark:text-red-400" : ""
+                  }`}
+                >
+                  {s.balance}
+                </p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  {s.low ? "⚠ Running low — top up soon" : "Healthy"}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Nav cards ─────────────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
