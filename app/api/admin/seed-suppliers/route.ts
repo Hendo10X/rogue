@@ -22,6 +22,13 @@ const SUPPLIERS = [
     apiUrl: "https://shopviaclone22.com",
     apiKey: process.env.SUPPLIER_SHOPVIACLONE_API_KEY ?? "",
   },
+  {
+    id: "supplier-acctshop",
+    name: "AcctShop",
+    slug: "acctshop",
+    apiUrl: "https://acctshop.com",
+    apiKey: process.env.SUPPLIER_ACCTSHOP_API_KEY ?? "",
+  },
 ];
 
 export async function POST() {
@@ -31,18 +38,33 @@ export async function POST() {
   }
 
   const inserted: string[] = [];
+  const updated: string[] = [];
   for (const s of SUPPLIERS) {
     if (!s.apiKey) continue;
+    // Match by slug so a previously-added supplier (e.g. with an old/reset key)
+    // gets its URL + key refreshed instead of being skipped.
     const [existing] = await db
       .select()
       .from(supplier)
-      .where(eq(supplier.id, s.id))
+      .where(eq(supplier.slug, s.slug))
       .limit(1);
-    if (!existing) {
+    if (existing) {
+      await db
+        .update(supplier)
+        .set({
+          name: s.name,
+          apiUrl: s.apiUrl,
+          apiKey: s.apiKey,
+          status: "active",
+          updatedAt: new Date(),
+        })
+        .where(eq(supplier.id, existing.id));
+      updated.push(s.slug);
+    } else {
       await db.insert(supplier).values(s);
-      inserted.push(s.id);
+      inserted.push(s.slug);
     }
   }
 
-  return NextResponse.json({ inserted });
+  return NextResponse.json({ inserted, updated });
 }

@@ -76,6 +76,10 @@ const Navbar = ({
     { title: "Services", url: "#features" },
     { title: "How it works", url: "#how-it-works" },
     { title: "API", url: "/docs/api" },
+    {
+      title: "Buy In-Game Currency & Foreign Numbers",
+      url: "https://www.roguearena.gg",
+    },
   ],
   auth = {
     login: { title: "Login", url: "/login" },
@@ -100,7 +104,7 @@ const Navbar = ({
 
   return (
     <section className={cn("pb-2 pt-4 px-4 font-display sm:px-6 lg:px-9", className)}>
-      <div className="container">
+      <div className="w-full">
         {/* Desktop Menu */}
         <nav className="hidden items-center justify-between lg:flex">
           <div className="flex items-center gap-6">
@@ -136,6 +140,8 @@ const Navbar = ({
                                 ? `/${item.url}`
                                 : item.url
                             }
+                            target={item.url.startsWith("http") ? "_blank" : undefined}
+                            rel={item.url.startsWith("http") ? "noopener noreferrer" : undefined}
                             className={navLinkClass}>
                             {item.title}
                           </Link>
@@ -251,6 +257,8 @@ const Navbar = ({
                               ? `/${item.url}`
                               : item.url
                           }
+                          target={item.url.startsWith("http") ? "_blank" : undefined}
+                          rel={item.url.startsWith("http") ? "noopener noreferrer" : undefined}
                           onClick={() => setSheetOpen(false)}
                           className={mobileNavLinkClass}>
                           {item.title}

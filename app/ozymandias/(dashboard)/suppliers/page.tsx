@@ -19,6 +19,7 @@ interface SupplierRow {
   slug: string;
   status: string;
   balance: string;
+  low?: boolean;
 }
 
 function fetchSuppliers() {
@@ -52,7 +53,13 @@ export default function AdminSuppliersPage() {
       const res = await fetch("/api/admin/seed-suppliers", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Seed failed");
-      toast.success(data.inserted?.length ? `Added ${data.inserted.length} suppliers` : "Suppliers ready");
+      const added = data.inserted?.length ?? 0;
+      const refreshed = data.updated?.length ?? 0;
+      toast.success(
+        added || refreshed
+          ? `Suppliers ready (${added} added, ${refreshed} updated)`
+          : "Suppliers ready",
+      );
       const next = await fetchSuppliers();
       setSuppliers(next);
     } catch (e) {
@@ -163,7 +170,16 @@ export default function AdminSuppliersPage() {
                   <TableCell>{s.name}</TableCell>
                   <TableCell className="font-mono text-xs">{s.slug}</TableCell>
                   <TableCell>{s.status}</TableCell>
-                  <TableCell>{s.balance}</TableCell>
+                  <TableCell>
+                    <span className={s.low ? "font-semibold text-red-600 dark:text-red-400" : ""}>
+                      {s.balance}
+                    </span>
+                    {s.low && (
+                      <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-red-600 dark:text-red-400">
+                        Low — top up
+                      </span>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -191,7 +207,10 @@ export default function AdminSuppliersPage() {
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Balance</p>
-                  <p>{s.balance}</p>
+                  <p className={s.low ? "font-semibold text-red-600 dark:text-red-400" : ""}>
+                    {s.balance}
+                    {s.low && " · Low"}
+                  </p>
                 </div>
               </div>
             </div>
