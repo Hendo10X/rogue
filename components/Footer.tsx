@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 const links = [
   { label: "Home", href: "/" },
-  { label: "Blog", href: "#" },
+  { label: "API Docs", href: "/docs/api" },
   { label: "Support", href: "https://t.me/rogue4l" },
   { label: "Terms & Conditions", href: "/terms" },
 ];

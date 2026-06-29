@@ -240,7 +240,7 @@ API-user discount in the admin dashboard (Settings → Rogue API). Authenticate
 every request with the key:
 
 ```
-Authorization: Bearer rk_live_xxxxxxxxxxxxxxxx
+Authorization: Bearer rogue_xxxxxxxxxxxxxxxx
 ```
 
 | Method & path            | Description                                        |
@@ -253,7 +253,7 @@ Authorization: Bearer rk_live_xxxxxxxxxxxxxxxx
 
 ```bash
 curl -X POST https://YOUR_DOMAIN/api/v1/orders \
-  -H "Authorization: Bearer rk_live_xxx" \
+  -H "Authorization: Bearer rogue_xxx" \
   -H "Content-Type: application/json" \
   -d '{"service": 123, "link": "https://instagram.com/you", "quantity": 1000}'
 ```

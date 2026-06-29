@@ -4,7 +4,9 @@ import { db } from "@/db/drizzle";
 import { apiKey } from "@/db/schema";
 import { getSetting } from "@/lib/admin-auth";
 
-const KEY_PREFIX = "rk_live_";
+// Branded prefix. Deliberately NOT "rk_live_"/"sk_live_" so keys don't collide
+// with Stripe's key format (which trips secret scanners like GitHub's).
+const KEY_PREFIX = "rogue_";
 
 export interface GeneratedApiKey {
   /** The full secret — shown to the user exactly once. */
@@ -19,7 +21,7 @@ export function generateApiKey(): GeneratedApiKey {
   return {
     key,
     hash: hashApiKey(key),
-    // Stored for display in the dashboard, e.g. "rk_live_1a2b3c…"
+    // Stored for display in the dashboard, e.g. "rogue_1a2b3c…"
     prefix: key.slice(0, KEY_PREFIX.length + 6),
   };
 }
