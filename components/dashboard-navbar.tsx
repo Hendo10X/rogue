@@ -58,6 +58,7 @@ const NAV_LINKS = [
   { title: "Boosting", url: "/boosting" },
   { title: "Orders", url: "/orders" },
   { title: "Game assets", url: "https://www.roguearena.gg" },
+  { title: "Foreign numbers", url: "https://www.roguearena.gg" },
   { title: "Support", url: "https://t.me/rogue4l" },
 ];
 
