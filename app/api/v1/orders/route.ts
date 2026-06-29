@@ -4,11 +4,10 @@ import { boostingOrder } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import {
   authenticateApiRequest,
-  getApiUserDiscountPercent,
-  applyApiDiscount,
+  getApiMarkupPercent,
+  applyApiMarkup,
   ApiErrors,
 } from "@/lib/api-auth";
-import { getMarkupNaira } from "@/lib/admin-auth";
 import {
   getOrCreateWallet,
   debitWallet,
@@ -49,7 +48,7 @@ export async function GET(req: NextRequest) {
   });
 }
 
-// POST /api/v1/orders — place a boosting order at the discounted API rate.
+// POST /api/v1/orders — place a boosting order at the reseller API rate.
 export async function POST(req: NextRequest) {
   const auth = await authenticateApiRequest(req);
   if (!auth) return ApiErrors.unauthorized();
@@ -78,14 +77,12 @@ export async function POST(req: NextRequest) {
   const max = parseInt(service.max, 10) || 10000;
   const qty = Math.max(min, Math.min(max, quantity));
 
-  const [markupNaira, discount] = await Promise.all([
-    getMarkupNaira("boosting"),
-    getApiUserDiscountPercent(),
-  ]);
+  const apiMarkup = await getApiMarkupPercent();
 
-  // socially.ng rates are already in NGN per 1000.
-  const normalRate = (parseFloat(service.rate) || 0) + markupNaira;
-  const apiRate = applyApiDiscount(normalRate, discount);
+  // socially.ng rates are already in NGN per 1000 and represent supplier cost.
+  // Reseller price = supplier cost + API markup% (always above cost).
+  const supplierRate = parseFloat(service.rate) || 0;
+  const apiRate = applyApiMarkup(supplierRate, apiMarkup);
   const totalAmountNgn = Number((apiRate * (qty / 1000)).toFixed(2));
 
   const walletRow = await getOrCreateWallet(auth.userId, "NGN");
@@ -186,7 +183,7 @@ export async function POST(req: NextRequest) {
       external_order_id: externalOrderId,
       charge: totalAmountNgn.toFixed(2),
       currency: "NGN",
-      discount_percent: discount,
+      markup_percent: apiMarkup,
       status: "processing",
     },
   });

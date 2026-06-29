@@ -43,7 +43,7 @@ export default function AdminSettingsPage() {
   const [threshold, setThreshold] = useState("9000");
   const [percent, setPercent] = useState("20");
   const [priceCap, setPriceCap] = useState("500000");
-  const [apiDiscount, setApiDiscount] = useState("0");
+  const [apiMarkup, setApiMarkup] = useState("30");
   const [actionPin, setActionPin] = useState("");
   const [hasActionPin, setHasActionPin] = useState(false);
   const [savingPin, setSavingPin] = useState(false);
@@ -87,7 +87,7 @@ export default function AdminSettingsPage() {
             setPercent(String(data.pricing.percent ?? 20));
             setPriceCap(String(data.pricing.priceCapNaira ?? 500000));
           }
-          setApiDiscount(String(data.apiUserDiscountPercent ?? 0));
+          setApiMarkup(String(data.apiMarkupPercent ?? 30));
           if (data.announcement) setAnnouncement(data.announcement);
           if (data.boostingAnnouncement) setBoostingAnnouncement(data.boostingAnnouncement);
           setHasActionPin(!!data.hasActionPin);
@@ -136,7 +136,7 @@ export default function AdminSettingsPage() {
             percent: Number(percent) || 0,
             priceCapNaira: Number(priceCap) || 0,
           },
-          apiUserDiscountPercent: Math.max(0, Math.min(100, Number(apiDiscount) || 0)),
+          apiMarkupPercent: Math.max(0, Number(apiMarkup) || 0),
         }),
       });
       if (!res.ok) throw new Error("Failed to save");
@@ -346,26 +346,27 @@ export default function AdminSettingsPage() {
       {/* Rogue API */}
       <Card className="border shadow-none">
         <CardHeader>
-          <h2 className="font-medium">Rogue API — Reseller Discount</h2>
+          <h2 className="font-medium">Rogue API — Reseller Markup</h2>
           <p className="text-muted-foreground text-sm">
-            Discount applied to orders placed through the public Rogue API by API
-            users (resellers). e.g. 50 means API users pay 50% of the normal
-            price. Set to 0 for no discount.
+            Your profit % added on top of the supplier&apos;s cost for orders
+            placed through the public Rogue API. e.g. 30 means API users pay
+            supplier cost + 30%. Because it&apos;s a markup over cost (not a
+            discount off the website price), you can never sell below cost and
+            lose money.
           </p>
         </CardHeader>
         <CardContent>
           <FieldSet>
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="apiDiscount">API user discount (%)</FieldLabel>
+                <FieldLabel htmlFor="apiMarkup">API reseller markup (%)</FieldLabel>
                 <Input
-                  id="apiDiscount"
+                  id="apiMarkup"
                   type="number"
                   min={0}
-                  max={100}
                   step={1}
-                  value={apiDiscount}
-                  onChange={(e) => setApiDiscount(e.target.value)}
+                  value={apiMarkup}
+                  onChange={(e) => setApiMarkup(e.target.value)}
                 />
               </Field>
             </FieldGroup>

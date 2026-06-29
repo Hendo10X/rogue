@@ -183,20 +183,19 @@ export default function ApiDocsPage() {
                 wallet from the dashboard (card, bank transfer, or crypto).
               </p>
               <p className="text-muted-foreground">
-                Each service has a rate per 1,000 units. Your price already
-                includes everything — supplier cost plus our margin — and
-                reseller (API) accounts receive a discount off the public price.
-                Your effective charge is:
+                Each service has a rate per 1,000 units. Your reseller rate is
+                the supplier cost plus a fixed markup % set by Rogue — so it is
+                always profitable for both sides. Your effective charge is:
               </p>
               <Code>{`charge = rate_per_1000 × (quantity / 1000)
 
-rate_per_1000  = your reseller rate (already discounted)
-list_rate_per_1000 = the normal website price (for reference)`}</Code>
+rate_per_1000         = your reseller rate (supplier cost + markup%)
+website_rate_per_1000 = the public website price (for reference)`}</Code>
               <p className="text-sm text-muted-foreground">
-                Both rates and the active{" "}
-                <code className="text-sm">discount_percent</code> are returned by
+                The rate and the active{" "}
+                <code className="text-sm">markup_percent</code> are returned by
                 the <code className="text-sm">/services</code> endpoint, so you
-                can always show customers your own markup on top.
+                can always add your own margin on top when reselling.
               </p>
             </section>
 
@@ -226,9 +225,9 @@ list_rate_per_1000 = the normal website price (for reference)`}</Code>
       "refill": true,
       "cancel": false,
       "currency": "NGN",
-      "rate_per_1000": 900.00,
-      "list_rate_per_1000": 1800.00,
-      "discount_percent": 50
+      "rate_per_1000": 1300.00,
+      "website_rate_per_1000": 1800.00,
+      "markup_percent": 30
     }
   ],
   "count": 1
@@ -260,9 +259,9 @@ list_rate_per_1000 = the normal website price (for reference)`}</Code>
   "data": {
     "id": "b1f3...",
     "external_order_id": 884512,
-    "charge": "900.00",
+    "charge": "1300.00",
     "currency": "NGN",
-    "discount_percent": 50,
+    "markup_percent": 30,
     "status": "processing"
   }
 }`}</Code>
@@ -289,7 +288,7 @@ list_rate_per_1000 = the normal website price (for reference)`}</Code>
     "service_name": "Instagram Followers — Premium",
     "link": "https://instagram.com/yourhandle",
     "quantity": 1000,
-    "charge": "900.00",
+    "charge": "1300.00",
     "currency": "NGN",
     "status": "completed",
     "external_status": "Completed",

@@ -235,8 +235,8 @@ Open [http://localhost:3000](http://localhost:3000) to view the app.
 
 ## Rogue API (for resellers / API users)
 
-Users generate API keys under **Settings → API Access**. The admin sets an
-API-user discount in the admin dashboard (Settings → Rogue API). Authenticate
+Users generate API keys under **Settings → API Access**. The admin sets the
+API reseller markup % in the admin dashboard (Settings → Rogue API). Authenticate
 every request with the key:
 
 ```
@@ -245,7 +245,7 @@ Authorization: Bearer rogue_xxxxxxxxxxxxxxxx
 
 | Method & path            | Description                                        |
 | ------------------------ | -------------------------------------------------- |
-| `GET /api/v1/services`   | List boosting services with discounted API pricing |
+| `GET /api/v1/services`   | List boosting services with reseller API pricing   |
 | `POST /api/v1/orders`    | Place an order `{ service, link, quantity }`       |
 | `GET /api/v1/orders`     | List your orders                                   |
 | `GET /api/v1/orders/:id` | Live status of one order                           |

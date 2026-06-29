@@ -28,7 +28,7 @@ export async function GET() {
     mpThreshold,
     mpPercent,
     mpPriceCap,
-    apiDiscount,
+    apiMarkup,
   ] = await Promise.all([
     getSetting("markup_naira_marketplace"),
     getSetting("markup_naira_boosting"),
@@ -39,7 +39,7 @@ export async function GET() {
     getSetting("mp_threshold_naira"),
     getSetting("mp_percent"),
     getSetting("mp_price_cap_naira"),
-    getSetting("api_user_discount_percent"),
+    getSetting("api_markup_percent"),
   ]);
 
   const numOr = (v: string | null, d: number) => {
@@ -59,7 +59,7 @@ export async function GET() {
       percent: numOr(mpPercent, MARKETPLACE_PRICING_DEFAULTS.percent),
       priceCapNaira: numOr(mpPriceCap, MARKETPLACE_PRICING_DEFAULTS.priceCapNaira),
     },
-    apiUserDiscountPercent: numOr(apiDiscount, 0),
+    apiMarkupPercent: numOr(apiMarkup, 30),
   });
 }
 
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       percent?: number;
       priceCapNaira?: number;
     };
-    apiUserDiscountPercent?: number;
+    apiMarkupPercent?: number;
   };
   try {
     body = await req.json();
@@ -135,11 +135,11 @@ export async function POST(req: NextRequest) {
   }
 
   if (
-    typeof body.apiUserDiscountPercent === "number" &&
-    body.apiUserDiscountPercent >= 0 &&
-    body.apiUserDiscountPercent <= 100
+    typeof body.apiMarkupPercent === "number" &&
+    body.apiMarkupPercent >= 0 &&
+    body.apiMarkupPercent <= 1000
   ) {
-    await setSetting("api_user_discount_percent", String(body.apiUserDiscountPercent));
+    await setSetting("api_markup_percent", String(body.apiMarkupPercent));
   }
 
   if (typeof body.actionPin === "string") {

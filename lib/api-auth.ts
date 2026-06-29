@@ -72,18 +72,23 @@ export async function authenticateApiRequest(
   return { userId: row.userId, keyId: row.id };
 }
 
-/** Discount (%) applied to API-user orders, configured by admin. 0–100. */
-export async function getApiUserDiscountPercent(): Promise<number> {
-  const val = await getSetting("api_user_discount_percent");
+/**
+ * API reseller markup (%) added on top of the supplier's raw cost, configured
+ * by admin. Because it's a markup over cost (not a discount off the website
+ * price), the reseller price is ALWAYS above supplier cost — you can never
+ * accidentally sell at a loss. Default 30%.
+ */
+export async function getApiMarkupPercent(): Promise<number> {
+  const val = await getSetting("api_markup_percent");
   const n = val ? parseFloat(val) : NaN;
-  if (!Number.isFinite(n)) return 0;
-  return Math.max(0, Math.min(100, n));
+  if (!Number.isFinite(n) || n < 0) return 30;
+  return n;
 }
 
-/** Apply the API-user discount to a normal price. */
-export function applyApiDiscount(price: number, discountPercent: number): number {
-  const d = Math.max(0, Math.min(100, discountPercent));
-  return price * (1 - d / 100);
+/** Reseller price = supplier cost + markup%. Never below cost. */
+export function applyApiMarkup(supplierCost: number, markupPercent: number): number {
+  const m = Math.max(0, markupPercent);
+  return supplierCost * (1 + m / 100);
 }
 
 function jsonError(message: string, status: number) {

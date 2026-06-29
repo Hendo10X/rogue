@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   authenticateApiRequest,
-  getApiUserDiscountPercent,
-  applyApiDiscount,
+  getApiMarkupPercent,
+  applyApiMarkup,
   ApiErrors,
 } from "@/lib/api-auth";
 import { getMarkupNaira } from "@/lib/admin-auth";
@@ -20,15 +20,16 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get("category");
     const query = searchParams.get("q")?.toLowerCase();
 
-    const [services, markupNaira, discount] = await Promise.all([
+    const [services, markupNaira, apiMarkup] = await Promise.all([
       fetchServices(),
       getMarkupNaira("boosting"),
-      getApiUserDiscountPercent(),
+      getApiMarkupPercent(),
     ]);
 
     let items = services.map((s) => {
-      const normalRate = (parseFloat(s.rate) || 0) + markupNaira; // NGN per 1000
-      const apiRate = applyApiDiscount(normalRate, discount);
+      const supplierRate = parseFloat(s.rate) || 0; // supplier cost, NGN per 1000
+      const apiRate = applyApiMarkup(supplierRate, apiMarkup); // reseller price
+      const websiteRate = supplierRate + markupNaira; // public site price (reference)
       return {
         service: s.service,
         name: s.name,
@@ -40,8 +41,8 @@ export async function GET(req: NextRequest) {
         cancel: s.cancel,
         currency: "NGN",
         rate_per_1000: Number(apiRate.toFixed(2)),
-        list_rate_per_1000: Number(normalRate.toFixed(2)),
-        discount_percent: discount,
+        website_rate_per_1000: Number(websiteRate.toFixed(2)),
+        markup_percent: apiMarkup,
       };
     });
 
