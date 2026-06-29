@@ -10,7 +10,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { formatPriceWithCurrency } from "@/lib/format-price";
+import { useCurrency } from "@/components/currency-provider";
 import { PurchaseButton } from "./purchase-button";
 
 interface ListingDetailModalProps {
@@ -36,6 +36,7 @@ export function ListingDetailModal({
   onOpenChange,
   userBalance,
 }: ListingDetailModalProps) {
+  const { format } = useCurrency();
   if (!listing) return null;
 
   const hasDescription = listing.description?.trim();
@@ -68,7 +69,7 @@ export function ListingDetailModal({
             <div>
               <p className="text-muted-foreground text-xs">Price</p>
               <p className="text-lg font-semibold">
-                {formatPriceWithCurrency(listing.price, listing.currency)}
+                {format(parseFloat(listing.price))}
               </p>
             </div>
             <div>

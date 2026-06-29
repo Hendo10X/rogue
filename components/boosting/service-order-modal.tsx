@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
+import { useCurrency } from "@/components/currency-provider";
 import type { SociallyService } from "@/lib/boosting/socially";
 
 interface ExtendedService extends SociallyService {
@@ -61,6 +62,7 @@ export function ServiceOrderModal({
   onSuccess,
 }: ServiceOrderModalProps) {
   const queryClient = useQueryClient();
+  const { format } = useCurrency();
   const [link, setLink] = useState("");
   const [quantity, setQuantity] = useState("");
   const [loading, setLoading] = useState(false);
@@ -150,7 +152,7 @@ export function ServiceOrderModal({
             {service.name}
           </AlertDialogTitle>
           <AlertDialogDescription className="text-left text-xs">
-            ₦{ratePer1000.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per 1000 · Min {min} – Max {max}
+            {format(ratePer1000)} per 1000 · Min {min} – Max {max}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-4 py-2">
@@ -181,13 +183,13 @@ export function ServiceOrderModal({
             <div>
               <p className="text-muted-foreground text-xs">Total</p>
               <p className="text-lg font-semibold">
-                ₦{total.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {format(total)}
               </p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Your balance</p>
               <p className="font-medium">
-                ₦{parseFloat(userBalance).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {format(parseFloat(userBalance))}
               </p>
               {!canAfford && (
                 <p className="text-destructive text-xs">Insufficient balance</p>
@@ -209,7 +211,7 @@ export function ServiceOrderModal({
                 Placing order...
               </>
             ) : (
-              `Order ₦${total.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              `Order ${format(total)}`
             )}
           </Button>
         </div>

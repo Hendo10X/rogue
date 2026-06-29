@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
-import { formatPriceWithCurrency } from "@/lib/format-price";
+import { Price } from "@/components/currency-provider";
 import { DashboardNavbar } from "@/components/dashboard-navbar";
 import { PurchaseButton } from "@/components/marketplace/purchase-button";
 
@@ -76,7 +76,7 @@ export default async function ListingPage({
             <div>
               <p className="text-muted-foreground text-sm">Price</p>
               <p className="text-xl font-semibold">
-                {formatPriceWithCurrency(listing.price, listing.currency)}
+                <Price ngn={listing.price} />
               </p>
             </div>
             <div>

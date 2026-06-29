@@ -7,7 +7,7 @@ import { db } from "@/db/drizzle";
 import { order, listing, supplier, boostingOrder } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { DashboardNavbar } from "@/components/dashboard-navbar";
-import { formatPriceWithCurrency } from "@/lib/format-price";
+import { Price } from "@/components/currency-provider";
 import { getSetting } from "@/lib/admin-auth";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 
@@ -193,7 +193,7 @@ export default async function DashboardPage() {
                             <td className="p-3">{o.title ?? "—"}</td>
                             <td className="p-3 capitalize">{o.status ?? "—"}</td>
                             <td className="p-3">
-                              {o.amount ? formatPriceWithCurrency(o.amount, o.currency ?? "NGN") : "—"}
+                              {o.amount ? <Price ngn={o.amount} /> : "—"}
                             </td>
                             <td className="text-muted-foreground p-3">
                               {o.createdAt
@@ -226,7 +226,7 @@ export default async function DashboardPage() {
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <p className="font-medium">
-                            {o.amount ? formatPriceWithCurrency(o.amount, o.currency ?? "NGN") : "—"}
+                            {o.amount ? <Price ngn={o.amount} /> : "—"}
                           </p>
                           <p className="text-muted-foreground text-xs">
                             {o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "—"}

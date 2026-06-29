@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
+import { useCurrency } from "@/components/currency-provider";
 
 interface PurchaseButtonProps {
   slug: string;
@@ -36,6 +37,7 @@ export function PurchaseButton({
   userBalance,
 }: PurchaseButtonProps) {
   const router = useRouter();
+  const { format } = useCurrency();
   const [open, setOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -109,7 +111,7 @@ export function PurchaseButton({
             </div>
             <div className="text-sm">
               <p className="text-muted-foreground">
-                Your balance: ₦{balance.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Your balance: {format(balance)}
               </p>
               <p className="text-muted-foreground text-xs mt-1">
                 Final price is calculated at checkout with the live exchange rate.

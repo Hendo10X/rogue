@@ -39,6 +39,11 @@ export default function AdminSettingsPage() {
     message: "",
     id: crypto.randomUUID(),
   });
+  const [flatFee, setFlatFee] = useState("1500");
+  const [threshold, setThreshold] = useState("9000");
+  const [percent, setPercent] = useState("20");
+  const [priceCap, setPriceCap] = useState("500000");
+  const [apiMarkup, setApiMarkup] = useState("30");
   const [actionPin, setActionPin] = useState("");
   const [hasActionPin, setHasActionPin] = useState(false);
   const [savingPin, setSavingPin] = useState(false);
@@ -76,6 +81,13 @@ export default function AdminSettingsPage() {
         .then((data) => {
           setMarketplace(String(data.markupNairaMarketplace ?? 0));
           setBoosting(String(data.markupNairaBoosting ?? 0));
+          if (data.pricing) {
+            setFlatFee(String(data.pricing.flatFeeNaira ?? 1500));
+            setThreshold(String(data.pricing.thresholdNaira ?? 9000));
+            setPercent(String(data.pricing.percent ?? 20));
+            setPriceCap(String(data.pricing.priceCapNaira ?? 500000));
+          }
+          setApiMarkup(String(data.apiMarkupPercent ?? 30));
           if (data.announcement) setAnnouncement(data.announcement);
           if (data.boostingAnnouncement) setBoostingAnnouncement(data.boostingAnnouncement);
           setHasActionPin(!!data.hasActionPin);
@@ -118,6 +130,13 @@ export default function AdminSettingsPage() {
           boosting: b,
           announcement: payloadAnnouncement,
           boostingAnnouncement: payloadBoostingAnnouncement,
+          pricing: {
+            flatFeeNaira: Number(flatFee) || 0,
+            thresholdNaira: Number(threshold) || 0,
+            percent: Number(percent) || 0,
+            priceCapNaira: Number(priceCap) || 0,
+          },
+          apiMarkupPercent: Math.max(0, Number(apiMarkup) || 0),
         }),
       });
       if (!res.ok) throw new Error("Failed to save");
@@ -174,8 +193,9 @@ export default function AdminSettingsPage() {
           <CardHeader>
             <h2 className="font-medium">Profit / Markup (Naira)</h2>
             <p className="text-muted-foreground text-sm">
-              Fixed amount in Naira added to supplier prices (converted from USD). 
-              Applied to marketplace listings and boosting services.
+              Boosting markup is the fixed Naira amount added to boosting
+              services. Marketplace logs now use the tiered pricing below — this
+              marketplace value only affects manual log baselines.
             </p>
           </CardHeader>
           <CardContent>
@@ -257,6 +277,102 @@ export default function AdminSettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Marketplace Log Pricing (tiered) */}
+      <Card className="border shadow-none">
+        <CardHeader>
+          <h2 className="font-medium">Marketplace Log Pricing</h2>
+          <p className="text-muted-foreground text-sm">
+            Cheap logs (below the threshold) get a flat Naira fee added. Logs at
+            or above the threshold get a percentage markup instead. Any
+            auto-synced log that would still price above the cap is hidden from
+            the marketplace, so customers never see scary prices.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <FieldSet>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="flatFee">Flat fee for cheap logs (₦)</FieldLabel>
+                <Input
+                  id="flatFee"
+                  type="number"
+                  min={0}
+                  step={50}
+                  value={flatFee}
+                  onChange={(e) => setFlatFee(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="threshold">Threshold — flat vs % (₦)</FieldLabel>
+                <Input
+                  id="threshold"
+                  type="number"
+                  min={0}
+                  step={500}
+                  value={threshold}
+                  onChange={(e) => setThreshold(e.target.value)}
+                />
+              </Field>
+            </FieldGroup>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="percent">Markup for logs ≥ threshold (%)</FieldLabel>
+                <Input
+                  id="percent"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={percent}
+                  onChange={(e) => setPercent(e.target.value)}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="priceCap">Hide logs above this price (₦, 0 = no cap)</FieldLabel>
+                <Input
+                  id="priceCap"
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={priceCap}
+                  onChange={(e) => setPriceCap(e.target.value)}
+                />
+              </Field>
+            </FieldGroup>
+          </FieldSet>
+        </CardContent>
+      </Card>
+
+      {/* Rogue API */}
+      <Card className="border shadow-none">
+        <CardHeader>
+          <h2 className="font-medium">Rogue API — Reseller Markup</h2>
+          <p className="text-muted-foreground text-sm">
+            Your profit % added on top of the supplier&apos;s cost for orders
+            placed through the public Rogue API. e.g. 30 means API users pay
+            supplier cost + 30%. Because it&apos;s a markup over cost (not a
+            discount off the website price), you can never sell below cost and
+            lose money.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <FieldSet>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="apiMarkup">API reseller markup (%)</FieldLabel>
+                <Input
+                  id="apiMarkup"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={apiMarkup}
+                  onChange={(e) => setApiMarkup(e.target.value)}
+                />
+              </Field>
+            </FieldGroup>
+          </FieldSet>
+        </CardContent>
+      </Card>
 
       {/* Security PIN */}
       <Card className="border shadow-none">

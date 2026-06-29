@@ -3,7 +3,7 @@
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatPriceWithCurrency } from "@/lib/format-price";
+import { useCurrency } from "@/components/currency-provider";
 
 interface ListingCardProps {
   id: string;
@@ -31,6 +31,7 @@ export function ListingCard({
   onViewClick,
 }: ListingCardProps) {
   const hasDescription = description?.trim();
+  const { format } = useCurrency();
   return (
     <Card className="overflow-hidden shadow-none">
       <CardHeader className="pb-2">
@@ -61,7 +62,7 @@ export function ListingCard({
       </CardContent>
       <CardFooter className="flex items-center justify-between border-t pt-4">
         <span className="font-semibold">
-          {formatPriceWithCurrency(price, currency)}
+          {format(parseFloat(price))}
         </span>
         <span className="text-muted-foreground text-xs">
           {stock} in stock

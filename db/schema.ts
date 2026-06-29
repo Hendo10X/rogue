@@ -375,6 +375,26 @@ export const adminSettings = pgTable("admin_settings", {
     .notNull(),
 });
 
+export const apiKey = pgTable(
+  "api_key",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    keyHash: text("key_hash").notNull().unique(),
+    keyPrefix: text("key_prefix").notNull(),
+    active: boolean("active").default(true).notNull(),
+    lastUsedAt: timestamp("last_used_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("api_key_user_idx").on(table.userId),
+    uniqueIndex("api_key_hash_idx").on(table.keyHash),
+  ],
+);
+
 export const webhookLog = pgTable(
   "webhook_log",
   {
@@ -402,6 +422,11 @@ export const userRelations = relations(user, ({ many }) => ({
   wallets: many(wallet),
   orders: many(order),
   boostingOrders: many(boostingOrder),
+  apiKeys: many(apiKey),
+}));
+
+export const apiKeyRelations = relations(apiKey, ({ one }) => ({
+  user: one(user, { fields: [apiKey.userId], references: [user.id] }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -521,4 +546,5 @@ export const schema = {
   accountDelivery,
   webhookLog,
   boostingOrder,
+  apiKey,
 };

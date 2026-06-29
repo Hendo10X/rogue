@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
 import { listing, supplier } from "@/db/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
-import { getMarkupNaira } from "@/lib/admin-auth";
 import { getUSDtoNGNRate } from "@/lib/currency";
+import {
+  getMarketplacePricing,
+  computeMarketplacePriceNgn,
+  capSupplierUsd,
+} from "@/lib/pricing";
 import { autoSyncIfStale } from "@/lib/suppliers/auto-sync";
 
 export async function GET(req: NextRequest) {
@@ -22,25 +26,38 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "24", 10)));
   const offset = (page - 1) * limit;
 
-  const [markupNaira, rate] = await Promise.all([
-    getMarkupNaira("marketplace"),
+  const [pricing, rate] = await Promise.all([
+    getMarketplacePricing(),
     getUSDtoNGNRate(),
   ]);
 
-  // Convert NGN price filters to USD supplier price filters
-  // finalPrice = (supplierPrice * rate) + markupNaira
-  // supplierPrice = (finalPrice - markupNaira) / rate
-  const minUsd = (minPrice - markupNaira) / rate;
-  const maxUsd = (maxPrice - markupNaira) / rate;
+  // Convert NGN price filters to approximate USD supplier-price bounds.
+  // Lower bound uses the flat-fee tier, upper bound the percentage tier.
+  const minUsd = Math.max(0, (minPrice - pricing.flatFeeNaira) / rate);
+  const maxUsd = maxPrice / (1 + pricing.percent / 100) / rate;
+
+  const isManualSql = sql`(${listing.metadata} ->> 'manual' = 'true')`;
 
   const baseConditions = [eq(listing.status, "active")];
   if (platform) baseConditions.push(eq(listing.platform, platform));
   if (platformGroup === "facebook") baseConditions.push(sql`(${listing.platform} ILIKE '%facebook%')`);
   if (category) baseConditions.push(eq(listing.categoryName, category));
-  
-  // Apply price range filter
+
+  // Apply price range filter (manual listings carry their own NGN price, so
+  // their synthetic supplier price isn't meaningful for the upper bound).
   baseConditions.push(sql`${listing.supplierPrice} >= ${minUsd}`);
-  baseConditions.push(sql`${listing.supplierPrice} <= ${maxUsd}`);
+  baseConditions.push(
+    sql`(${isManualSql} OR ${listing.supplierPrice} <= ${maxUsd})`,
+  );
+
+  // Hard price cap: hide auto-synced logs that would still price above the cap
+  // ("no log of 500k"). Manual logs are admin-priced, so they're exempt.
+  const capUsd = capSupplierUsd(rate, pricing);
+  if (capUsd != null) {
+    baseConditions.push(
+      sql`(${isManualSql} OR ${listing.supplierPrice} <= ${capUsd})`,
+    );
+  }
 
   const whereClause =
     baseConditions.length === 1
@@ -69,6 +86,7 @@ export async function GET(req: NextRequest) {
           platform: listing.platform,
           categoryName: listing.categoryName,
           slug: listing.slug,
+          metadata: listing.metadata,
           supplierName: supplier.name,
         })
         .from(listing)
@@ -81,15 +99,18 @@ export async function GET(req: NextRequest) {
         )
         .limit(limit)
         .offset(offset),
-      getMarkupNaira("marketplace"),
-      getUSDtoNGNRate(),
     ]);
 
     const itemsWithDynamicPrice = items.map((item: any) => {
-      const supplierPrice = parseFloat(item.supplierPrice);
-      const finalPrice = Math.round(supplierPrice * rate + markupNaira);
+      const isManual = !!(item.metadata && item.metadata.manual === true);
+      // Manual logs keep their admin-set NGN price; supplier logs use the
+      // tiered model (flat fee for cheap logs, % above the threshold).
+      const finalPrice = isManual
+        ? Math.round(parseFloat(item.price))
+        : computeMarketplacePriceNgn(parseFloat(item.supplierPrice), rate, pricing);
+      const { metadata, ...rest } = item;
       return {
-        ...item,
+        ...rest,
         price: String(finalPrice),
         currency: "NGN",
       };

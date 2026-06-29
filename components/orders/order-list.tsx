@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { formatPriceWithCurrency } from "@/lib/format-price";
+import { useCurrency } from "@/components/currency-provider";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Copy01Icon,
@@ -111,6 +111,7 @@ function OrderViewModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { format } = useCurrency();
   if (!order) return null;
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -131,7 +132,7 @@ function OrderViewModal({
         <div className="flex flex-col gap-4 py-4">
           <div>
             <p className="text-xl font-semibold">
-              {formatPriceWithCurrency(order.amount, order.currency)}
+              {format(parseFloat(order.amount))}
             </p>
           </div>
           {(order.status === "completed" || order.status === "failed") && (
@@ -167,6 +168,7 @@ async function fetchOrders() {
 }
 
 export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
+  const { format } = useCurrency();
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const { data: orders = initialOrders, isLoading } = useQuery({
@@ -241,7 +243,7 @@ export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
             <CardContent className="space-y-3 pt-0">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">
-                  {formatPriceWithCurrency(o.amount, o.currency)}
+                  {format(parseFloat(o.amount))}
                 </span>
                 {(o.status === "processing" || o.status === "pending" || o.status === "manual_review") && (
                   <span className="text-muted-foreground flex items-center gap-1 text-xs">

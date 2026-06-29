@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { GoogleSignInButton } from "@/components/google-signin-button";
 import { passwordSchema } from "@/components/inputs/validity";
 import { z } from "zod";
 import { useState } from "react";
@@ -314,6 +315,12 @@ export function SignupForm({
               </FieldGroup>
             </form>
           </Form>
+          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            OR
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <GoogleSignInButton callbackURL="/dashboard" label="Sign up with Google" />
         </CardContent>
       </Card>
     </div>

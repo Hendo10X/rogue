@@ -14,8 +14,8 @@ import {
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getOrCreateWallet, debitWallet } from "@/lib/wallet";
-import { getMarkupNaira } from "@/lib/admin-auth";
 import { getUSDtoNGNRate } from "@/lib/currency";
+import { getMarketplacePricing, computeMarketplacePriceNgn } from "@/lib/pricing";
 import { purchaseFromSupplier } from "@/lib/suppliers/adapter";
 
 export const maxDuration = 60; // Allow enough time for supplier API and Email
@@ -87,13 +87,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const [markupNaira, rate] = await Promise.all([
-    getMarkupNaira("marketplace"),
+  const [pricing, rate] = await Promise.all([
+    getMarketplacePricing(),
     getUSDtoNGNRate(),
   ]);
 
-  const supplierPrice = parseFloat(list.supplierPrice);
-  const unitPriceNgn = supplierPrice * rate + markupNaira;
+  // Charge the same price customers see: manual logs use their admin-set NGN
+  // price, supplier logs use the tiered model.
+  const unitPriceNgn = isManual
+    ? Math.round(parseFloat(list.price))
+    : computeMarketplacePriceNgn(parseFloat(list.supplierPrice), rate, pricing);
   const totalAmount = (unitPriceNgn * quantity).toFixed(2);
 
   const walletRow = await getOrCreateWallet(session.user.id, "NGN");
