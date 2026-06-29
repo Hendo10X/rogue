@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     .limit(100);
 
   return NextResponse.json({
-    data: rows.map((o) => ({
+    data: rows.map((o: typeof boostingOrder.$inferSelect) => ({
       id: o.id,
       service: o.serviceId,
       service_name: o.serviceName,
