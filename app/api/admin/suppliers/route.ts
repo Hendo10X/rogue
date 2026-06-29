@@ -46,8 +46,9 @@ async function getAcctShopBalance(): Promise<number | null> {
     const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    // AcctShop reports money in cents (29.31 = $0.29), so convert to USD.
     const num = parseFloat(String(data?.data?.money ?? data?.money));
-    return Number.isFinite(num) ? num : null;
+    return Number.isFinite(num) ? num / 100 : null;
   } catch {
     return null;
   }
