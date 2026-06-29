@@ -74,6 +74,10 @@ export async function syncListingsForSupplier(supplierId: string) {
     getUSDtoNGNRate(),
   ]);
 
+  // AcctShop's API reports prices in cents (e.g. 220 = $2.20); ShopViaClone
+  // reports plain USD. Normalise everything to USD before pricing.
+  const priceScaleToUsd = sup.slug === "acctshop" ? 0.01 : 1;
+
   const products: SupplierProduct[] = data.categories.flatMap((cat: any) =>
     cat.products.map((p: any) => ({
       ...p,
@@ -95,7 +99,7 @@ export async function syncListingsForSupplier(supplierId: string) {
       )
       .limit(1);
 
-    const supplierPriceUsd = parseFloat(p.price);
+    const supplierPriceUsd = parseFloat(p.price) * priceScaleToUsd;
     const ourPriceNgn = computeMarketplacePriceNgn(supplierPriceUsd, rate, pricing);
 
     const platform = inferPlatform(p.categoryName || "", p.name);
