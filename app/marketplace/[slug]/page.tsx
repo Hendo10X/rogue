@@ -81,7 +81,7 @@ export default async function ListingPage({
             </div>
             <div>
               <p className="text-muted-foreground text-sm">In stock</p>
-              <p className="font-medium">{listing.stock}</p>
+              <p className="font-medium">{Math.round(Number(listing.stock)).toLocaleString("en-US")}</p>
             </div>
           </div>
           <PurchaseButton

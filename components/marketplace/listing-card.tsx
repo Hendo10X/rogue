@@ -65,7 +65,7 @@ export function ListingCard({
           {format(parseFloat(price))}
         </span>
         <span className="text-muted-foreground text-xs">
-          {stock} in stock
+          {Math.round(Number(stock)).toLocaleString("en-US")} in stock
         </span>
         <Button size="sm" className="rounded-full" onClick={onViewClick}>
           View

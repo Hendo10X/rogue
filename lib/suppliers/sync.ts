@@ -118,7 +118,7 @@ export async function syncListingsForSupplier(supplierId: string) {
       supplierPrice: String(supplierPriceUsd),
       price: String(Math.round(ourPriceNgn)),
       currency: "NGN",
-      stock: p.amount ?? 0,
+      stock: Math.max(0, Math.trunc(Number(p.amount) || 0)),
       status: "active" as const,
       metadata: { min: p.min, max: p.max },
     };

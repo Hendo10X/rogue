@@ -76,7 +76,7 @@ const Navbar = ({
     { title: "Services", url: "#features" },
     { title: "How it works", url: "#how-it-works" },
     { title: "API", url: "/docs/api" },
-    { title: "Game assets", url: "https://www.roguearena.gg" },
+    { title: "Game coins", url: "https://www.roguearena.gg" },
     { title: "Foreign numbers", url: "https://www.roguearena.gg" },
   ],
   auth = {
