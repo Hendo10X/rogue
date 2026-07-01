@@ -10,6 +10,11 @@ bot). Follow it literally.
 - **Currency:** All money values are in Nigerian Naira (NGN) unless stated.
 - **Versioning:** All endpoints live under `/api/v1`.
 
+> **Scope:** This API is for **SMM / social-media boosting services only**
+> (followers, likes, views, etc.). It does **not** sell marketplace "logs"
+> (social media accounts). Buying accounts/logs is only available through the
+> Rogue Socials website, not the API.
+
 ---
 
 ## 1. Authentication
