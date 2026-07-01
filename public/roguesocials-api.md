@@ -10,10 +10,12 @@ bot). Follow it literally.
 - **Currency:** All money values are in Nigerian Naira (NGN) unless stated.
 - **Versioning:** All endpoints live under `/api/v1`.
 
-> **Scope:** This API is for **SMM / social-media boosting services only**
-> (followers, likes, views, etc.). It does **not** sell marketplace "logs"
-> (social media accounts). Buying accounts/logs is only available through the
-> Rogue Socials website, not the API.
+> **Scope:** This API covers **two product types**:
+> 1. **SMM / boosting services** (followers, likes, views) — sections 3.1–3.5.
+> 2. **Logs** (social-media accounts) — section 6.
+>
+> Only **auto-fulfilled** logs are buyable via the API; logs that require manual
+> delivery can be viewed but not purchased programmatically.
 
 ---
 
@@ -281,14 +283,118 @@ add funds.
 
 ---
 
-## 5. Quick reference
+## 6. Logs (social-media accounts)
+
+Logs are pre-made accounts sold from stock. Prices are in NGN at your reseller
+rate (supplier cost + `markup_percent`), charged from the same wallet.
+
+### 6.1 List logs
+
+```
+GET /api/v1/logs
+```
+
+Returns in-stock, auto-fulfilled logs. Optional query params: `platform`,
+`category`, `search`, `page`, `limit` (max 100).
+
+```bash
+curl "https://roguesocials.com/api/v1/logs?platform=instagram" \
+  -H "Authorization: Bearer rogue_xxx"
+```
+
+**Response `200`:**
+
+```json
+{
+  "data": [
+    {
+      "slug": "listing-supplier-acctshop-1441",
+      "title": "Instagram account with posts (2015-2024)",
+      "description": "ID|PASS|MAIL|PASSMAIL",
+      "platform": "instagram",
+      "category": "Instagram Account with Posts",
+      "stock": 4269,
+      "price": "3800",
+      "currency": "NGN",
+      "markup_percent": 30
+    }
+  ],
+  "count": 1,
+  "pagination": { "page": 1, "limit": 50, "total": 1, "total_pages": 1 }
+}
+```
+
+Use `slug` to fetch details or buy.
+
+### 6.2 Get one log
+
+```
+GET /api/v1/logs/{slug}
+```
+
+Same fields as above plus `buyable` (boolean). A `buyable: false` log cannot be
+purchased via the API (manual delivery, inactive, or out of stock).
+
+### 6.3 Buy a log
+
+```
+POST /api/v1/logs/{slug}/buy
+Content-Type: application/json
+```
+
+**Body:**
+
+| Field | Type | Required | Description |
+| ----- | ---- | -------- | ----------- |
+| `quantity` | number | no | Defaults to 1. Capped at available stock (and 1000). |
+
+```bash
+curl -X POST "https://roguesocials.com/api/v1/logs/listing-supplier-acctshop-1441/buy" \
+  -H "Authorization: Bearer rogue_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "quantity": 1 }'
+```
+
+**Response `200` — credentials are delivered inline:**
+
+```json
+{
+  "data": {
+    "order_id": "9c2a...",
+    "status": "completed",
+    "charge": "3800.00",
+    "currency": "NGN",
+    "quantity": 1,
+    "credentials": [
+      "username:password:email:emailpassword"
+    ]
+  }
+}
+```
+
+Each entry in `credentials` is one delivered account. The exact colon-separated
+format depends on the log's `description` field (e.g.
+`ID|PASS|MAIL|PASSMAIL`).
+
+**Failure behaviour:**
+- Manual-delivery log → `400` ("cannot be bought via the API").
+- Not enough stock or wallet balance → `400`, nothing is charged.
+- Supplier fails to deliver → `502`, and your wallet is **refunded
+  automatically** (the order is marked `failed`). Do not retry blindly.
+
+---
+
+## 7. Quick reference
 
 | Method | Path | Purpose |
 | ------ | ---- | ------- |
-| GET | `/api/v1/services` | List services + reseller pricing |
-| POST | `/api/v1/orders` | Place an order (debits wallet) |
-| GET | `/api/v1/orders` | List your recent orders |
-| GET | `/api/v1/orders/{id}` | Live status of one order |
+| GET | `/api/v1/services` | List boosting services + reseller pricing |
+| POST | `/api/v1/orders` | Place a boosting order (debits wallet) |
+| GET | `/api/v1/orders` | List your recent boosting orders |
+| GET | `/api/v1/orders/{id}` | Live status of one boosting order |
 | GET | `/api/v1/balance` | Wallet balance |
+| GET | `/api/v1/logs` | List buyable accounts (logs) |
+| GET | `/api/v1/logs/{slug}` | Details for one log |
+| POST | `/api/v1/logs/{slug}/buy` | Buy a log, get credentials |
 
 Auth header (all requests): `Authorization: Bearer rogue_<key>`
