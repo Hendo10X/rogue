@@ -6,6 +6,7 @@ import {
   order,
   supplierOrder,
   accountDelivery,
+  user,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import {
@@ -173,6 +174,32 @@ export async function POST(
       .update(order)
       .set({ status: "completed", updatedAt: new Date() })
       .where(eq(order.id, orderId));
+
+    // Email the credentials as a backup copy (non-critical).
+    try {
+      const [usr] = await db
+        .select()
+        .from(user)
+        .where(eq(user.id, auth.userId))
+        .limit(1);
+      if (usr?.email) {
+        const { sendOrderDeliveryEmail } = await import("@/lib/email");
+        await sendOrderDeliveryEmail({
+          to: usr.email,
+          orderId,
+          platform: list.platform,
+          details: {
+            username: parts[0],
+            password: parts[1],
+            email: parts[2],
+            emailPassword: parts[3],
+            notes: credentials.join("\n"),
+          },
+        });
+      }
+    } catch {
+      /* non-critical */
+    }
 
     return NextResponse.json({
       data: {
