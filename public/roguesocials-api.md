@@ -382,6 +382,66 @@ format depends on the log's `description` field (e.g.
 - Supplier fails to deliver → `502`, and your wallet is **refunded
   automatically** (the order is marked `failed`). Do not retry blindly.
 
+> Credentials are also emailed to the account owner as a backup, and can be
+> re-fetched anytime via the endpoints below. Still, store the buy response.
+
+### 6.4 List your log orders
+
+```
+GET /api/v1/logs/orders
+```
+
+Returns your 100 most recent log (account) orders. Credentials are **not**
+included here — use 6.5 to fetch them.
+
+```json
+{
+  "data": [
+    {
+      "order_id": "9c2a...",
+      "slug": "listing-supplier-acctshop-1441",
+      "title": "Instagram account with posts (2015-2024)",
+      "platform": "instagram",
+      "quantity": 1,
+      "charge": "3800.00",
+      "currency": "NGN",
+      "status": "completed",
+      "created_at": "2026-06-30T12:00:00.000Z"
+    }
+  ]
+}
+```
+
+### 6.5 Get one log order (re-fetch credentials)
+
+```
+GET /api/v1/logs/orders/{order_id}
+```
+
+Returns the order plus its delivered credentials. Use the `order_id` from the
+buy response or from 6.4.
+
+```json
+{
+  "data": {
+    "order_id": "9c2a...",
+    "slug": "listing-supplier-acctshop-1441",
+    "title": "Instagram account with posts (2015-2024)",
+    "platform": "instagram",
+    "quantity": 1,
+    "charge": "3800.00",
+    "currency": "NGN",
+    "status": "completed",
+    "delivery_status": "delivered",
+    "credentials": ["username:password:email:emailpassword"],
+    "created_at": "2026-06-30T12:00:00.000Z"
+  }
+}
+```
+
+`credentials` is populated only when `delivery_status` is `"delivered"`;
+otherwise it is an empty array.
+
 ---
 
 ## 7. Quick reference
@@ -396,5 +456,7 @@ format depends on the log's `description` field (e.g.
 | GET | `/api/v1/logs` | List buyable accounts (logs) |
 | GET | `/api/v1/logs/{slug}` | Details for one log |
 | POST | `/api/v1/logs/{slug}/buy` | Buy a log, get credentials |
+| GET | `/api/v1/logs/orders` | List your log orders |
+| GET | `/api/v1/logs/orders/{order_id}` | Re-fetch a log order + credentials |
 
 Auth header (all requests): `Authorization: Bearer rogue_<key>`
