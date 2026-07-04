@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
 import { Navbar } from "@/components/navbar";
 import Footer from "@/components/Footer";
+
+export const metadata: Metadata = {
+  title: "Terms & Conditions",
+  description:
+    "Read the Rogue Socials terms and conditions covering purchases, delivery, refunds and acceptable use.",
+  alternates: { canonical: "/terms" },
+};
 
 export default function TermsPage() {
   return (
