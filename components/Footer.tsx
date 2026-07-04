@@ -8,6 +8,7 @@ import {
   TelegramIcon,
 } from "@hugeicons/core-free-icons";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LANDING_PAGES } from "@/lib/landing";
 
 const links = [
   { label: "Home", href: "/" },
@@ -62,6 +63,17 @@ export default function Footer() {
                 href={link.href}
                 className="text-white hover:opacity-80 text-sm transition-colors">
                 {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <nav className="flex flex-wrap gap-x-6 gap-y-2 border-t border-white/20 pt-6">
+            {LANDING_PAGES.map((p) => (
+              <Link
+                key={p.slug}
+                href={`/buy/${p.slug}`}
+                className="text-white/80 hover:text-white text-xs transition-colors">
+                {p.h1}
               </Link>
             ))}
           </nav>
