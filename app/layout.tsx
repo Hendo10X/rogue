@@ -1,10 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, DM_Sans } from "next/font/google";
 import "./globals.css";
 import Toaster from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { resolveCurrency } from "@/lib/detect-currency";
+import {
+  SITE_URL,
+  SITE_NAME,
+  SITE_DESCRIPTION,
+  SITE_KEYWORDS,
+  SITE_SOCIALS,
+} from "@/lib/site";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -19,9 +26,74 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Rogue",
-  description: "Rogue is a platform for buying and selling social media accounts.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Rogue Socials — Buy Social Media Accounts & SMM Services",
+    template: "%s | Rogue Socials",
+  },
+  description: SITE_DESCRIPTION,
+  keywords: SITE_KEYWORDS,
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "shopping",
+  alternates: { canonical: "/" },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: "Rogue Socials — Buy Social Media Accounts & SMM Services",
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Rogue Socials — Buy Social Media Accounts & SMM",
+    description:
+      "Aged & fresh social accounts plus affordable SMM boosting. Instant delivery, secure payments.",
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/Roguesocialsyellow.svg", type: "image/svg+xml" },
+    ],
+    apple: "/Roguesocialsyellow.svg",
+  },
 };
+
+export const viewport: Viewport = {
+  themeColor: "#E54D1B",
+};
+
+const structuredData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: SITE_NAME,
+    url: SITE_URL,
+    logo: `${SITE_URL}/Roguesocialsyellow.svg`,
+    description: SITE_DESCRIPTION,
+    sameAs: SITE_SOCIALS,
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    url: SITE_URL,
+  },
+];
 
 export default async function RootLayout({
   children,
@@ -45,6 +117,10 @@ export default async function RootLayout({
       <body
         className={`${dmSans.variable} ${geistMono.variable} antialiased`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
         <Providers>
           <CurrencyProvider initialCurrency={currency} rates={rates}>
             {children}

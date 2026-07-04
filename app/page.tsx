@@ -7,8 +7,19 @@ import FAQs from "@/components/FAQs";
 import Footer from "@/components/Footer";
 import { getSetting } from "@/lib/admin-auth";
 import { AnnouncementBanner } from "@/components/announcement-banner";
+import { FAQ_ITEMS } from "@/lib/faq";
 
 export const dynamic = "force-dynamic";
+
+const faqStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ_ITEMS.map((f) => ({
+    "@type": "Question",
+    name: f.question,
+    acceptedAnswer: { "@type": "Answer", text: f.answer },
+  })),
+};
 
 export default async function Home() {
   const announcementStr = await getSetting("site_announcement");
@@ -16,6 +27,10 @@ export default async function Home() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
+      />
       {announcement && announcement.active && (
         <AnnouncementBanner announcement={announcement} />
       )}
