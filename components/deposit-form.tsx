@@ -284,16 +284,18 @@ export function DepositForm() {
                 </div>
               </div>
               <p className="text-muted-foreground text-xs pt-1 border-t">
-                After payment, send your receipt to our support on{" "}
+                Pay the exact amount to the account above. Then tap the button
+                below to send your payment receipt to us on Telegram — we&apos;ll
+                credit your wallet manually.
+              </p>
+              <Button asChild className="w-full rounded-full">
                 <a
                   href="https://t.me/rogue4l"
                   target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline">
-                  Telegram
-                </a>{" "}
-                for manual crediting.
-              </p>
+                  rel="noopener noreferrer">
+                  I have paid — send receipt
+                </a>
+              </Button>
             </div>
           ) : (
             <>
