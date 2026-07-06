@@ -105,6 +105,7 @@ export async function syncListingsForSupplier(supplierId: string) {
     const platform = inferPlatform(p.categoryName || "", p.name);
 
     const slug = `listing-${supplierId}-${p.id}`;
+    const stockVal = Math.max(0, Math.trunc(Number(p.amount) || 0));
 
     const payload = {
       supplierId,
@@ -118,16 +119,18 @@ export async function syncListingsForSupplier(supplierId: string) {
       supplierPrice: String(supplierPriceUsd),
       price: String(Math.round(ourPriceNgn)),
       currency: "NGN",
-      stock: Math.max(0, Math.trunc(Number(p.amount) || 0)),
-      status: "active" as const,
+      stock: stockVal,
       metadata: { min: p.min, max: p.max },
     };
 
     if (existing) {
+      // Reactivate when restocked; if still out of stock, leave the current
+      // status alone so a manual "hide out-of-stock" survives the next sync.
       await db
         .update(listing)
         .set({
           ...payload,
+          ...(stockVal > 0 ? { status: "active" as const } : {}),
           updatedAt: new Date(),
         })
         .where(eq(listing.id, existing.id));
@@ -136,6 +139,7 @@ export async function syncListingsForSupplier(supplierId: string) {
       await db.insert(listing).values({
         id,
         ...payload,
+        status: stockVal > 0 ? "active" : "inactive",
       });
     }
     upserted++;

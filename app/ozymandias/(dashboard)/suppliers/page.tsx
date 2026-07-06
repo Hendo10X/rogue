@@ -40,6 +40,7 @@ export default function AdminSuppliersPage() {
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [hiding, setHiding] = useState(false);
 
   useEffect(() => {
     fetchSuppliers()
@@ -101,6 +102,34 @@ export default function AdminSuppliersPage() {
     }
   }
 
+  async function handleHideOutOfStock() {
+    if (
+      !window.confirm(
+        "Hide all out-of-stock products from the marketplace? Restocked items come back on the next sync.",
+      )
+    ) {
+      return;
+    }
+    setHiding(true);
+    try {
+      const res = await fetch("/api/admin/listings/deactivate-zero-stock", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to hide products");
+      const n = data.deactivated ?? 0;
+      toast.success(
+        n > 0
+          ? `Hid ${n} out-of-stock product${n === 1 ? "" : "s"}`
+          : "No out-of-stock products to hide",
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to hide products");
+    } finally {
+      setHiding(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -119,7 +148,7 @@ export default function AdminSuppliersPage() {
             variant="outline"
             size="sm"
             onClick={handleSeedSuppliers}
-            disabled={seeding || syncing}
+            disabled={seeding || syncing || hiding}
           >
             {seeding ? (
               <>
@@ -128,6 +157,21 @@ export default function AdminSuppliersPage() {
               </>
             ) : (
               "Seed Suppliers"
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleHideOutOfStock}
+            disabled={hiding || seeding || syncing}
+          >
+            {hiding ? (
+              <>
+                <Spinner className="mr-2 size-4" />
+                Hiding...
+              </>
+            ) : (
+              "Hide out-of-stock"
             )}
           </Button>
           <Button
