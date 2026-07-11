@@ -41,6 +41,7 @@ export default function AdminSuppliersPage() {
   const [seeding, setSeeding] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [hiding, setHiding] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSuppliers()
@@ -130,6 +131,41 @@ export default function AdminSuppliersPage() {
     }
   }
 
+  async function handleRemove(s: SupplierRow) {
+    if (
+      !window.confirm(
+        `Remove "${s.name}" from the web app?\n\n` +
+          `• Listings that were never sold will be permanently deleted.\n` +
+          `• Listings with order history are kept but hidden from the store (to preserve customer records).\n` +
+          `• The supplier is deleted if nothing references it, otherwise deactivated.\n\n` +
+          `This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    setRemovingId(s.id);
+    try {
+      const res = await fetch(`/api/admin/suppliers/${s.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Remove failed");
+      toast.success(
+        `${data.name}: ${data.supplierRemoved ? "supplier deleted" : "supplier deactivated"}, ` +
+          `${data.deletedListings} listing${data.deletedListings === 1 ? "" : "s"} deleted` +
+          (data.retainedListings > 0
+            ? `, ${data.retainedListings} kept for order history`
+            : ""),
+      );
+      const next = await fetchSuppliers();
+      setSuppliers(next);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Remove failed");
+    } finally {
+      setRemovingId(null);
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -199,12 +235,13 @@ export default function AdminSuppliersPage() {
               <TableHead>Slug</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Balance</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {suppliers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground py-8">
+                <TableCell colSpan={5} className="text-muted-foreground py-8">
                   No suppliers configured
                 </TableCell>
               </TableRow>
@@ -222,6 +259,26 @@ export default function AdminSuppliersPage() {
                       <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-red-600 dark:text-red-400">
                         Low — top up
                       </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {s.slug === "socially" ? null : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-600 dark:text-red-400"
+                        onClick={() => handleRemove(s)}
+                        disabled={removingId === s.id || seeding || syncing}
+                      >
+                        {removingId === s.id ? (
+                          <>
+                            <Spinner className="mr-2 size-4" />
+                            Removing...
+                          </>
+                        ) : (
+                          "Remove"
+                        )}
+                      </Button>
                     )}
                   </TableCell>
                 </TableRow>
@@ -257,6 +314,24 @@ export default function AdminSuppliersPage() {
                   </p>
                 </div>
               </div>
+              {s.slug !== "socially" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-red-600 dark:text-red-400"
+                  onClick={() => handleRemove(s)}
+                  disabled={removingId === s.id || seeding || syncing}
+                >
+                  {removingId === s.id ? (
+                    <>
+                      <Spinner className="mr-2 size-4" />
+                      Removing...
+                    </>
+                  ) : (
+                    "Remove"
+                  )}
+                </Button>
+              )}
             </div>
           ))
         )}
