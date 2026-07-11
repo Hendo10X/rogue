@@ -45,7 +45,7 @@ export async function DELETE(
     .select({ id: listing.id })
     .from(listing)
     .where(eq(listing.supplierId, id));
-  const listingIds = listings.map((l) => l.id);
+  const listingIds: string[] = listings.map((l: { id: string }) => l.id);
 
   let deletedListings = 0;
   let retainedListings = 0;
@@ -55,7 +55,9 @@ export async function DELETE(
       .selectDistinct({ listingId: order.listingId })
       .from(order)
       .where(inArray(order.listingId, listingIds));
-    const soldSet = new Set(sold.map((o) => o.listingId));
+    const soldSet = new Set(
+      sold.map((o: { listingId: string }) => o.listingId),
+    );
 
     const deletable = listingIds.filter((lid) => !soldSet.has(lid));
     const keep = listingIds.filter((lid) => soldSet.has(lid));
