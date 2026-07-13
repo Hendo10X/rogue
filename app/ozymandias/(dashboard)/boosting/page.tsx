@@ -166,16 +166,15 @@ export default function AdminBoostingPage() {
               <TableHeader>
                 <TableRow className="border-b">
                   <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Rate</TableHead>
+                  <TableHead>Service</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Show in store</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-muted-foreground py-8">
+                    <TableCell colSpan={4} className="text-muted-foreground py-8">
                       No services found
                     </TableCell>
                   </TableRow>
@@ -185,18 +184,19 @@ export default function AdminBoostingPage() {
                       <TableCell className="font-mono text-xs">
                         {r.service}
                       </TableCell>
-                      <TableCell className="max-w-sm truncate">
-                        {r.name}
-                        {r.isHidden && (
-                          <Badge variant="secondary" className="ml-2">
-                            Hidden
-                          </Badge>
+                      <TableCell className="max-w-md">
+                        <p className="truncate font-medium">{r.name}</p>
+                        <p className="text-muted-foreground truncate text-xs">
+                          {r.category}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        {r.isHidden ? (
+                          <Badge variant="secondary">Hidden</Badge>
+                        ) : (
+                          <Badge>Active</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-xs">
-                        {r.category}
-                      </TableCell>
-                      <TableCell>{r.rate}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           {togglingId === r.service && (
@@ -231,9 +231,13 @@ export default function AdminBoostingPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-medium">{r.name}</p>
-                    {r.isHidden && <Badge variant="secondary">Hidden</Badge>}
+                    {r.isHidden ? (
+                      <Badge variant="secondary">Hidden</Badge>
+                    ) : (
+                      <Badge>Active</Badge>
+                    )}
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <p className="text-muted-foreground text-xs">ID</p>
                       <p className="font-mono text-xs">{r.service}</p>
@@ -241,10 +245,6 @@ export default function AdminBoostingPage() {
                     <div>
                       <p className="text-muted-foreground text-xs">Category</p>
                       <p className="truncate text-xs">{r.category}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground text-xs">Rate</p>
-                      <p>{r.rate}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between border-t pt-3">

@@ -190,9 +190,8 @@ export default function AdminLogsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="border-b">
-                  <TableHead>Title</TableHead>
+                  <TableHead>Log</TableHead>
                   <TableHead>Platform</TableHead>
-                  <TableHead>Price</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Show in store</TableHead>
@@ -201,19 +200,22 @@ export default function AdminLogsPage() {
               <TableBody>
                 {items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-muted-foreground py-8">
+                    <TableCell colSpan={5} className="text-muted-foreground py-8">
                       No logs found
                     </TableCell>
                   </TableRow>
                 ) : (
                   items.map((r) => (
                     <TableRow key={r.id} className="border-b">
-                      <TableCell className="max-w-xs truncate">{r.title}</TableCell>
-                      <TableCell className="capitalize">{r.platform}</TableCell>
-                      <TableCell>
-                        {r.currency === "NGN" ? "₦" : ""}
-                        {Number(r.price).toLocaleString()}
+                      <TableCell className="max-w-md">
+                        <p className="truncate font-medium">{r.title}</p>
+                        {r.categoryName && (
+                          <p className="text-muted-foreground truncate text-xs">
+                            {r.categoryName}
+                          </p>
+                        )}
                       </TableCell>
+                      <TableCell className="capitalize">{r.platform}</TableCell>
                       <TableCell>{r.stock}</TableCell>
                       <TableCell>
                         {r.hidden ? (
@@ -263,17 +265,10 @@ export default function AdminLogsPage() {
                       <Badge variant="outline">Inactive</Badge>
                     )}
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <p className="text-muted-foreground text-xs">Platform</p>
                       <p className="capitalize">{r.platform}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground text-xs">Price</p>
-                      <p>
-                        {r.currency === "NGN" ? "₦" : ""}
-                        {Number(r.price).toLocaleString()}
-                      </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">Stock</p>
