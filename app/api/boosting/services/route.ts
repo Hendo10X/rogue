@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMarkupNaira } from "@/lib/admin-auth";
 import { fetchServices } from "@/lib/boosting/socially";
+import { getHiddenServiceIds } from "@/lib/boosting/hidden";
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,14 +12,21 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10)));
     const offset = (page - 1) * limit;
 
-    const [services, markupNaira] = await Promise.all([
+    const [services, markupNaira, hidden] = await Promise.all([
       fetchServices().catch(() => []),
       getMarkupNaira("boosting"),
+      getHiddenServiceIds(),
     ]);
 
-    const categories = Array.from(new Set(services.map((s) => s.category))).sort();
+    // Drop services the admin has switched off before anything else, so they
+    // never appear in the storefront list, categories, or pagination counts.
+    const visibleServices = services.filter((s) => !hidden.has(s.service));
 
-    let filteredServices = services.map((s) => {
+    const categories = Array.from(
+      new Set(visibleServices.map((s) => s.category)),
+    ).sort();
+
+    let filteredServices = visibleServices.map((s) => {
       // socially.ng returns rates already in NGN — no USD conversion needed
       const rateNgnPer1000 = (parseFloat(s.rate) || 0) + markupNaira;
       return {

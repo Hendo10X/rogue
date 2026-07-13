@@ -89,7 +89,7 @@ export async function syncListingsForSupplier(supplierId: string) {
   let upserted = 0;
   for (const p of products) {
     const [existing] = await db
-      .select({ id: listing.id })
+      .select({ id: listing.id, metadata: listing.metadata })
       .from(listing)
       .where(
         and(
@@ -124,13 +124,21 @@ export async function syncListingsForSupplier(supplierId: string) {
     };
 
     if (existing) {
+      const isHidden =
+        (existing.metadata as Record<string, unknown> | null)?.hidden === true;
       // Reactivate when restocked; if still out of stock, leave the current
       // status alone so a manual "hide out-of-stock" survives the next sync.
+      // A log the admin switched off (metadata.hidden) stays hidden regardless
+      // of stock, and we preserve that flag since payload.metadata would
+      // otherwise overwrite it.
       await db
         .update(listing)
         .set({
           ...payload,
-          ...(stockVal > 0 ? { status: "active" as const } : {}),
+          metadata: isHidden
+            ? { ...payload.metadata, hidden: true }
+            : payload.metadata,
+          ...(stockVal > 0 && !isHidden ? { status: "active" as const } : {}),
           updatedAt: new Date(),
         })
         .where(eq(listing.id, existing.id));

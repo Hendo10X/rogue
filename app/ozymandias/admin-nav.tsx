@@ -17,6 +17,8 @@ import { Separator } from "@/components/ui/separator";
 const links = [
   { href: "/ozymandias", label: "Overview" },
   { href: "/ozymandias/orders", label: "Orders" },
+  { href: "/ozymandias/logs", label: "Logs" },
+  { href: "/ozymandias/boosting", label: "Boosting" },
   { href: "/ozymandias/suppliers", label: "Suppliers" },
   { href: "/ozymandias/users", label: "Users" },
   { href: "/ozymandias/settings", label: "Settings" },
