@@ -308,7 +308,7 @@ curl "https://roguesocials.com/api/v1/logs?platform=instagram" \
 {
   "data": [
     {
-      "slug": "listing-supplier-storesm-2",
+      "slug": "listing-supplier-acctshop-1441",
       "title": "Instagram account with posts (2015-2024)",
       "description": "ID|PASS|MAIL|PASSMAIL",
       "platform": "instagram",
@@ -349,7 +349,7 @@ Content-Type: application/json
 | `quantity` | number | no | Defaults to 1. Capped at available stock (and 1000). |
 
 ```bash
-curl -X POST "https://roguesocials.com/api/v1/logs/listing-supplier-storesm-2/buy" \
+curl -X POST "https://roguesocials.com/api/v1/logs/listing-supplier-acctshop-1441/buy" \
   -H "Authorization: Bearer rogue_xxx" \
   -H "Content-Type: application/json" \
   -d '{ "quantity": 1 }'
@@ -399,7 +399,7 @@ included here — use 6.5 to fetch them.
   "data": [
     {
       "order_id": "9c2a...",
-      "slug": "listing-supplier-storesm-2",
+      "slug": "listing-supplier-acctshop-1441",
       "title": "Instagram account with posts (2015-2024)",
       "platform": "instagram",
       "quantity": 1,
@@ -425,7 +425,7 @@ buy response or from 6.4.
 {
   "data": {
     "order_id": "9c2a...",
-    "slug": "listing-supplier-storesm-2",
+    "slug": "listing-supplier-acctshop-1441",
     "title": "Instagram account with posts (2015-2024)",
     "platform": "instagram",
     "quantity": 1,

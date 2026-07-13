@@ -23,11 +23,11 @@ const SUPPLIERS = [
     apiKey: process.env.SUPPLIER_SHOPVIACLONE_API_KEY ?? "",
   },
   {
-    id: "supplier-storesm",
-    name: "StoreSM",
-    slug: "storesm",
-    apiUrl: "https://storesm.net",
-    apiKey: process.env.SUPPLIER_STORESM_API_KEY ?? "",
+    id: "supplier-acctshop",
+    name: "AcctShop",
+    slug: "acctshop",
+    apiUrl: "https://acctshop.com",
+    apiKey: process.env.SUPPLIER_ACCTSHOP_API_KEY ?? "",
   },
 ];
 

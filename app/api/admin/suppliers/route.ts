@@ -37,18 +37,18 @@ async function getShopViaCloneBalance(): Promise<number | null> {
   }
 }
 
-// StoreSM exposes the reseller balance via profile.php → data.money (plain USD).
-async function getStoreSmBalance(): Promise<number | null> {
-  const apiKey = process.env.SUPPLIER_STORESM_API_KEY?.trim();
+// AcctShop exposes the reseller balance via profile.php → data.money (USD).
+async function getAcctShopBalance(): Promise<number | null> {
+  const apiKey = process.env.SUPPLIER_ACCTSHOP_API_KEY?.trim();
   if (!apiKey) return null;
   try {
-    const url = `https://storesm.net/api/profile.php?api_key=${apiKey}`;
+    const url = `https://acctshop.com/api/profile.php?api_key=${apiKey}`;
     const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    // StoreSM reports money in plain USD (e.g. "5.00" = $5.00), no conversion.
+    // AcctShop reports money in cents (29.31 = $0.29), so convert to USD.
     const num = parseFloat(String(data?.data?.money ?? data?.money));
-    return Number.isFinite(num) ? num : null;
+    return Number.isFinite(num) ? num / 100 : null;
   } catch {
     return null;
   }
@@ -67,19 +67,19 @@ export async function GET() {
   const suppliers = await db.select().from(supplier).orderBy(supplier.name);
 
   // Fetch balances in parallel
-  const [sociallyBalance, svcBalance, storeSmBalance] = await Promise.all([
+  const [sociallyBalance, svcBalance, acctShopBalance] = await Promise.all([
     (async () => {
       if (!process.env.SOCIALLY_API_KEY?.trim()) return null;
       try { return await getSociallyBalance(); } catch { return { balance: "N/A", currency: "NGN" }; }
     })(),
     getShopViaCloneBalance(),
-    getStoreSmBalance(),
+    getAcctShopBalance(),
   ]);
 
   const rows = suppliers.map((s: any) => {
     let num: number | null = null;
     if (s.slug === "shopviaclone") num = svcBalance;
-    else if (s.slug === "storesm") num = storeSmBalance;
+    else if (s.slug === "acctshop") num = acctShopBalance;
     return {
       id: s.id,
       name: s.name,
