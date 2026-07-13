@@ -15,6 +15,7 @@ import {
   logTransaction,
 } from "@/lib/wallet";
 import * as socially from "@/lib/boosting/socially";
+import { getHiddenServiceIds } from "@/lib/boosting/hidden";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -72,6 +73,9 @@ export async function POST(req: NextRequest) {
   const services = await socially.fetchServices();
   const service = services.find((s) => s.service === serviceId);
   if (!service) return ApiErrors.notFound("Service not found");
+
+  const hiddenServices = await getHiddenServiceIds();
+  if (hiddenServices.has(serviceId)) return ApiErrors.notFound("Service not found");
 
   const min = parseInt(service.min, 10) || 1;
   const max = parseInt(service.max, 10) || 10000;

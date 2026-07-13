@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { getMarkupNaira } from "@/lib/admin-auth";
 import { getOrCreateWallet, debitWallet, creditWallet, logTransaction } from "@/lib/wallet";
 import * as socially from "@/lib/boosting/socially";
+import { getHiddenServiceIds } from "@/lib/boosting/hidden";
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({
@@ -37,6 +38,14 @@ export async function POST(req: NextRequest) {
   const service = services.find((s) => s.service === serviceId);
   if (!service) {
     return NextResponse.json({ error: "Service not found" }, { status: 404 });
+  }
+
+  const hiddenServices = await getHiddenServiceIds();
+  if (hiddenServices.has(serviceId)) {
+    return NextResponse.json(
+      { error: "This service is no longer available." },
+      { status: 404 },
+    );
   }
 
   const min = parseInt(service.min, 10) || 1;
