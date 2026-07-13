@@ -74,9 +74,9 @@ export async function syncListingsForSupplier(supplierId: string) {
     getUSDtoNGNRate(),
   ]);
 
-  // Both current suppliers (ShopViaClone, StoreSM) report prices in plain USD,
-  // so no scaling is needed to normalise to USD before pricing.
-  const priceScaleToUsd = 1;
+  // AcctShop's API reports prices in cents (e.g. 220 = $2.20); ShopViaClone
+  // reports plain USD. Normalise everything to USD before pricing.
+  const priceScaleToUsd = sup.slug === "acctshop" ? 0.01 : 1;
 
   const products: SupplierProduct[] = data.categories.flatMap((cat: any) =>
     cat.products.map((p: any) => ({
