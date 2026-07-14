@@ -50,6 +50,7 @@ export async function GET(req: NextRequest) {
     min: s.min,
     max: s.max,
     isHidden: hidden.has(s.service),
+    provider: "Socially",
   }));
 
   if (hiddenOnly) items = items.filter((s) => s.isHidden);

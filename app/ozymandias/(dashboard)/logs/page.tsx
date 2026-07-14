@@ -26,6 +26,7 @@ interface LogRow {
   stock: number;
   status: string;
   hidden: boolean;
+  source: string;
 }
 
 interface Pagination {
@@ -191,6 +192,7 @@ export default function AdminLogsPage() {
               <TableHeader>
                 <TableRow className="border-b">
                   <TableHead>Log</TableHead>
+                  <TableHead>API</TableHead>
                   <TableHead>Platform</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Status</TableHead>
@@ -200,7 +202,7 @@ export default function AdminLogsPage() {
               <TableBody>
                 {items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-muted-foreground py-8">
+                    <TableCell colSpan={6} className="text-muted-foreground py-8">
                       No logs found
                     </TableCell>
                   </TableRow>
@@ -214,6 +216,9 @@ export default function AdminLogsPage() {
                             {r.categoryName}
                           </p>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{r.source}</Badge>
                       </TableCell>
                       <TableCell className="capitalize">{r.platform}</TableCell>
                       <TableCell>{r.stock}</TableCell>
@@ -265,7 +270,11 @@ export default function AdminLogsPage() {
                       <Badge variant="outline">Inactive</Badge>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div>
+                      <p className="text-muted-foreground text-xs">API</p>
+                      <p className="truncate text-xs">{r.source}</p>
+                    </div>
                     <div>
                       <p className="text-muted-foreground text-xs">Platform</p>
                       <p className="capitalize">{r.platform}</p>

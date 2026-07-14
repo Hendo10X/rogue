@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import { cookies } from "next/headers";
 import { db } from "@/db/drizzle";
-import { listing } from "@/db/schema";
+import { listing, supplier } from "@/db/schema";
 import { and, desc, eq, ilike, sql } from "drizzle-orm";
 import { verifyAdminSession } from "@/lib/admin-auth";
 
@@ -55,8 +55,10 @@ export async function GET(req: NextRequest) {
         stock: listing.stock,
         status: listing.status,
         metadata: listing.metadata,
+        supplierName: supplier.name,
       })
       .from(listing)
+      .leftJoin(supplier, eq(listing.supplierId, supplier.id))
       .where(whereExpr)
       .orderBy(desc(listing.updatedAt))
       .limit(limit)
@@ -79,6 +81,7 @@ export async function GET(req: NextRequest) {
       stock: number;
       status: string;
       metadata: Record<string, unknown> | null;
+      supplierName: string | null;
     }) => ({
       id: r.id,
       title: r.title,
@@ -89,6 +92,7 @@ export async function GET(req: NextRequest) {
       stock: r.stock,
       status: r.status,
       hidden: r.metadata?.hidden === true,
+      source: r.supplierName ?? "Unknown",
     }),
   );
 

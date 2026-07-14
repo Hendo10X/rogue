@@ -24,6 +24,7 @@ interface ServiceRow {
   min: string;
   max: string;
   isHidden: boolean;
+  provider: string;
 }
 
 interface Pagination {
@@ -167,6 +168,7 @@ export default function AdminBoostingPage() {
                 <TableRow className="border-b">
                   <TableHead>ID</TableHead>
                   <TableHead>Service</TableHead>
+                  <TableHead>API</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Show in store</TableHead>
                 </TableRow>
@@ -174,7 +176,7 @@ export default function AdminBoostingPage() {
               <TableBody>
                 {items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-muted-foreground py-8">
+                    <TableCell colSpan={5} className="text-muted-foreground py-8">
                       No services found
                     </TableCell>
                   </TableRow>
@@ -189,6 +191,9 @@ export default function AdminBoostingPage() {
                         <p className="text-muted-foreground truncate text-xs">
                           {r.category}
                         </p>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{r.provider}</Badge>
                       </TableCell>
                       <TableCell>
                         {r.isHidden ? (
@@ -237,10 +242,14 @@ export default function AdminBoostingPage() {
                       <Badge>Active</Badge>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="grid grid-cols-3 gap-2 text-sm">
                     <div>
                       <p className="text-muted-foreground text-xs">ID</p>
                       <p className="font-mono text-xs">{r.service}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">API</p>
+                      <p className="truncate text-xs">{r.provider}</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground text-xs">Category</p>
