@@ -14,6 +14,9 @@ export async function autoSyncIfStale() {
   try {
     const suppliers = await db.select().from(supplier);
     for (const sup of suppliers) {
+      // A supplier switched off in the admin panel stays off: re-syncing it
+      // would put its listings back on the storefront.
+      if (sup.status !== "active") continue;
       if (!sup.apiUrl || !sup.apiKey) continue;
       try {
         await syncListingsForSupplier(sup.id);

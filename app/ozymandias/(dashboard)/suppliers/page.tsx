@@ -32,7 +32,9 @@ interface SyncResult {
   supplierId: string;
   upserted: number;
   total: number;
+  deactivated?: number;
   error?: string;
+  skipped?: string;
 }
 
 export default function AdminSuppliersPage() {
@@ -42,6 +44,7 @@ export default function AdminSuppliersPage() {
   const [syncing, setSyncing] = useState(false);
   const [hiding, setHiding] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSuppliers()
@@ -81,16 +84,28 @@ export default function AdminSuppliersPage() {
       const results: SyncResult[] = Array.isArray(data.results) ? data.results : [];
       const totalUpserted = results.reduce((sum, r) => sum + (r.upserted ?? 0), 0);
       const failed = results.filter((r) => r.error);
+      const skipped = results.filter((r) => r.skipped);
+      const totalDeactivated = results.reduce(
+        (sum, r) => sum + (r.deactivated ?? 0),
+        0,
+      );
+      const suffix =
+        (totalDeactivated > 0
+          ? `; ${totalDeactivated} delisted product${totalDeactivated === 1 ? "" : "s"} hidden`
+          : "") +
+        (skipped.length > 0
+          ? `; skipped ${skipped.map((r) => r.supplierId).join(", ")} (inactive)`
+          : "");
 
       if (failed.length > 0) {
         toast.warning(
-          `Synced ${totalUpserted} listing${totalUpserted === 1 ? "" : "s"}; ${failed.length} supplier${failed.length === 1 ? "" : "s"} failed: ${failed
+          `Synced ${totalUpserted} listing${totalUpserted === 1 ? "" : "s"}${suffix}; ${failed.length} supplier${failed.length === 1 ? "" : "s"} failed: ${failed
             .map((r) => `${r.supplierId} (${r.error})`)
             .join(", ")}`
         );
       } else {
         toast.success(
-          `Re-synced ${totalUpserted} listing${totalUpserted === 1 ? "" : "s"} from ${results.length} supplier${results.length === 1 ? "" : "s"}`
+          `Re-synced ${totalUpserted} listing${totalUpserted === 1 ? "" : "s"} from ${results.length - skipped.length} supplier${results.length - skipped.length === 1 ? "" : "s"}${suffix}`
         );
       }
 
@@ -128,6 +143,43 @@ export default function AdminSuppliersPage() {
       toast.error(e instanceof Error ? e.message : "Failed to hide products");
     } finally {
       setHiding(false);
+    }
+  }
+
+  async function handleDeactivateListings(s: SupplierRow) {
+    if (
+      !window.confirm(
+        `Take all of "${s.name}" listings off the storefront?\n\n` +
+          `• Nothing is deleted — the listings are only hidden.\n` +
+          `• The supplier is marked inactive, so a re-sync won't bring them back.\n` +
+          `• Reversible: re-seed the supplier and re-sync to restore them.\n\n` +
+          `Use this for a supplier that is no longer connected, whose orders would otherwise fail into manual review.`,
+      )
+    ) {
+      return;
+    }
+    setDeactivatingId(s.id);
+    try {
+      const res = await fetch(
+        `/api/admin/suppliers/${s.id}/deactivate-listings`,
+        { method: "POST" },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to deactivate listings");
+      const n = data.deactivated ?? 0;
+      toast.success(
+        n > 0
+          ? `${data.name}: ${n} listing${n === 1 ? "" : "s"} hidden, supplier deactivated`
+          : `${data.name}: no active listings, supplier deactivated`,
+      );
+      const next = await fetchSuppliers();
+      setSuppliers(next);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to deactivate listings",
+      );
+    } finally {
+      setDeactivatingId(null);
     }
   }
 
@@ -263,22 +315,49 @@ export default function AdminSuppliersPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     {s.slug === "socially" ? null : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-600 dark:text-red-400"
-                        onClick={() => handleRemove(s)}
-                        disabled={removingId === s.id || seeding || syncing}
-                      >
-                        {removingId === s.id ? (
-                          <>
-                            <Spinner className="mr-2 size-4" />
-                            Removing...
-                          </>
-                        ) : (
-                          "Remove"
-                        )}
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeactivateListings(s)}
+                          disabled={
+                            deactivatingId === s.id ||
+                            removingId === s.id ||
+                            seeding ||
+                            syncing
+                          }
+                        >
+                          {deactivatingId === s.id ? (
+                            <>
+                              <Spinner className="mr-2 size-4" />
+                              Hiding...
+                            </>
+                          ) : (
+                            "Deactivate listings"
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-600 dark:text-red-400"
+                          onClick={() => handleRemove(s)}
+                          disabled={
+                            removingId === s.id ||
+                            deactivatingId === s.id ||
+                            seeding ||
+                            syncing
+                          }
+                        >
+                          {removingId === s.id ? (
+                            <>
+                              <Spinner className="mr-2 size-4" />
+                              Removing...
+                            </>
+                          ) : (
+                            "Remove"
+                          )}
+                        </Button>
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>
@@ -315,22 +394,50 @@ export default function AdminSuppliersPage() {
                 </div>
               </div>
               {s.slug !== "socially" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-red-600 dark:text-red-400"
-                  onClick={() => handleRemove(s)}
-                  disabled={removingId === s.id || seeding || syncing}
-                >
-                  {removingId === s.id ? (
-                    <>
-                      <Spinner className="mr-2 size-4" />
-                      Removing...
-                    </>
-                  ) : (
-                    "Remove"
-                  )}
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => handleDeactivateListings(s)}
+                    disabled={
+                      deactivatingId === s.id ||
+                      removingId === s.id ||
+                      seeding ||
+                      syncing
+                    }
+                  >
+                    {deactivatingId === s.id ? (
+                      <>
+                        <Spinner className="mr-2 size-4" />
+                        Hiding...
+                      </>
+                    ) : (
+                      "Deactivate listings"
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-red-600 dark:text-red-400"
+                    onClick={() => handleRemove(s)}
+                    disabled={
+                      removingId === s.id ||
+                      deactivatingId === s.id ||
+                      seeding ||
+                      syncing
+                    }
+                  >
+                    {removingId === s.id ? (
+                      <>
+                        <Spinner className="mr-2 size-4" />
+                        Removing...
+                      </>
+                    ) : (
+                      "Remove"
+                    )}
+                  </Button>
+                </div>
               )}
             </div>
           ))
