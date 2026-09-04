@@ -70,6 +70,7 @@ export async function POST() {
     supplierId: string;
     upserted: number;
     total: number;
+    deactivated: number;
     error?: string;
   }[] = [];
 
@@ -80,6 +81,7 @@ export async function POST() {
           supplierId: sup.id,
           upserted: 0,
           total: 0,
+          deactivated: 0,
           error: "Missing apiUrl or apiKey",
         });
         continue;
@@ -91,6 +93,7 @@ export async function POST() {
         supplierId: sup.id,
         upserted: 0,
         total: 0,
+        deactivated: 0,
         error: e instanceof Error ? e.message : "Sync failed",
       });
     }

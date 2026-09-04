@@ -13,7 +13,12 @@ import {
   user,
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { getOrCreateWallet, debitWallet } from "@/lib/wallet";
+import {
+  getOrCreateWallet,
+  debitWallet,
+  creditWallet,
+  logTransaction,
+} from "@/lib/wallet";
 import { getUSDtoNGNRate } from "@/lib/currency";
 import { getMarketplacePricing, computeMarketplacePriceNgn } from "@/lib/pricing";
 import { purchaseFromSupplier } from "@/lib/suppliers/adapter";
@@ -307,27 +312,62 @@ export async function POST(req: NextRequest) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error(`[PurchaseAPI] Supplier failure for order ${orderId}:`, errMsg);
 
-    // Update order to manual_review status instead of failing it entirely
-    // This allows the admin to fulfill it manually or refund it later.
-    await db.update(order).set({ 
-      status: "manual_review", 
-      updatedAt: new Date(),
-      metadata: { 
-        ...((body.coupon ? { coupon: body.coupon } : {})),
-        error: errMsg,
-        pending_fulfillment: true 
-      }
-    }).where(eq(order.id, orderId));
-    
-    await db.insert(accountDelivery).values({
-      id: crypto.randomUUID(),
-      orderId,
-      platform: list.platform,
-      deliveryStatus: "pending", // Set to pending for manual check
-      notes: `Automatic fulfillment failed: ${errMsg}`,
-    });
+    // Automatic delivery failed, so refund and close the order out. This
+    // mirrors the public API path (app/api/v1/logs/[slug]/buy) so a customer is
+    // never left charged for something we could not deliver.
+    //
+    // Deliberately NOT manual_review on success: that status keeps a "Fulfil"
+    // action in the admin panel, and fulfilling an order we have already
+    // refunded would hand out the account for free. Listings that are genuinely
+    // manual-delivery take the isManual branch far above and are unaffected.
+    let refunded = false;
+    try {
+      await creditWallet(walletRow.id, totalAmount, "NGN");
+      await logTransaction({
+        walletId: walletRow.id,
+        type: "refund",
+        amount: totalAmount,
+        currency: "NGN",
+        status: "completed",
+        orderId,
+        metadata: { reason: "marketplace_purchase_failed", error: errMsg },
+      });
+      refunded = true;
+    } catch (refundErr) {
+      // The debit stood but the credit did not — a human has to settle this.
+      console.error(
+        `[PurchaseAPI] REFUND FAILED for order ${orderId}:`,
+        refundErr
+      );
+    }
 
-    // Notify admin about manual review order
+    await db
+      .update(order)
+      .set({
+        status: refunded ? "failed" : "manual_review",
+        updatedAt: new Date(),
+        metadata: {
+          ...(body.coupon ? { coupon: body.coupon } : {}),
+          error: errMsg,
+          refunded,
+          ...(refunded ? {} : { pending_fulfillment: true }),
+        },
+      })
+      .where(eq(order.id, orderId));
+
+    // Only queue a delivery record when the refund failed: that is the one case
+    // still needing a human. A refunded order has nothing left to deliver, and
+    // the admin fulfil route creates this row on demand anyway.
+    if (!refunded) {
+      await db.insert(accountDelivery).values({
+        id: crypto.randomUUID(),
+        orderId,
+        platform: list.platform,
+        deliveryStatus: "pending",
+        notes: `Automatic fulfillment failed: ${errMsg} — REFUND ALSO FAILED, customer is still charged.`,
+      });
+    }
+
     try {
       const [usr] = await db.select().from(user).where(eq(user.id, session.user.id)).limit(1);
       if (usr?.email) {
@@ -340,15 +380,23 @@ export async function POST(req: NextRequest) {
           amount: totalAmount,
           currency: "NGN",
           platform: list.platform,
-          status: "manual_review — needs fulfillment",
+          status: refunded
+            ? "failed — customer refunded automatically"
+            : "manual_review — REFUND FAILED, customer still charged",
         });
       }
     } catch { /* non-critical */ }
 
-    return NextResponse.json({
-      message: `Order placed, but automatic delivery failed: ${errMsg}. Our team is fulfilling it manually now.`,
-      orderId,
-      status: "manual_review",
-    });
+    return NextResponse.json(
+      {
+        error: refunded
+          ? `Automatic delivery failed, so your wallet has been refunded in full. (${errMsg})`
+          : `Automatic delivery failed. (${errMsg}) Our team has been notified and will sort your order out.`,
+        orderId,
+        status: refunded ? "failed" : "manual_review",
+        refunded,
+      },
+      { status: 502 }
+    );
   }
 }

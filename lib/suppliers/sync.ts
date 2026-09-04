@@ -1,6 +1,6 @@
 import { db } from "@/db/drizzle";
 import { supplier, listing } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, notInArray } from "drizzle-orm";
 import { fetchSupplierProducts } from "./adapter";
 import { getUSDtoNGNRate } from "../currency";
 import { getMarketplacePricing, computeMarketplacePriceNgn } from "../pricing";
@@ -153,5 +153,29 @@ export async function syncListingsForSupplier(supplierId: string) {
     upserted++;
   }
 
-  return { upserted, total: products.length };
+  // Products the supplier has delisted never come back through the loop above,
+  // so their listings would keep their last-known stock and stay active for
+  // ever — and every purchase of one fails at the supplier with "product does
+  // not exist", which lands the order in manual_review. Sweep them out here.
+  //
+  // Guarded on a non-empty feed: a supplier that answers 200 with zero products
+  // (a glitch on their side) must not be able to empty the whole storefront.
+  const feedProductIds = products.map((p) => p.id);
+  let deactivated = 0;
+  if (feedProductIds.length > 0) {
+    const removed = await db
+      .update(listing)
+      .set({ status: "inactive", stock: 0, updatedAt: new Date() })
+      .where(
+        and(
+          eq(listing.supplierId, supplierId),
+          eq(listing.status, "active"),
+          notInArray(listing.externalProductId, feedProductIds)
+        )
+      )
+      .returning({ id: listing.id });
+    deactivated = removed.length;
+  }
+
+  return { upserted, total: products.length, deactivated };
 }

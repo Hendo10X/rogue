@@ -17,19 +17,24 @@ async function requireAdmin() {
 // USD balance below this is flagged "low" in the admin panel.
 const LOW_USD_THRESHOLD = 10;
 
+// ShopViaClone runs the same clone script as AcctShop: the reseller balance
+// comes from profile.php → data.money. (balance.php does not exist — it 404s,
+// which silently showed "N/A" in the admin panel.) Unlike AcctShop,
+// ShopViaClone reports plain USD rather than cents — same split as the product
+// prices handled in lib/suppliers/sync.ts.
 async function getShopViaCloneBalance(): Promise<number | null> {
   const apiKey = process.env.SUPPLIER_SHOPVIACLONE_API_KEY?.trim();
   if (!apiKey) return null;
   try {
-    const url = `https://shopviaclone22.com/api/balance.php?api_key=${apiKey}`;
+    const url = `https://shopviaclone22.com/api/profile.php?api_key=${apiKey}`;
     const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const balance =
+      data?.data?.money ??
+      data?.money ??
       data?.balance ??
-      data?.data?.balance ??
-      data?.wallet ??
-      data?.wallet_balance;
+      data?.data?.balance;
     const num = parseFloat(String(balance));
     return Number.isFinite(num) ? num : null;
   } catch {
