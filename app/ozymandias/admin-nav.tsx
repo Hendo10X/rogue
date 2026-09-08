@@ -20,6 +20,7 @@ const links = [
   { href: "/ozymandias/logs", label: "Logs" },
   { href: "/ozymandias/boosting", label: "Boosting" },
   { href: "/ozymandias/suppliers", label: "Suppliers" },
+  { href: "/ozymandias/api-analytics", label: "API Analytics" },
   { href: "/ozymandias/users", label: "Users" },
   { href: "/ozymandias/settings", label: "Settings" },
   { href: "/ozymandias/change-password", label: "Change Password" },

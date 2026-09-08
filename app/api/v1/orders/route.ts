@@ -147,6 +147,8 @@ export async function POST(req: NextRequest) {
       currency: "NGN",
       externalOrderId,
       provider: "api",
+      apiKeyId: auth.keyId,
+      appliedMarkupPercent: String(apiMarkup),
       status: "processing",
       externalStatus: "In progress",
     });

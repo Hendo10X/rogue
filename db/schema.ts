@@ -183,6 +183,14 @@ export const order = pgTable(
     walletId: text("wallet_id").references(() => wallet.id, {
       onDelete: "set null",
     }),
+    // Which public-API key placed this order (null for orders made on the
+    // website). Lets admins attribute API purchases to a specific reseller.
+    apiKeyId: text("api_key_id").references(() => apiKey.id, {
+      onDelete: "set null",
+    }),
+    // The API reseller markup % actually charged at purchase time. Recorded so
+    // admins can confirm a markup change took effect on real orders.
+    appliedMarkupPercent: numeric("applied_markup_percent"),
     metadata: jsonb("metadata").$type<Record<string, unknown>>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
@@ -194,6 +202,7 @@ export const order = pgTable(
     index("order_user_idx").on(table.userId),
     index("order_status_idx").on(table.status),
     index("order_created_idx").on(table.createdAt),
+    index("order_api_key_idx").on(table.apiKeyId),
   ],
 );
 
@@ -326,6 +335,12 @@ export const boostingOrder = pgTable(
     charge: numeric("charge"),
     startCount: text("start_count"),
     remains: text("remains"),
+    // Which public-API key placed this order (null for website orders).
+    apiKeyId: text("api_key_id").references(() => apiKey.id, {
+      onDelete: "set null",
+    }),
+    // API reseller markup % actually charged at purchase time.
+    appliedMarkupPercent: numeric("applied_markup_percent"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -336,6 +351,7 @@ export const boostingOrder = pgTable(
     index("boosting_order_user_idx").on(table.userId),
     index("boosting_order_status_idx").on(table.status),
     index("boosting_order_external_idx").on(table.externalOrderId),
+    index("boosting_order_api_key_idx").on(table.apiKeyId),
   ],
 );
 
