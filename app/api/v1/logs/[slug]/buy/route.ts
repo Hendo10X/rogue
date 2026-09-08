@@ -120,6 +120,8 @@ export async function POST(
     currency: "NGN",
     quantity,
     walletId: walletRow.id,
+    apiKeyId: auth.keyId,
+    appliedMarkupPercent: String(apiMarkup),
     metadata: { via: "api" },
   });
 
