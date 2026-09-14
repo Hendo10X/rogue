@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
 import { supplier } from "@/db/schema";
 import { syncListingsForSupplier } from "@/lib/suppliers/sync";
+import { checkSupplierBalances } from "@/lib/suppliers/balance-alert";
 
 export const dynamic = "force-dynamic";
 // A full catalogue resync across suppliers can touch a few hundred rows.
@@ -68,9 +69,14 @@ export async function GET(req: Request) {
     }
   }
 
+  // Proactive low-balance check: read each supplier's remaining balance and
+  // alert the admin (Telegram) if any is below the configured threshold, so
+  // the account gets topped up BEFORE orders start failing.
+  const balances = await checkSupplierBalances();
+
   const anyFailed = results.some((r) => !r.ok);
   return NextResponse.json(
-    { results, syncedAt: new Date().toISOString() },
+    { results, balances, syncedAt: new Date().toISOString() },
     // 207 (still 2xx, so schedulers don't flag it) when a supplier failed.
     { status: anyFailed ? 207 : 200 },
   );

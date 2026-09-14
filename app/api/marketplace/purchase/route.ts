@@ -22,6 +22,10 @@ import {
 import { getUSDtoNGNRate } from "@/lib/currency";
 import { getMarketplacePricing, computeMarketplacePriceNgn } from "@/lib/pricing";
 import { purchaseFromSupplier } from "@/lib/suppliers/adapter";
+import {
+  alertSupplierInsufficientBalance,
+  isInsufficientBalanceError,
+} from "@/lib/suppliers/balance-alert";
 
 export const maxDuration = 60; // Allow enough time for supplier API and Email
 
@@ -311,6 +315,14 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error(`[PurchaseAPI] Supplier failure for order ${orderId}:`, errMsg);
+    // Supplier balance exhausted => every order fails until topped up. Alert now.
+    if (isInsufficientBalanceError(errMsg)) {
+      await alertSupplierInsufficientBalance({
+        supplierId: sup.id,
+        supplierName: sup.name,
+        detail: errMsg,
+      });
+    }
 
     // Automatic delivery failed, so refund and close the order out. This
     // mirrors the public API path (app/api/v1/logs/[slug]/buy) so a customer is

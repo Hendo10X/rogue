@@ -29,6 +29,7 @@ export async function GET() {
     mpPercent,
     mpPriceCap,
     apiMarkup,
+    lowBalance,
   ] = await Promise.all([
     getSetting("markup_naira_marketplace"),
     getSetting("markup_naira_boosting"),
@@ -40,6 +41,7 @@ export async function GET() {
     getSetting("mp_percent"),
     getSetting("mp_price_cap_naira"),
     getSetting("api_markup_percent"),
+    getSetting("supplier_low_balance_threshold"),
   ]);
 
   const numOr = (v: string | null, d: number) => {
@@ -60,6 +62,7 @@ export async function GET() {
       priceCapNaira: numOr(mpPriceCap, MARKETPLACE_PRICING_DEFAULTS.priceCapNaira),
     },
     apiMarkupPercent: numOr(apiMarkup, 30),
+    supplierLowBalanceThreshold: numOr(lowBalance, 30000),
   });
 }
 
@@ -91,6 +94,7 @@ export async function POST(req: NextRequest) {
       priceCapNaira?: number;
     };
     apiMarkupPercent?: number;
+    supplierLowBalanceThreshold?: number;
   };
   try {
     body = await req.json();
@@ -140,6 +144,16 @@ export async function POST(req: NextRequest) {
     body.apiMarkupPercent <= 1000
   ) {
     await setSetting("api_markup_percent", String(body.apiMarkupPercent));
+  }
+
+  if (
+    typeof body.supplierLowBalanceThreshold === "number" &&
+    body.supplierLowBalanceThreshold >= 0
+  ) {
+    await setSetting(
+      "supplier_low_balance_threshold",
+      String(body.supplierLowBalanceThreshold),
+    );
   }
 
   if (typeof body.actionPin === "string") {
