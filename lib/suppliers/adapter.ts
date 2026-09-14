@@ -81,7 +81,8 @@ export async function fetchSupplierBalance(
 
   // Shapes vary between clones: { balance }, { data: { balance } },
   // { user: { money } } ... so look in the usual places for the usual names.
-  const containers = [json, (json as any)?.data, (json as any)?.user, (json as any)?.profile];
+  const root = json && typeof json === "object" ? (json as Record<string, unknown>) : null;
+  const containers: unknown[] = [root, root?.data, root?.user, root?.profile];
   for (const c of containers) {
     if (!c || typeof c !== "object") continue;
     for (const key of ["balance", "money", "wallet", "credit", "amount"]) {
