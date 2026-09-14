@@ -316,7 +316,7 @@ export async function POST(req: NextRequest) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error(`[PurchaseAPI] Supplier failure for order ${orderId}:`, errMsg);
     // Supplier balance exhausted => every order fails until topped up. Alert now.
-    if (isInsufficientBalanceError(errMsg)) {
+    if (sup && isInsufficientBalanceError(errMsg)) {
       await alertSupplierInsufficientBalance({
         supplierId: sup.id,
         supplierName: sup.name,
