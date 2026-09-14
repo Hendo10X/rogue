@@ -23,6 +23,7 @@ export async function GET(
       currency: order.currency,
       quantity: order.quantity,
       createdAt: order.createdAt,
+      metadata: order.metadata,
       slug: listing.slug,
       title: listing.title,
       platform: listing.platform,
@@ -56,6 +57,11 @@ export async function GET(
       currency: row.currency,
       status: row.status,
       delivery_status: delivery?.deliveryStatus ?? "pending",
+      // Why a failed order failed (supplier's message), else null.
+      error:
+        row.status === "failed"
+          ? ((row.metadata as { error?: string } | null)?.error ?? null)
+          : null,
       credentials,
       created_at: row.createdAt,
     },
