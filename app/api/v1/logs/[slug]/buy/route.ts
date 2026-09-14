@@ -215,6 +215,7 @@ export async function POST(
     });
   } catch (e) {
     // API buyers can't wait on manual review — refund and fail cleanly.
+    const msg = e instanceof Error ? e.message : "Supplier failed";
     try {
       await creditWallet(walletRow.id, totalAmount, "NGN");
       await logTransaction({
@@ -225,14 +226,27 @@ export async function POST(
         status: "completed",
         metadata: { reason: "api_log_purchase_failed", orderId },
       });
+      // Record WHY the supplier rejected it. Previously the message was only
+      // sent back in this response and then lost, so a run of failures left
+      // nothing to diagnose from (balance exhausted vs. out of stock, etc.).
+      await db.insert(supplierOrder).values({
+        id: crypto.randomUUID(),
+        orderId,
+        supplierId: sup.id,
+        status: "failed",
+        errorMessage: msg,
+      });
       await db
         .update(order)
-        .set({ status: "failed", updatedAt: new Date() })
+        .set({
+          status: "failed",
+          metadata: { via: "api", error: msg },
+          updatedAt: new Date(),
+        })
         .where(eq(order.id, orderId));
     } catch {
       /* best effort */
     }
-    const msg = e instanceof Error ? e.message : "Supplier failed";
     return err502(`Order failed and your wallet was refunded. (${msg})`);
   }
 }

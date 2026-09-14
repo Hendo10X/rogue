@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
       currency: order.currency,
       quantity: order.quantity,
       createdAt: order.createdAt,
+      metadata: order.metadata,
       slug: listing.slug,
       title: listing.title,
       platform: listing.platform,
@@ -39,6 +40,8 @@ export async function GET(req: NextRequest) {
       charge: o.amount,
       currency: o.currency,
       status: o.status,
+      // Why a failed order failed (supplier's message), else null.
+      error: o.status === "failed" ? (o.metadata?.error ?? null) : null,
       created_at: o.createdAt,
     })),
   });
