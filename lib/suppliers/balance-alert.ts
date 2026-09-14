@@ -3,6 +3,7 @@ import { supplier } from "@/db/schema";
 import { getSetting, setSetting } from "@/lib/admin-auth";
 import { sendTelegramMessage, escapeHtml } from "@/lib/telegram";
 import { fetchSupplierBalance } from "./adapter";
+import { getUSDtoNGNRate } from "@/lib/currency";
 
 /**
  * Supplier low-balance alerting.
@@ -43,10 +44,28 @@ function fmt(n: number): string {
   return n.toLocaleString("en-NG", { maximumFractionDigits: 2 });
 }
 
+/**
+ * Which currency each supplier reports its balance in. The threshold is set in
+ * Naira, so USD balances are converted before comparing — otherwise "$100"
+ * (plenty) reads as 100 < 30,000 and alerts forever. Keyed by supplier slug;
+ * anything not listed is treated as Naira.
+ */
+const SUPPLIER_BALANCE_CURRENCY: Record<string, "USD" | "NGN"> = {
+  shopviaclone: "USD",
+};
+
+function balanceLabel(balance: number, currency: "USD" | "NGN", ngn: number): string {
+  return currency === "USD" ? `$${fmt(balance)} (≈ ₦${fmt(ngn)})` : `₦${fmt(balance)}`;
+}
+
 export interface SupplierBalanceStatus {
   supplierId: string;
   name: string;
   balance: number | null;
+  /** Currency the supplier reports in; the threshold is always in Naira. */
+  currency: "USD" | "NGN";
+  /** Balance converted to Naira for the threshold comparison. */
+  balanceNgn: number | null;
   /** Only set when the balance couldn't be read: the response shape (keys, no values). */
   shape?: string;
   threshold: number;
@@ -59,7 +78,7 @@ export interface SupplierBalanceStatus {
  * Never throws — a supplier that can't be read just reports balance: null.
  */
 export async function checkSupplierBalances(): Promise<SupplierBalanceStatus[]> {
-  const threshold = await getLowBalanceThreshold();
+  const [threshold, rate] = await Promise.all([getLowBalanceThreshold(), getUSDtoNGNRate()]);
   const suppliers = await db.select().from(supplier);
   const out: SupplierBalanceStatus[] = [];
 
@@ -69,7 +88,9 @@ export async function checkSupplierBalances(): Promise<SupplierBalanceStatus[]> 
     if (!isApi) continue;
 
     const { balance, shape } = await fetchSupplierBalance({ baseUrl: sup.apiUrl!, apiKey: sup.apiKey! });
-    const low = balance != null && balance < threshold;
+    const currency = SUPPLIER_BALANCE_CURRENCY[sup.slug] ?? "NGN";
+    const balanceNgn = balance == null ? null : currency === "USD" ? balance * rate : balance;
+    const low = balanceNgn != null && balanceNgn < threshold;
     let alerted = false;
 
     if (low) {
@@ -79,8 +100,8 @@ export async function checkSupplierBalances(): Promise<SupplierBalanceStatus[]> 
           [
             `⚠️ <b>Supplier balance low — ${escapeHtml(sup.name)}</b>`,
             ``,
-            `<b>Balance:</b> ${escapeHtml(fmt(balance!))}`,
-            `<b>Alert threshold:</b> ${escapeHtml(fmt(threshold))}`,
+            `<b>Balance:</b> ${escapeHtml(balanceLabel(balance!, currency, balanceNgn!))}`,
+            `<b>Alert threshold:</b> ₦${escapeHtml(fmt(threshold))}`,
             ``,
             `Orders will start failing with "Insufficient balance" once this runs out. Top up the ${escapeHtml(sup.name)} account.`,
           ].join("\n"),
@@ -90,7 +111,17 @@ export async function checkSupplierBalances(): Promise<SupplierBalanceStatus[]> 
       }
     }
 
-    out.push({ supplierId: sup.id, name: sup.name, balance, ...(shape ? { shape } : {}), threshold, low, alerted });
+    out.push({
+      supplierId: sup.id,
+      name: sup.name,
+      balance,
+      currency,
+      balanceNgn: balanceNgn == null ? null : Math.round(balanceNgn),
+      ...(shape ? { shape } : {}),
+      threshold,
+      low,
+      alerted,
+    });
   }
   return out;
 }
