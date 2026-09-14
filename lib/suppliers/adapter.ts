@@ -88,19 +88,34 @@ export async function fetchSupplierBalance(
   const url = `${config.baseUrl}/api/profile.php?api_key=${encodeURIComponent(config.apiKey)}`;
   let status = 0;
   let json: unknown;
-  try {
-    const res = await fetch(url, { cache: "no-store" });
-    status = res.status;
-    const text = await res.text();
+  let lastErr = "";
+  // Some suppliers (AcctShop) intermittently refuse connections, especially
+  // right after another request. Retry a couple of times with a short pause
+  // rather than reporting "unknown" on a single blip.
+  for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      json = JSON.parse(text);
-    } catch {
-      return { balance: null, shape: `HTTP ${status}, non-JSON: ${text.slice(0, 60)}` };
+      const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(15000) });
+      status = res.status;
+      const text = await res.text();
+      try {
+        json = JSON.parse(text);
+      } catch {
+        return { balance: null, shape: `HTTP ${status}, non-JSON: ${text.slice(0, 60)}` };
+      }
+      if (!res.ok) return { balance: null, shape: `HTTP ${status}: ${JSON.stringify(json).slice(0, 120)}` };
+      lastErr = "";
+      break;
+    } catch (e) {
+      // Surface the underlying network cause (e.g. UND_ERR_CONNECT_TIMEOUT),
+      // not just undici's generic "fetch failed".
+      const cause = (e as { cause?: { code?: string; message?: string } })?.cause;
+      lastErr = cause?.code
+        ? `${cause.code}${cause.message ? ` (${cause.message})` : ""}`
+        : e instanceof Error ? e.message : String(e);
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 2000 * attempt));
     }
-    if (!res.ok) return { balance: null, shape: `HTTP ${status}: ${JSON.stringify(json).slice(0, 120)}` };
-  } catch (e) {
-    return { balance: null, shape: `fetch failed: ${e instanceof Error ? e.message : String(e)}` };
   }
+  if (lastErr) return { balance: null, shape: `unreachable after 3 tries: ${lastErr.slice(0, 140)}` };
 
   // Shapes vary between clones: { balance }, { data: { balance } },
   // { user: { money } }, { so_du } ... so look in the usual places for the
