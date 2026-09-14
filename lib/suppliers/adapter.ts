@@ -66,31 +66,69 @@ export async function purchaseFromSupplier(
  * can degrade to the reactive "insufficient balance" alert instead of failing.
  * The value is in whatever unit the supplier reports; it is not converted.
  */
+export interface SupplierBalanceResult {
+  balance: number | null;
+  /**
+   * When the balance couldn't be parsed: the shape of what came back (status
+   * and top-level/nested key names, never values) so the parser can be taught
+   * the field name without exposing account details.
+   */
+  shape?: string;
+}
+
+// Field names seen across shop-clone scripts (several are Vietnamese builds).
+const BALANCE_KEYS = [
+  "balance", "money", "wallet", "credit", "amount", "funds",
+  "so_du", "sodu", "tien", "so_tien", "tien_con_lai", "coin", "xu",
+];
+
 export async function fetchSupplierBalance(
   config: SupplierConfig
-): Promise<number | null> {
+): Promise<SupplierBalanceResult> {
   const url = `${config.baseUrl}/api/profile.php?api_key=${encodeURIComponent(config.apiKey)}`;
+  let status = 0;
   let json: unknown;
   try {
     const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return null;
-    json = await res.json();
-  } catch {
-    return null;
+    status = res.status;
+    const text = await res.text();
+    try {
+      json = JSON.parse(text);
+    } catch {
+      return { balance: null, shape: `HTTP ${status}, non-JSON: ${text.slice(0, 60)}` };
+    }
+    if (!res.ok) return { balance: null, shape: `HTTP ${status}: ${JSON.stringify(json).slice(0, 120)}` };
+  } catch (e) {
+    return { balance: null, shape: `fetch failed: ${e instanceof Error ? e.message : String(e)}` };
   }
 
   // Shapes vary between clones: { balance }, { data: { balance } },
-  // { user: { money } } ... so look in the usual places for the usual names.
+  // { user: { money } }, { so_du } ... so look in the usual places for the
+  // usual names, matching keys case-insensitively.
   const root = json && typeof json === "object" ? (json as Record<string, unknown>) : null;
-  const containers: unknown[] = [root, root?.data, root?.user, root?.profile];
+  const containers: unknown[] = [root, root?.data, root?.user, root?.profile, root?.info];
   for (const c of containers) {
-    if (!c || typeof c !== "object") continue;
-    for (const key of ["balance", "money", "wallet", "credit", "amount"]) {
-      const raw = (c as Record<string, unknown>)[key];
+    if (!c || typeof c !== "object" || Array.isArray(c)) continue;
+    const rec = c as Record<string, unknown>;
+    const lower = new Map(Object.keys(rec).map((k) => [k.toLowerCase(), k]));
+    for (const key of BALANCE_KEYS) {
+      const actual = lower.get(key);
+      if (!actual) continue;
+      const raw = rec[actual];
       if (raw == null) continue;
       const n = typeof raw === "number" ? raw : parseFloat(String(raw).replace(/[^0-9.-]/g, ""));
-      if (Number.isFinite(n)) return n;
+      if (Number.isFinite(n)) return { balance: n };
     }
   }
-  return null;
+
+  // Not found: describe the shape (keys only) so we can teach the parser.
+  const describe = (v: unknown): string =>
+    v && typeof v === "object" && !Array.isArray(v)
+      ? `{${Object.keys(v as object).join(",")}}`
+      : Array.isArray(v) ? `[${v.length}]` : typeof v;
+  const nested = ["data", "user", "profile", "info"]
+    .filter((k) => root && root[k] != null)
+    .map((k) => `${k}=${describe(root![k])}`)
+    .join(" ");
+  return { balance: null, shape: `HTTP ${status} ${describe(root)} ${nested}`.trim() };
 }

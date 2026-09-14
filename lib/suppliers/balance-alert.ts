@@ -47,6 +47,8 @@ export interface SupplierBalanceStatus {
   supplierId: string;
   name: string;
   balance: number | null;
+  /** Only set when the balance couldn't be read: the response shape (keys, no values). */
+  shape?: string;
   threshold: number;
   low: boolean;
   alerted: boolean;
@@ -66,7 +68,7 @@ export async function checkSupplierBalances(): Promise<SupplierBalanceStatus[]> 
       sup.status === "active" && !!sup.apiUrl && !!sup.apiKey && !sup.apiUrl.startsWith("manual");
     if (!isApi) continue;
 
-    const balance = await fetchSupplierBalance({ baseUrl: sup.apiUrl!, apiKey: sup.apiKey! });
+    const { balance, shape } = await fetchSupplierBalance({ baseUrl: sup.apiUrl!, apiKey: sup.apiKey! });
     const low = balance != null && balance < threshold;
     let alerted = false;
 
@@ -88,7 +90,7 @@ export async function checkSupplierBalances(): Promise<SupplierBalanceStatus[]> 
       }
     }
 
-    out.push({ supplierId: sup.id, name: sup.name, balance, threshold, low, alerted });
+    out.push({ supplierId: sup.id, name: sup.name, balance, ...(shape ? { shape } : {}), threshold, low, alerted });
   }
   return out;
 }
