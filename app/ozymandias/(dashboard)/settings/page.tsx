@@ -44,6 +44,7 @@ export default function AdminSettingsPage() {
   const [percent, setPercent] = useState("20");
   const [priceCap, setPriceCap] = useState("500000");
   const [apiMarkup, setApiMarkup] = useState("30");
+  const [lowBalance, setLowBalance] = useState("30000");
   const [actionPin, setActionPin] = useState("");
   const [hasActionPin, setHasActionPin] = useState(false);
   const [savingPin, setSavingPin] = useState(false);
@@ -88,6 +89,7 @@ export default function AdminSettingsPage() {
             setPriceCap(String(data.pricing.priceCapNaira ?? 500000));
           }
           setApiMarkup(String(data.apiMarkupPercent ?? 30));
+          setLowBalance(String(data.supplierLowBalanceThreshold ?? 30000));
           if (data.announcement) setAnnouncement(data.announcement);
           if (data.boostingAnnouncement) setBoostingAnnouncement(data.boostingAnnouncement);
           setHasActionPin(!!data.hasActionPin);
@@ -137,6 +139,7 @@ export default function AdminSettingsPage() {
             priceCapNaira: Number(priceCap) || 0,
           },
           apiMarkupPercent: Math.max(0, Number(apiMarkup) || 0),
+          supplierLowBalanceThreshold: Math.max(0, Number(lowBalance) || 0),
         }),
       });
       if (!res.ok) throw new Error("Failed to save");
@@ -367,6 +370,38 @@ export default function AdminSettingsPage() {
                   step={1}
                   value={apiMarkup}
                   onChange={(e) => setApiMarkup(e.target.value)}
+                />
+              </Field>
+            </FieldGroup>
+          </FieldSet>
+        </CardContent>
+      </Card>
+
+      {/* Supplier balance alert */}
+      <Card className="border shadow-none">
+        <CardHeader>
+          <h2 className="font-medium">Supplier Balance Alert</h2>
+          <p className="text-muted-foreground text-sm">
+            Every order is paid from your prepaid balance with the supplier
+            (e.g. AcctShop). When it runs out, every order fails with
+            &quot;Insufficient balance&quot; even though stock looks fine. You get
+            a Telegram alert when a supplier&apos;s balance drops below this
+            amount, and immediately if a supplier rejects an order for
+            insufficient balance. Use the same unit the supplier shows.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <FieldSet>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="lowBalance">Alert when balance is below</FieldLabel>
+                <Input
+                  id="lowBalance"
+                  type="number"
+                  min={0}
+                  step={1000}
+                  value={lowBalance}
+                  onChange={(e) => setLowBalance(e.target.value)}
                 />
               </Field>
             </FieldGroup>

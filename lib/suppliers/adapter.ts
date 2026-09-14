@@ -58,3 +58,38 @@ export async function purchaseFromSupplier(
 
   return parsed;
 }
+
+/**
+ * The supplier's account balance (what we have left to spend with them), read
+ * from the shop-clone script's profile endpoint. Returns null if the endpoint
+ * is unreachable or the response carries no recognisable balance, so callers
+ * can degrade to the reactive "insufficient balance" alert instead of failing.
+ * The value is in whatever unit the supplier reports; it is not converted.
+ */
+export async function fetchSupplierBalance(
+  config: SupplierConfig
+): Promise<number | null> {
+  const url = `${config.baseUrl}/api/profile.php?api_key=${encodeURIComponent(config.apiKey)}`;
+  let json: unknown;
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    json = await res.json();
+  } catch {
+    return null;
+  }
+
+  // Shapes vary between clones: { balance }, { data: { balance } },
+  // { user: { money } } ... so look in the usual places for the usual names.
+  const containers = [json, (json as any)?.data, (json as any)?.user, (json as any)?.profile];
+  for (const c of containers) {
+    if (!c || typeof c !== "object") continue;
+    for (const key of ["balance", "money", "wallet", "credit", "amount"]) {
+      const raw = (c as Record<string, unknown>)[key];
+      if (raw == null) continue;
+      const n = typeof raw === "number" ? raw : parseFloat(String(raw).replace(/[^0-9.-]/g, ""));
+      if (Number.isFinite(n)) return n;
+    }
+  }
+  return null;
+}

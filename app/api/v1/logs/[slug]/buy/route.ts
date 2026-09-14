@@ -23,6 +23,10 @@ import {
   logTransaction,
 } from "@/lib/wallet";
 import { purchaseFromSupplier } from "@/lib/suppliers/adapter";
+import {
+  alertSupplierInsufficientBalance,
+  isInsufficientBalanceError,
+} from "@/lib/suppliers/balance-alert";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -246,6 +250,15 @@ export async function POST(
         .where(eq(order.id, orderId));
     } catch {
       /* best effort */
+    }
+    // The supplier saying "insufficient balance" means EVERY order will now
+    // fail until the admin tops up — tell them immediately (rate-limited).
+    if (isInsufficientBalanceError(msg)) {
+      await alertSupplierInsufficientBalance({
+        supplierId: sup.id,
+        supplierName: sup.name,
+        detail: msg,
+      });
     }
     return err502(`Order failed and your wallet was refunded. (${msg})`);
   }
