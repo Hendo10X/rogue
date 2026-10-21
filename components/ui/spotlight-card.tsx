@@ -42,9 +42,9 @@ export function SpotlightCard({
       className={cn(
         "group/spot surface relative isolate overflow-hidden rounded-2xl transition-transform duration-300 ease-out",
         // Glow fill
-        "before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-300 before:[background:radial-gradient(420px_circle_at_var(--x,50%)_var(--y,50%),rgb(255_110_30/0.12),transparent_45%)] hover:before:opacity-100",
+        "before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-300 before:[background:radial-gradient(360px_circle_at_var(--x,50%)_var(--y,50%),rgb(255_140_60/0.045),transparent_50%)] hover:before:opacity-100",
         // Lit edge
-        "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:p-px after:opacity-0 after:transition-opacity after:duration-300 after:[background:radial-gradient(260px_circle_at_var(--x,50%)_var(--y,50%),rgb(255_150_50/0.55),transparent_60%)] after:[mask:linear-gradient(#000_0_0)_content-box,linear-gradient(#000_0_0)] after:[mask-composite:exclude] hover:after:opacity-100",
+        "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:p-px after:opacity-0 after:transition-opacity after:duration-300 after:[background:radial-gradient(220px_circle_at_var(--x,50%)_var(--y,50%),rgb(255_170_90/0.2),transparent_65%)] after:[mask:linear-gradient(#000_0_0)_content-box,linear-gradient(#000_0_0)] after:[mask-composite:exclude] hover:after:opacity-100",
         className
       )}
       {...props}

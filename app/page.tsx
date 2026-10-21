@@ -243,7 +243,7 @@ export default async function Home() {
         {/* API */}
         <Section id="api">
           <div className="grid items-center gap-12 lg:grid-cols-12">
-            <div className="lg:col-span-5">
+            <div className="min-w-0 lg:col-span-5">
               <SectionHead title="Plug the whole catalog into your panel." sub="One API key, four endpoints. List services at reseller rates, order against your wallet, poll status." />
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg">
@@ -257,8 +257,8 @@ export default async function Home() {
                 </Button>
               </div>
             </div>
-            <div className="lg:col-span-7">
-              <div className="surface overflow-hidden rounded-3xl">
+            <div className="min-w-0 lg:col-span-7">
+              <div className="surface max-w-full overflow-hidden rounded-3xl">
                 <ApiConsole />
               </div>
             </div>

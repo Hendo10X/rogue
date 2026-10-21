@@ -72,11 +72,11 @@ export function ScrollSteps({
       <div className="absolute top-6 right-[12.5%] left-[12.5%] hidden h-px bg-white/[0.08] md:block">
         <motion.div className="bg-rogue-gradient h-full origin-left" style={{ scaleX: fill }} />
       </div>
-      <ol className="grid gap-4 md:grid-cols-4 md:gap-6">
+      <ol className="grid gap-10 sm:grid-cols-2 md:grid-cols-4 md:gap-6">
         {steps.map((s, i) => {
           const lit = progress >= i / steps.length + 0.02 || (i === 0 && progress > 0.01);
           return (
-            <li key={s.title} className="flex flex-col items-start gap-4 md:items-center md:text-center">
+            <li key={s.title} className="flex flex-col items-center gap-4 text-center">
               <span
                 className={cn(
                   "relative flex size-12 items-center justify-center rounded-2xl transition-all duration-500",

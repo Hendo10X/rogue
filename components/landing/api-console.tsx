@@ -98,9 +98,9 @@ export function ApiConsole() {
   }
 
   return (
-    <div ref={ref} className="w-full">
-      <div className="flex items-center justify-between gap-3 px-4 pt-4">
-        <div className="inline-flex items-center gap-0.5 rounded-full bg-white/[0.04] p-1">
+    <div ref={ref} className="w-full min-w-0">
+      <div className="flex items-center justify-between gap-2 px-3 pt-3 sm:px-4 sm:pt-4">
+        <div className="inline-flex min-w-0 items-center gap-0.5 overflow-x-auto rounded-full bg-white/[0.04] p-1 [scrollbar-width:none]">
           {CALLS.map((c, i) => {
             const on = i === active;
             return (
@@ -109,7 +109,7 @@ export function ApiConsole() {
                 type="button"
                 onClick={() => setActive(i)}
                 aria-pressed={on}
-                className="relative flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium"
+                className="relative flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium sm:px-3"
               >
                 {on && (
                   <motion.span
@@ -129,14 +129,14 @@ export function ApiConsole() {
         <button
           type="button"
           onClick={copy}
-          className="flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
+          className="flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
         >
           <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} strokeWidth={2} className="size-3.5" />
-          {copied ? "Copied" : "Copy"}
+          <span className="hidden sm:inline">{copied ? "Copied" : "Copy"}</span>
         </button>
       </div>
 
-      <pre className="min-h-28 overflow-x-auto px-5 pt-5 pb-3 font-mono text-[0.75rem] leading-relaxed text-foreground/90">
+      <pre className="min-h-28 max-w-full overflow-x-auto px-4 pt-5 pb-3 font-mono text-[0.6875rem] leading-relaxed text-foreground/90 sm:px-5 sm:text-[0.75rem]">
         <span className="text-muted-foreground/60 select-none">$ </span>
         {reduced ? call.request : call.request.slice(0, typed)}
         {!done && <span className="ml-px inline-block h-3.5 w-1.5 translate-y-0.5 animate-pulse rounded-sm bg-[#ff8a1a]" />}
@@ -156,7 +156,7 @@ export function ApiConsole() {
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3, ease: EASE }}
-                className="overflow-x-auto px-3 pt-2 pb-3 font-mono text-[0.75rem] leading-relaxed text-muted-foreground"
+                className="max-w-full overflow-x-auto px-3 pt-2 pb-3 font-mono text-[0.6875rem] leading-relaxed text-muted-foreground sm:text-[0.75rem]"
               >
                 {call.response}
               </motion.pre>
