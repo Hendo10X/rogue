@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import { verifyAdminSession, getSetting, setSetting } from "@/lib/admin-auth";
 import { AdminNav } from "../admin-nav";
+import { getSessionWithAdmin } from "@/lib/admin-access";
 
 const MAX_IP_ENTRIES = 200;
 
@@ -12,9 +13,13 @@ export default async function DashboardLayout({
 }) {
   const cookieStore = await cookies();
   const token = cookieStore.get("admin_session")?.value;
-  if (!token) redirect("/ozymandias/login");
-  const admin = await verifyAdminSession(token);
-  if (!admin) redirect("/ozymandias/login");
+  const admin = token ? await verifyAdminSession(token) : null;
+  if (!admin) {
+    // An allowed email that's signed in to Rogue gets a fresh admin session;
+    // anyone else lands on the explanation page.
+    const { isAdmin } = await getSessionWithAdmin();
+    redirect(isAdmin ? "/api/admin/auth/email" : "/ozymandias/login");
+  }
 
   // Log IP access (non-blocking)
   try {

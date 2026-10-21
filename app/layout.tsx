@@ -76,6 +76,11 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: "#0A0A0A",
   colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+  // iOS zooms into any field with text under 16px and leaves the page zoomed.
+  // Capping the scale stops that jump when tapping into an input.
+  maximumScale: 1,
 };
 
 const structuredData = [

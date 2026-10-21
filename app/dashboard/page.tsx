@@ -19,6 +19,7 @@ import { db } from "@/db/drizzle";
 import { order, listing, supplier, boostingOrder } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { isAdminEmail } from "@/lib/admin-emails";
 import { EmptyState, PageHeader, SectionLabel, StatCard } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
@@ -26,6 +27,9 @@ import { Price } from "@/components/currency-provider";
 import { Badge } from "@/components/ui/badge";
 import { getSetting } from "@/lib/admin-auth";
 import { AnnouncementBanner } from "@/components/announcement-banner";
+import { ReferralCard } from "@/components/referral/referral-card";
+import { getReferralSummary } from "@/lib/referral";
+import { claimReferralFromRequest } from "@/lib/referral-claim";
 
 export const dynamic = "force-dynamic";
 
@@ -92,7 +96,9 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [walletBalance, orders, announcementStr] = await Promise.all([
+  await claimReferralFromRequest(session.user);
+
+  const [walletBalance, orders, announcementStr, referralSummary] = await Promise.all([
     (async () => {
       await getOrCreateWallet(session!.user!.id, "NGN");
       const b = await getWalletBalance(session!.user!.id);
@@ -100,6 +106,7 @@ export default async function DashboardPage() {
     })(),
     getOrders(session.user.id),
     getSetting("site_announcement"),
+    getReferralSummary(session.user.id),
   ]);
 
   const primaryBalance = walletBalance.find((w) => w.currency === "NGN") ?? walletBalance[0];
@@ -122,6 +129,7 @@ export default async function DashboardPage() {
         image: session.user.image,
       }}
       walletBalance={walletBalance}
+      isAdmin={isAdminEmail(session.user.email)}
     >
       <PageHeader title={`Welcome back, ${firstName}`} description="Here's your wallet and what you've ordered." />
 
@@ -170,6 +178,8 @@ export default async function DashboardPage() {
         <QuickTile href="/wallet/deposit" icon={Wallet01Icon} label="Fund wallet" hint="Card, bank, crypto" />
         <QuickTile href="/settings" icon={CodeIcon} label="API key" hint="For resellers" />
       </div>
+
+      {referralSummary && <ReferralCard data={referralSummary} />}
 
       {/* Recent orders */}
       <div className="flex flex-col gap-3">

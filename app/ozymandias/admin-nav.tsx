@@ -7,7 +7,7 @@ import { motion } from "motion/react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowUpRight01Icon,
-  LockPasswordIcon,
+  DashboardSquare01Icon,
   Logout03Icon,
   Menu01Icon,
   ShieldKeyIcon,
@@ -38,6 +38,7 @@ const links = [
   { href: ROOT, label: "Overview" },
   { href: `${ROOT}/orders`, label: "Orders" },
   { href: `${ROOT}/users`, label: "Users" },
+  { href: `${ROOT}/referrals`, label: "Referrals" },
   { href: `${ROOT}/logs`, label: "Logs" },
   { href: `${ROOT}/boosting`, label: "Boosting" },
   { href: `${ROOT}/suppliers`, label: "Suppliers" },
@@ -56,7 +57,7 @@ async function logout() {
     method: "POST",
     credentials: "include",
   });
-  window.location.href = `${ROOT}/login`;
+  window.location.href = "/dashboard";
 }
 
 function OzBadge() {
@@ -85,9 +86,9 @@ function AccountMenu({ username }: { username: string }) {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href={`${ROOT}/change-password`}>
-            <HugeiconsIcon icon={LockPasswordIcon} strokeWidth={2} />
-            Change password
+          <Link href="/dashboard">
+            <HugeiconsIcon icon={DashboardSquare01Icon} strokeWidth={2} />
+            Back to store
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
@@ -99,7 +100,7 @@ function AccountMenu({ username }: { username: string }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onSelect={() => void logout()}>
           <HugeiconsIcon icon={Logout03Icon} strokeWidth={2} />
-          Log out
+          Exit admin
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -132,7 +133,7 @@ export function AdminNav({ username }: { username: string }) {
               </SheetTitle>
             </SheetHeader>
             <nav className="flex flex-col gap-0.5">
-              {[...links, { href: `${ROOT}/change-password`, label: "Change password" }].map((link) => {
+              {[...links, { href: "/dashboard", label: "Back to store" }].map((link) => {
                 const active = isActive(link.href);
                 return (
                   <Link
@@ -151,7 +152,7 @@ export function AdminNav({ username }: { username: string }) {
               })}
             </nav>
             <Button variant="destructive" className="mt-auto" onClick={() => void logout()}>
-              Log out
+              Exit admin
             </Button>
           </SheetContent>
         </Sheet>

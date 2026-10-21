@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { isAdminEmail } from "@/lib/admin-emails";
 import { PageHeader } from "@/components/page-header";
 import { ServiceGrid } from "@/components/boosting/service-grid";
 
@@ -31,6 +32,7 @@ export default async function BoostingPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
+        isAdmin={isAdminEmail(session.user.email)}
       >
         <PageHeader
           title="Boosting"

@@ -198,6 +198,21 @@
   background-size: 22px 22px;
 }
 
+/* Sign-in / sign-up on short screens (small phones, landscape): trim control
+   heights so the whole form still fits one screen without scrolling. */
+@media (max-height: 760px) {
+  .auth-compact input {
+    height: 2.25rem;
+  }
+  .auth-compact button[type="submit"],
+  .auth-compact [data-slot="card"] button[type="button"]:not([aria-pressed]) {
+    height: 2.25rem;
+  }
+  .auth-compact [data-slot="card"] {
+    padding-block: 0.75rem;
+  }
+}
+
 /* Platform ticker */
 @keyframes marquee {
   from {

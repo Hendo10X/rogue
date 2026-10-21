@@ -8,6 +8,7 @@ import { eq, desc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { isAdminEmail } from "@/lib/admin-emails";
 import { PageHeader } from "@/components/page-header";
 import { OrderList } from "@/components/orders/order-list";
 
@@ -117,6 +118,7 @@ export default async function OrdersPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
+        isAdmin={isAdminEmail(session.user.email)}
       >
         <PageHeader
           title="Orders"

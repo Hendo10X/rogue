@@ -8,6 +8,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   AccountSetting01Icon,
   Add01Icon,
+  ArrowRight01Icon,
   ArrowUpRight01Icon,
   CodeIcon,
   DashboardSquare01Icon,
@@ -15,6 +16,7 @@ import {
   Menu01Icon,
   PackageIcon,
   Rocket01Icon,
+  ShieldKeyIcon,
   ShoppingBag01Icon,
   UnfoldMoreIcon,
   Wallet01Icon,
@@ -71,6 +73,8 @@ export type ShellUser = {
 type ShellProps = {
   user: ShellUser;
   walletBalance: { balance: string; currency: string }[];
+  /** Admin emails get a "Switch to admin" entry. Computed on the server. */
+  isAdmin?: boolean;
 };
 
 function useIsActive() {
@@ -89,7 +93,15 @@ function useBalance(walletBalance: ShellProps["walletBalance"]) {
  * Pill nav. The active pill is one shared element that glides between rows,
  * and hovering previews where it would land.
  */
-function NavList({ onNavigate, layoutKey }: { onNavigate?: () => void; layoutKey: string }) {
+function NavList({
+  onNavigate,
+  layoutKey,
+  isAdmin,
+}: {
+  onNavigate?: () => void;
+  layoutKey: string;
+  isAdmin?: boolean;
+}) {
   const isActive = useIsActive();
   const [hover, setHover] = React.useState<string | null>(null);
 
@@ -134,6 +146,21 @@ function NavList({ onNavigate, layoutKey }: { onNavigate?: () => void; layoutKey
           );
         })}
       </nav>
+      {isAdmin && (
+        <a
+          href="/api/admin/auth/email"
+          onClick={onNavigate}
+          className="group relative flex h-10 items-center gap-3 overflow-hidden rounded-xl bg-[linear-gradient(120deg,rgb(255_90_31/0.14),rgb(255_211_26/0.05))] px-3 text-[0.8125rem] font-medium text-[#ffc08f] shadow-[inset_0_0_0_1px_rgb(255_140_60/0.18)] transition-colors hover:text-[#ffd9b8]"
+        >
+          <HugeiconsIcon icon={ShieldKeyIcon} strokeWidth={1.75} className="size-[18px] shrink-0" />
+          Switch to admin
+          <HugeiconsIcon
+            icon={ArrowRight01Icon}
+            strokeWidth={2}
+            className="ml-auto size-3.5 transition-transform duration-300 group-hover:translate-x-0.5"
+          />
+        </a>
+      )}
       <div className="flex flex-col gap-0.5">
         <span className="px-3 pb-1 text-xs text-muted-foreground/60">More from Rogue</span>
         {EXTRAS.map((item) => {
@@ -174,7 +201,15 @@ function initialsOf(name: string) {
   );
 }
 
-function UserMenu({ user, variant = "avatar" }: { user: ShellUser; variant?: "avatar" | "row" }) {
+function UserMenu({
+  user,
+  variant = "avatar",
+  isAdmin,
+}: {
+  user: ShellUser;
+  variant?: "avatar" | "row";
+  isAdmin?: boolean;
+}) {
   const router = useRouter();
   const [signingOut, setSigningOut] = React.useState(false);
 
@@ -227,6 +262,12 @@ function UserMenu({ user, variant = "avatar" }: { user: ShellUser; variant?: "av
           <HugeiconsIcon icon={AccountSetting01Icon} strokeWidth={2} />
           Settings
         </DropdownMenuItem>
+        {isAdmin && (
+          <DropdownMenuItem onClick={() => (window.location.href = "/api/admin/auth/email")}>
+            <HugeiconsIcon icon={ShieldKeyIcon} strokeWidth={2} />
+            Switch to admin
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={() => router.push("/docs/api")}>
           <HugeiconsIcon icon={CodeIcon} strokeWidth={2} />
           API docs
@@ -275,23 +316,23 @@ function BalanceCard({ walletBalance }: { walletBalance: ShellProps["walletBalan
 }
 
 /** Desktop rail. Same tone as the page, so the content panel floats above it. */
-function Sidebar({ user, walletBalance }: ShellProps) {
+function Sidebar({ user, walletBalance, isAdmin }: ShellProps) {
   return (
     <aside className="hidden w-64 shrink-0 flex-col gap-6 overflow-y-auto px-3 py-4 lg:flex lg:h-full">
       <div className="px-2 pt-1">
         <LogoLink href="/dashboard" />
       </div>
-      <NavList layoutKey="rail" />
+      <NavList layoutKey="rail" isAdmin={isAdmin} />
       <div className="mt-auto flex flex-col gap-2">
         <BalanceCard walletBalance={walletBalance} />
-        <UserMenu user={user} variant="row" />
+        <UserMenu user={user} variant="row" isAdmin={isAdmin} />
       </div>
     </aside>
   );
 }
 
 /** Mobile bar — the rail folds into a floating sheet below `lg`. */
-function Topbar({ user, walletBalance }: ShellProps) {
+function Topbar({ user, walletBalance, isAdmin }: ShellProps) {
   const [open, setOpen] = React.useState(false);
   const balance = useBalance(walletBalance);
 
@@ -310,7 +351,7 @@ function Topbar({ user, walletBalance }: ShellProps) {
                 <Wordmark />
               </SheetTitle>
             </SheetHeader>
-            <NavList layoutKey="sheet" onNavigate={() => setOpen(false)} />
+            <NavList layoutKey="sheet" isAdmin={isAdmin} onNavigate={() => setOpen(false)} />
             <div className="mt-auto">
               <BalanceCard walletBalance={walletBalance} />
             </div>
@@ -327,7 +368,7 @@ function Topbar({ user, walletBalance }: ShellProps) {
         >
           {balance}
         </Link>
-        <UserMenu user={user} />
+        <UserMenu user={user} isAdmin={isAdmin} />
       </div>
     </header>
   );

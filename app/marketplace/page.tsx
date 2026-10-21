@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { isAdminEmail } from "@/lib/admin-emails";
 import { PageHeader } from "@/components/page-header";
 import { ListingGrid } from "@/components/marketplace/listing-grid";
 
@@ -31,6 +32,7 @@ export default async function MarketplacePage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
+        isAdmin={isAdminEmail(session.user.email)}
       >
         <PageHeader
           title="Marketplace"

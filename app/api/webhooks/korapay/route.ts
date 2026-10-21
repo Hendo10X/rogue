@@ -4,6 +4,7 @@ import { deposit, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyKorapayWebhook } from "@/lib/korapay";
 import { creditWallet, logTransaction } from "@/lib/wallet";
+import { rewardReferralForDeposit } from "@/lib/referral";
 
 export async function POST(req: NextRequest) {
   const secretKey = process.env.KORAPAY_SECRET_KEY;
@@ -85,6 +86,8 @@ export async function POST(req: NextRequest) {
       .where(eq(deposit.id, dep.id));
 
     await creditWallet(dep.walletId, String(amountNgn), "NGN");
+    // Pays the referrer on a first deposit; never throws.
+    await rewardReferralForDeposit({ userId: dep.userId, depositId: dep.id, amountNgn: Number(amountNgn) });
 
     await logTransaction({
       walletId: dep.walletId,

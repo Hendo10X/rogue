@@ -4,6 +4,7 @@ import Link from "next/link";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { isAdminEmail } from "@/lib/admin-emails";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
@@ -35,6 +36,7 @@ export default async function DepositSuccessPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
+        isAdmin={isAdminEmail(session.user.email)}
       >
         <div className="flex w-full max-w-md flex-col surface rounded-2xl">
           <div className="flex items-center gap-3 px-5 py-4">

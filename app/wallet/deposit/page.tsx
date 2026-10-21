@@ -5,8 +5,10 @@ import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 
 export const dynamic = "force-dynamic";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { isAdminEmail } from "@/lib/admin-emails";
 import { PageHeader } from "@/components/page-header";
 import { DepositForm } from "@/components/deposit-form";
+import { claimReferralFromRequest } from "@/lib/referral-claim";
 
 export default async function DepositPage() {
   const session = await auth.api.getSession({
@@ -17,6 +19,7 @@ export default async function DepositPage() {
     redirect("/login");
   }
 
+  await claimReferralFromRequest(session.user);
   await getOrCreateWallet(session.user.id, "NGN");
   const balance = await getWalletBalance(session.user.id);
   const walletBalance = Array.isArray(balance) ? balance : [balance];
@@ -30,6 +33,7 @@ export default async function DepositPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
+        isAdmin={isAdminEmail(session.user.email)}
       >
         <PageHeader
           title="Fund your wallet"

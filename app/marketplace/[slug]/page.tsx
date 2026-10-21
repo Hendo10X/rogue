@@ -4,6 +4,7 @@ import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { Price } from "@/components/currency-provider";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { isAdminEmail } from "@/lib/admin-emails";
 import { PageHeader } from "@/components/page-header";
 import { PurchaseButton } from "@/components/marketplace/purchase-button";
 
@@ -54,6 +55,7 @@ export default async function ListingPage({
           image: session.user.image,
         }}
         walletBalance={walletBalance}
+        isAdmin={isAdminEmail(session.user.email)}
       >
         <PageHeader
           eyebrow={[listing.platform, listing.categoryName].filter(Boolean).join(" · ")}

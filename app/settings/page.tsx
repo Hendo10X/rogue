@@ -3,7 +3,10 @@ import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { DashboardShell } from "@/components/dashboard/shell";
+import { isAdminEmail } from "@/lib/admin-emails";
 import { PageHeader } from "@/components/page-header";
+import { ReferralCard } from "@/components/referral/referral-card";
+import { getReferralSummary } from "@/lib/referral";
 import { SettingsForm } from "./settings-form";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +23,7 @@ export default async function SettingsPage() {
   await getOrCreateWallet(session.user.id, "NGN");
   const balance = await getWalletBalance(session.user.id);
   const walletBalance = Array.isArray(balance) ? balance : [balance];
+  const referralSummary = await getReferralSummary(session.user.id);
 
   return (
       <DashboardShell
@@ -30,8 +34,10 @@ export default async function SettingsPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
+        isAdmin={isAdminEmail(session.user.email)}
       >
-        <PageHeader title="Settings" description="Manage your account, password and API keys." />
+        <PageHeader title="Settings" description="Manage your account, password, referrals and API keys." />
+        {referralSummary && <ReferralCard data={referralSummary} className="w-full max-w-2xl" />}
         <div className="w-full max-w-2xl">
         <SettingsForm
           user={{

@@ -2,6 +2,7 @@ import { db } from "@/db/drizzle";
 import { admin, adminSession, adminSettings, user, deposit, order, boostingOrder } from "@/db/schema";
 import { eq, sql, gte, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { isAdminEmail } from "@/lib/admin-emails";
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -46,6 +47,10 @@ export async function verifyAdminSession(
     .where(eq(admin.id, s.adminId))
     .limit(1);
   if (!a) return null;
+  // Admin access is tied to an allowed email. Sessions belonging to the old
+  // username/password admins (or to an email that has since been removed)
+  // no longer open the panel.
+  if (!isAdminEmail(a.username)) return null;
   return { id: a.id, username: a.username };
 }
 

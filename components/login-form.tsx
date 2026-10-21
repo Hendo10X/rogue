@@ -72,11 +72,11 @@ export function LoginForm({
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card className="shadow-none">
-        <CardContent className="pt-0">
+      <Card className="gap-0 py-4 shadow-none sm:py-5">
+        <CardContent className="px-4 sm:px-5">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <FieldGroup>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FieldGroup className="gap-4">
                 <Field>
                   <FormField
                     control={form.control}
@@ -137,7 +137,7 @@ export function LoginForm({
               </FieldGroup>
             </form>
           </Form>
-          <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
             <span className="h-px flex-1 bg-border" />
             OR
             <span className="h-px flex-1 bg-border" />

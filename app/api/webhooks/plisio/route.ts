@@ -4,6 +4,7 @@ import { deposit, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyPlisioWebhook } from "@/lib/plisio";
 import { creditWallet, logTransaction } from "@/lib/wallet";
+import { rewardReferralForDeposit } from "@/lib/referral";
 import { getUSDtoNGNRate } from "@/lib/currency";
 
 export async function POST(req: NextRequest) {
@@ -72,6 +73,8 @@ export async function POST(req: NextRequest) {
     .where(eq(deposit.id, dep.id));
 
   await creditWallet(dep.walletId, String(amountNgn), "NGN");
+  // Pays the referrer on a first deposit; never throws.
+  await rewardReferralForDeposit({ userId: dep.userId, depositId: dep.id, amountNgn: Number(amountNgn) });
 
   await logTransaction({
     walletId: dep.walletId,

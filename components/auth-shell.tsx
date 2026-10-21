@@ -21,9 +21,11 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="grid min-h-svh gap-2 p-2 lg:grid-cols-2">
-      <main className="relative flex flex-col">
-        <div className="flex h-14 items-center justify-between px-3 sm:px-5">
+    // Exactly one screen tall on every device: the page never scrolls. The form
+    // column can scroll internally only on unusually short screens.
+    <div className="grid h-svh gap-2 overflow-hidden p-2 lg:grid-cols-2">
+      <main className="relative flex min-h-0 flex-col">
+        <div className="flex h-14 shrink-0 items-center justify-between px-3 sm:px-5 [@media(max-height:700px)]:h-12">
           <LogoLink />
           <Link
             href="/"
@@ -33,11 +35,11 @@ export function AuthShell({
             Back to site
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-center px-4 py-12">
-          <div className="flex w-full max-w-sm flex-col gap-8">
-            <div className="flex flex-col gap-2">
-              <h1 className="text-3xl font-semibold tracking-[-0.04em]">{title}</h1>
-              {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+        <div className="flex min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none]">
+          <div className="auth-compact m-auto flex w-full max-w-sm flex-col gap-4 px-2 py-3 sm:gap-6 sm:px-4 [@media(max-height:760px)]:gap-3">
+            <div className="flex flex-col gap-1">
+              <h1 className="text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">{title}</h1>
+              {subtitle && <p className="text-sm text-muted-foreground [@media(max-height:700px)]:hidden">{subtitle}</p>}
             </div>
             {children}
           </div>

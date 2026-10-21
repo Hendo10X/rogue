@@ -116,11 +116,11 @@ export function SignupForm({
     <div
       className={cn("flex flex-col gap-4", className)}
       {...props}>
-      <Card className="shadow-none">
-        <CardContent className="pt-0">
+      <Card className="gap-0 py-4 shadow-none sm:py-5">
+        <CardContent className="px-4 sm:px-5">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FieldGroup className="gap-3">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+              <FieldGroup className="gap-2.5">
                 <FormField
                   control={form.control}
                   name="name"
@@ -135,7 +135,7 @@ export function SignupForm({
                   )}
                 />
               </FieldGroup>
-              <FieldGroup className="gap-3">
+              <FieldGroup className="gap-2.5">
                 <Field>
                   <FormField
                     control={form.control}
@@ -212,57 +212,43 @@ export function SignupForm({
                               </button>
                             </div>
                           </FormControl>
-                          <div
-                            className="mt-2 h-1 w-full overflow-hidden bg-border"
-                            role="progressbar"
-                            aria-valuenow={strengthScore}
-                            aria-valuemin={0}
-                            aria-valuemax={4}
-                            aria-label="Password strength">
-                            <div
-                              className="h-full transition-all duration-500 ease-out"
-                              style={{
-                                backgroundColor:
-                                  getStrengthColor(strengthScore),
-                                width: `${(strengthScore / 4) * 100}%`,
-                              }}
-                            />
-                          </div>
-                          <p className="text-sm font-medium text-foreground">
-                            {getStrengthText(strengthScore)}. Must contain:
-                          </p>
-                          <ul
-                            className="space-y-1.5"
-                            aria-label="Password requirements">
-                            {PASSWORD_REQUIREMENTS.map((reqText) => (
-                              <li
-                                key={reqText}
-                                className="flex items-center space-x-2">
-                                {passwordErrors.includes(reqText) ? (
-                                  <X
-                                    size={16}
-                                    className="text-muted-foreground/80"
-                                    aria-hidden
-                                  />
-                                ) : (
-                                  <Check
-                                    size={16}
-                                    className="text-emerald-500"
-                                    aria-hidden
-                                  />
-                                )}
-                                <span
-                                  className={cn(
-                                    "text-xs",
-                                    passwordErrors.includes(reqText)
-                                      ? "text-muted-foreground"
-                                      : "text-emerald-600",
-                                  )}>
-                                  {reqText}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
+                          {/* Strength and rules only appear once typing starts,
+                              as a bar plus compact chips, so the form fits one screen. */}
+                          {(field.value ?? "").length > 0 && (
+                            <div className="flex flex-col gap-2">
+                              <div
+                                className="h-1 w-full overflow-hidden rounded-full bg-white/[0.08]"
+                                role="progressbar"
+                                aria-valuenow={strengthScore}
+                                aria-valuemin={0}
+                                aria-valuemax={4}
+                                aria-label={`Password strength: ${getStrengthText(strengthScore)}`}>
+                                <div
+                                  className="h-full rounded-full transition-all duration-500 ease-out"
+                                  style={{
+                                    backgroundColor: getStrengthColor(strengthScore),
+                                    width: `${(strengthScore / 4) * 100}%`,
+                                  }}
+                                />
+                              </div>
+                              <ul className="flex flex-wrap gap-1.5" aria-label="Password requirements">
+                                {PASSWORD_REQUIREMENTS.map((reqText) => {
+                                  const ok = !passwordErrors.includes(reqText);
+                                  return (
+                                    <li
+                                      key={reqText}
+                                      className={cn(
+                                        "flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.6875rem] transition-colors",
+                                        ok ? "bg-emerald-400/10 text-emerald-300" : "bg-white/[0.05] text-muted-foreground"
+                                      )}>
+                                      {ok ? <Check size={12} aria-hidden /> : <X size={12} aria-hidden />}
+                                      {reqText}
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          )}
                           <FormMessage />
                         </FormItem>
                       );
@@ -273,7 +259,7 @@ export function SignupForm({
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="eyebrow h-10 w-full">
+                    className="h-10 w-full">
                     {loading ? (
                       <HugeiconsIcon
                         icon={Loading03Icon}
@@ -306,7 +292,7 @@ export function SignupForm({
               </FieldGroup>
             </form>
           </Form>
-          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="my-3 flex items-center gap-3 text-xs text-muted-foreground [@media(max-height:760px)]:my-2">
             <span className="h-px flex-1 bg-border" />
             OR
             <span className="h-px flex-1 bg-border" />
