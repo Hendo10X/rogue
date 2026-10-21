@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Loading03Icon, ShieldKeyIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, FieldGroup, FieldSet, FieldLabel } from "@/components/ui/field";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Wordmark } from "@/components/logo";
 
 const schema = z.object({
   username: z.string().min(1, "Username required"),
@@ -49,54 +50,81 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-sm border shadow-none">
-        <CardHeader>
-          <h1 className="text-xl font-semibold">Admin Login</h1>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <FieldSet>
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="username">Username</FieldLabel>
-                  <Input
-                    id="username"
-                    autoComplete="username"
-                    {...register("username")}
-                  />
-                  {errors.username && (
-                    <p className="text-destructive text-sm">
-                      {errors.username.message}
-                    </p>
-                  )}
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <Input
-                    id="password"
-                    type="password"
-                    autoComplete="current-password"
-                    {...register("password")}
-                  />
-                  {errors.password && (
-                    <p className="text-destructive text-sm">
-                      {errors.password.message}
-                    </p>
-                  )}
-                  <p className="text-muted-foreground text-xs">
-                    Alphanumeric only, 6+ characters
-                  </p>
-                </Field>
-              </FieldGroup>
-            </FieldSet>
-            {error && <p className="text-destructive text-sm">{error}</p>}
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Logging in…" : "Log in"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="relative flex min-h-svh items-center justify-center overflow-hidden p-4">
+      <div
+        aria-hidden
+        className="glow pointer-events-none absolute inset-0 m-auto h-96 max-w-2xl opacity-60"
+      />
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="surface relative w-full max-w-sm rounded-3xl p-2"
+      >
+        <div className="flex items-center justify-between px-4 pt-3">
+          <Wordmark />
+          <span className="flex items-center gap-1.5 rounded-full bg-[#ff7a1a]/12 px-2.5 py-1 text-xs font-medium text-[#ffc08f]">
+            <HugeiconsIcon icon={ShieldKeyIcon} strokeWidth={2} className="size-3" />
+            Ozymandias
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-5 px-4 py-6">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-[-0.035em]">Admin sign in</h1>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Restricted area. Access is logged.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="username" className="text-[0.8125rem] font-medium">
+              Username
+            </label>
+            <Input id="username" autoComplete="username" className="h-10" {...register("username")} />
+            {errors.username && (
+              <p className="text-xs text-destructive">{errors.username.message}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="password" className="text-[0.8125rem] font-medium">
+              Password
+            </label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              className="h-10"
+              {...register("password")}
+            />
+            {errors.password ? (
+              <p className="text-xs text-destructive">{errors.password.message}</p>
+            ) : (
+              <p className="text-[0.6875rem] text-muted-foreground">
+                Alphanumeric only, 6+ characters
+              </p>
+            )}
+          </div>
+
+          {error && (
+            <p className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="px-4 pb-4">
+          <Button type="submit" className="h-11 w-full" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <HugeiconsIcon icon={Loading03Icon} className="size-4 animate-spin" />
+                Signing in…
+              </>
+            ) : (
+              "Sign in"
+            )}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }

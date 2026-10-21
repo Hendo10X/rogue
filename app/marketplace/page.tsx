@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
-import { DashboardNavbar } from "@/components/dashboard-navbar";
+import { DashboardShell } from "@/components/dashboard/shell";
+import { PageHeader } from "@/components/page-header";
 import { ListingGrid } from "@/components/marketplace/listing-grid";
 
 export const dynamic = "force-dynamic";
@@ -21,8 +22,8 @@ export default async function MarketplacePage() {
   const walletBalance = Array.isArray(balance) ? balance : [balance];
 
   return (
-    <div className="min-h-screen bg-background font-display">
-      <DashboardNavbar
+      <DashboardShell
+        wide
         user={{
           id: session.user.id,
           name: session.user.name ?? "User",
@@ -30,16 +31,12 @@ export default async function MarketplacePage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
-      />
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="font-display text-2xl font-semibold">Marketplace</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Browse and buy social media accounts and services
-          </p>
-        </div>
+      >
+        <PageHeader
+          title="Marketplace"
+          description="Browse and buy social media accounts and services."
+        />
         <ListingGrid walletBalance={walletBalance} />
-      </main>
-    </div>
+      </DashboardShell>
   );
 }

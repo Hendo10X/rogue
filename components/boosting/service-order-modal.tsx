@@ -11,7 +11,6 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -138,36 +137,50 @@ export function ServiceOrderModal({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <AlertDialogHeader className="text-left">
-          <div className="flex flex-wrap gap-1.5">
-            <Badge variant="secondary" className="text-xs">
-              {service.category}
-            </Badge>
-            {service.type !== "Default" && (
-              <Badge variant="outline" className="text-xs">
-                {service.type}
-              </Badge>
-            )}
-          </div>
-          <AlertDialogTitle className="text-left">
+          <span className="eyebrow text-primary">
+            {service.category}
+            {service.type !== "Default" ? ` · ${service.type}` : ""}
+          </span>
+          <AlertDialogTitle className="text-left leading-snug">
             {service.name}
           </AlertDialogTitle>
           <AlertDialogDescription className="text-left text-xs">
-            {format(ratePer1000)} per 1000 · Min {min} – Max {max}
+            {format(ratePer1000)} per 1,000 · min {min.toLocaleString()} – max {max.toLocaleString()}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="link">Link</Label>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="link" className="eyebrow text-muted-foreground">Link</Label>
             <Input
               id="link"
               placeholder="Paste your profile or post link"
               value={link}
               onChange={(e) => setLink(e.target.value)}
-              className="rounded-lg"
+              className="h-10"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="quantity">Quantity</Label>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="quantity" className="eyebrow text-muted-foreground">Quantity</Label>
+              <div className="flex gap-1.5">
+                {[min, Math.min(max, 1000), Math.min(max, 5000)]
+                  .filter((v, i, arr) => arr.indexOf(v) === i)
+                  .map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setQuantity(String(v))}
+                      className={
+                        qty === v
+                          ? "h-7 rounded-full bg-[#ff7a1a]/15 px-3 text-xs text-[#ffc08f] shadow-[inset_0_0_0_1px_rgb(255_140_60/0.4)]"
+                          : "h-7 rounded-full bg-white/[0.04] px-3 text-xs text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                      }
+                    >
+                      {v.toLocaleString()}
+                    </button>
+                  ))}
+              </div>
+            </div>
             <Input
               id="quantity"
               type="number"
@@ -176,29 +189,35 @@ export function ServiceOrderModal({
               placeholder={`${min} - ${max}`}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              className="rounded-lg"
+              className="h-10 tabular-nums"
             />
           </div>
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <div>
-              <p className="text-muted-foreground text-xs">Total</p>
-              <p className="text-lg font-semibold">
+          <div className="grid grid-cols-2">
+            <div className="rounded-xl bg-white/[0.03] px-4 py-3">
+              <p className="eyebrow text-muted-foreground">Total</p>
+              <p className="mt-2 text-lg font-semibold tracking-[-0.02em] tabular-nums">
                 {format(total)}
               </p>
             </div>
-            <div>
-              <p className="text-muted-foreground text-xs">Your balance</p>
-              <p className="font-medium">
+            <div className="rounded-xl bg-white/[0.03] px-4 py-3">
+              <p className="eyebrow text-muted-foreground">Your balance</p>
+              <p
+                className={
+                  canAfford
+                    ? "mt-2 text-lg font-semibold tracking-[-0.02em] tabular-nums"
+                    : "mt-2 text-lg font-semibold tracking-[-0.02em] text-destructive tabular-nums"
+                }
+              >
                 {format(parseFloat(userBalance))}
               </p>
               {!canAfford && (
-                <p className="text-destructive text-xs">Insufficient balance</p>
+                <p className="subtext text-[0.6875rem] text-destructive">Insufficient balance</p>
               )}
             </div>
           </div>
           <Button
             size="lg"
-            className="w-full rounded-full"
+            className="eyebrow h-11 w-full"
             disabled={loading || !link.trim() || !canAfford}
             onClick={handleOrder}>
             {loading ? (
@@ -206,17 +225,17 @@ export function ServiceOrderModal({
                 <HugeiconsIcon
                   icon={Loading03Icon}
                   size={16}
-                  className="mr-2 size-4 animate-spin"
+                  className="size-4 animate-spin"
                 />
-                Placing order...
+                Placing order…
               </>
             ) : (
-              `Order ${format(total)}`
+              `Order · ${format(total)}`
             )}
           </Button>
         </div>
         <AlertDialogFooter>
-          <AlertDialogCancel className="rounded-full">Close</AlertDialogCancel>
+          <AlertDialogCancel className="eyebrow">Close</AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
-import { DashboardNavbar } from "@/components/dashboard-navbar";
+import { DashboardShell } from "@/components/dashboard/shell";
+import { PageHeader } from "@/components/page-header";
 import { ServiceGrid } from "@/components/boosting/service-grid";
 
 export const dynamic = "force-dynamic";
@@ -21,8 +22,8 @@ export default async function BoostingPage() {
   const walletBalance = Array.isArray(balance) ? balance : [balance];
 
   return (
-    <div className="min-h-screen bg-background font-display">
-      <DashboardNavbar
+      <DashboardShell
+        wide
         user={{
           id: session.user.id,
           name: session.user.name ?? "User",
@@ -30,16 +31,12 @@ export default async function BoostingPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
-      />
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="font-display text-2xl font-semibold">Boosting</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Get followers, likes, comments and more for your social media
-          </p>
-        </div>
+      >
+        <PageHeader
+          title="Boosting"
+          description="Get followers, likes, comments and more for your social media."
+        />
         <ServiceGrid walletBalance={walletBalance} />
-      </main>
-    </div>
+      </DashboardShell>
   );
 }

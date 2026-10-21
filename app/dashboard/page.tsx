@@ -1,26 +1,50 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { headers } from "next/headers";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Add01Icon,
+  ArrowRight01Icon,
+  CheckmarkCircle02Icon,
+  CodeIcon,
+  Coins01Icon,
+  PackageIcon,
+  Rocket01Icon,
+  ShoppingBag01Icon,
+  Wallet01Icon,
+} from "@hugeicons/core-free-icons";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { db } from "@/db/drizzle";
 import { order, listing, supplier, boostingOrder } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { DashboardNavbar } from "@/components/dashboard-navbar";
+import { DashboardShell } from "@/components/dashboard/shell";
+import { EmptyState, PageHeader, SectionLabel, StatCard } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Price } from "@/components/currency-provider";
+import { Badge } from "@/components/ui/badge";
 import { getSetting } from "@/lib/admin-auth";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 
 export const dynamic = "force-dynamic";
 
-async function getRecentOrders(userId: string) {
+type RecentOrder = {
+  id: string;
+  kind: "account" | "boost";
+  status: string;
+  amount: string;
+  createdAt: Date;
+  title: string;
+};
+
+async function getOrders(userId: string) {
   const [marketplaceOrders, boostOrders] = await Promise.all([
     db
       .select({
         id: order.id,
         status: order.status,
         amount: order.amount,
-        currency: order.currency,
         createdAt: order.createdAt,
         title: listing.title,
       })
@@ -29,25 +53,34 @@ async function getRecentOrders(userId: string) {
       .innerJoin(supplier, eq(listing.supplierId, supplier.id))
       .where(eq(order.userId, userId))
       .orderBy(desc(order.createdAt))
-      .limit(5),
+      .limit(100),
     db
       .select({
         id: boostingOrder.id,
         status: boostingOrder.status,
         amount: boostingOrder.amount,
-        currency: boostingOrder.currency,
         createdAt: boostingOrder.createdAt,
         title: boostingOrder.serviceName,
       })
       .from(boostingOrder)
       .where(eq(boostingOrder.userId, userId))
       .orderBy(desc(boostingOrder.createdAt))
-      .limit(5),
+      .limit(100),
   ]);
 
-  const all = [...marketplaceOrders, ...boostOrders];
+  const all: RecentOrder[] = [
+    ...marketplaceOrders.map((o: (typeof marketplaceOrders)[number]) => ({ ...o, kind: "account" as const })),
+    ...boostOrders.map((o: (typeof boostOrders)[number]) => ({ ...o, kind: "boost" as const })),
+  ];
   all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  return all.slice(0, 5);
+  return all;
+}
+
+function statusVariant(status: string) {
+  const s = status.toLowerCase();
+  if (s.includes("complet") || s.includes("deliver")) return "default" as const;
+  if (s.includes("cancel") || s.includes("fail") || s.includes("refund")) return "destructive" as const;
+  return "secondary" as const;
 }
 
 export default async function DashboardPage() {
@@ -59,188 +92,170 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [walletBalance, recentOrders, announcementStr] = await Promise.all([
+  const [walletBalance, orders, announcementStr] = await Promise.all([
     (async () => {
       await getOrCreateWallet(session!.user!.id, "NGN");
       const b = await getWalletBalance(session!.user!.id);
       return Array.isArray(b) ? b : [b];
     })(),
-    getRecentOrders(session.user.id),
+    getOrders(session.user.id),
     getSetting("site_announcement"),
   ]);
 
   const primaryBalance = walletBalance.find((w) => w.currency === "NGN") ?? walletBalance[0];
   const announcement = announcementStr ? JSON.parse(announcementStr) : null;
 
+  const completed = orders.filter((o) => /complet|deliver/i.test(o.status)).length;
+  const spent = orders
+    .filter((o) => !/cancel|fail|refund/i.test(o.status))
+    .reduce((sum, o) => sum + Number(o.amount || 0), 0);
+  const recent = orders.slice(0, 6);
+  const firstName = session.user.name?.split(" ")[0] ?? "there";
+
   return (
-    <div className="min-h-screen bg-background font-display">
-      {announcement?.active && <AnnouncementBanner announcement={announcement} />}
-      <DashboardNavbar
-        user={{
-          id: session.user.id,
-          name: session.user.name ?? "User",
-          email: session.user.email ?? "",
-          image: session.user.image,
-        }}
-        walletBalance={walletBalance}
-      />
-      <main className="container mx-auto px-4 py-8">
-        <div className="space-y-8">
-          <section>
-            <h1 className="text-2xl font-semibold">
-              Welcome back, {session.user.name?.split(" ")[0] ?? "there"}
-            </h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Manage your wallet, orders, and growth services
-            </p>
-          </section>
+    <DashboardShell
+      banner={announcement?.active ? <AnnouncementBanner announcement={announcement} /> : undefined}
+      user={{
+        id: session.user.id,
+        name: session.user.name ?? "User",
+        email: session.user.email ?? "",
+        image: session.user.image,
+      }}
+      walletBalance={walletBalance}
+    >
+      <PageHeader title={`Welcome back, ${firstName}`} description="Here's your wallet and what you've ordered." />
 
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border border-border bg-background p-4 shadow-none">
-              <p className="text-muted-foreground text-sm">Balance (NGN)</p>
-              <p className="mt-1 font-display text-2xl font-semibold">
-                {primaryBalance
-                  ? Number(primaryBalance.balance).toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })
-                  : "0.00"}{" "}
-                <span className="text-muted-foreground font-normal">NGN</span>
-              </p>
-              <Link
-                href="/wallet/deposit"
-                className="text-link mt-2 inline-block text-sm font-medium hover:underline"
-              >
-                Deposit funds →
-              </Link>
+      <div className="grid gap-3 lg:grid-cols-3">
+        {/* Balance hero */}
+        <div className="relative overflow-hidden rounded-3xl p-7 shadow-[inset_0_0_0_1px_rgb(255_140_60/0.14)] lg:col-span-2">
+          <div aria-hidden className="absolute inset-0 bg-[linear-gradient(135deg,rgb(255_90_31/0.22),rgb(255_211_26/0.06)_55%,transparent_80%)]" />
+          <div aria-hidden className="glow absolute -top-24 -right-10 h-72 w-96 opacity-60" />
+          <div className="relative flex h-full flex-col justify-between gap-10">
+            <div className="flex items-start justify-between gap-4">
+              <span className="text-sm text-foreground/70">Wallet balance</span>
+              <span className="flex size-10 items-center justify-center rounded-2xl bg-white/10 text-white">
+                <HugeiconsIcon icon={Wallet01Icon} strokeWidth={1.75} className="size-5" />
+              </span>
             </div>
-            <Link
-              href="/marketplace"
-              className="rounded-lg border border-border bg-background p-4 shadow-none transition-colors hover:bg-muted/50"
-            >
-              <p className="font-medium">Marketplace</p>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Buy verified social accounts
+            <div className="flex flex-wrap items-end justify-between gap-6">
+              <p className="text-5xl font-semibold tracking-[-0.05em] tabular-nums sm:text-6xl">
+                <Price ngn={primaryBalance ? primaryBalance.balance : 0} />
               </p>
-            </Link>
-            <Link
-              href="/boosting"
-              className="rounded-lg border border-border bg-background p-4 shadow-none transition-colors hover:bg-muted/50"
-            >
-              <p className="font-medium">Boosting</p>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Followers, likes, views & more
-              </p>
-            </Link>
-            <Link
-              href="/orders"
-              className="rounded-lg border border-border bg-background p-4 shadow-none transition-colors hover:bg-muted/50"
-            >
-              <p className="font-medium">Orders</p>
-              <p className="text-muted-foreground mt-1 text-sm">
-                Track orders & credentials
-              </p>
-            </Link>
-          </section>
-
-          <section>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Recent Orders</h2>
-              <Link
-                href="/orders"
-                className="text-link text-sm font-medium hover:underline"
-              >
-                View all →
-              </Link>
-            </div>
-            {recentOrders.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border p-8 text-center">
-                <p className="text-muted-foreground">
-                  No orders yet. Browse the marketplace or boosting to get started.
-                </p>
-                <Link
-                  href="/marketplace"
-                  className="text-link mt-2 inline-block text-sm font-medium hover:underline"
-                >
-                  Go to Marketplace
-                </Link>
+              <div className="flex gap-2">
+                <Button asChild>
+                  <Link href="/wallet/deposit">
+                    <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />
+                    Add funds
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/orders">Orders</Link>
+                </Button>
               </div>
-            ) : (
-              <>
-                <div className="hidden md:block rounded-lg border border-border bg-background">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="p-3 text-left font-medium">Product</th>
-                        <th className="p-3 text-left font-medium">Status</th>
-                        <th className="p-3 text-left font-medium">Amount</th>
-                        <th className="p-3 text-left font-medium">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentOrders.map(
-                        (
-                          o: {
-                            id?: string;
-                            title?: string;
-                            status?: string;
-                            amount?: string;
-                            currency?: string;
-                            createdAt?: string;
-                          }
-                        ) => (
-                          <tr key={o.id} className="border-b last:border-0">
-                            <td className="p-3">{o.title ?? "—"}</td>
-                            <td className="p-3 capitalize">{o.status ?? "—"}</td>
-                            <td className="p-3">
-                              {o.amount ? <Price ngn={o.amount} /> : "—"}
-                            </td>
-                            <td className="text-muted-foreground p-3">
-                              {o.createdAt
-                                ? new Date(o.createdAt).toLocaleDateString()
-                                : "—"}
-                            </td>
-                          </tr>
-                        )
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex flex-col gap-3 md:hidden">
-                  {recentOrders.map(
-                    (
-                      o: {
-                        id?: string;
-                        title?: string;
-                        status?: string;
-                        amount?: string;
-                        currency?: string;
-                        createdAt?: string;
-                      }
-                    ) => (
-                      <div key={o.id} className="rounded-lg border border-border bg-background p-4 space-y-2">
-                        <div className="flex items-start justify-between">
-                          <p className="font-medium text-sm">{o.title ?? "—"}</p>
-                          <span className="text-xs capitalize rounded-full bg-muted px-2 py-0.5">{o.status ?? "—"}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <p className="font-medium">
-                            {o.amount ? <Price ngn={o.amount} /> : "—"}
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            {o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "—"}
-                          </p>
-                        </div>
-                      </div>
-                    )
-                  )}
-                </div>
-              </>
-            )}
-          </section>
+            </div>
+          </div>
         </div>
-      </main>
-    </div>
+
+        <div className="grid grid-cols-3 gap-3 lg:grid-cols-1">
+          <StatCard label="Orders" value={orders.length.toLocaleString()} icon={<HugeiconsIcon icon={ShoppingBag01Icon} />} />
+          <StatCard label="Completed" value={completed.toLocaleString()} icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} />} />
+          <StatCard label="Spent" value={<Price ngn={spent} />} icon={<HugeiconsIcon icon={Coins01Icon} />} />
+        </div>
+      </div>
+
+      {/* Quick actions */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <QuickTile href="/marketplace" icon={PackageIcon} label="Buy accounts" hint="Aged & fresh" />
+        <QuickTile href="/boosting" icon={Rocket01Icon} label="Boost a profile" hint="From ₦180 / 1k" />
+        <QuickTile href="/wallet/deposit" icon={Wallet01Icon} label="Fund wallet" hint="Card, bank, crypto" />
+        <QuickTile href="/settings" icon={CodeIcon} label="API key" hint="For resellers" />
+      </div>
+
+      {/* Recent orders */}
+      <div className="flex flex-col gap-3">
+        <SectionLabel
+          action={
+            <Link href="/orders" className="flex items-center gap-1 text-[0.8125rem] text-muted-foreground transition-colors hover:text-foreground">
+              View all
+              <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="size-3.5" />
+            </Link>
+          }
+        >
+          Recent orders
+        </SectionLabel>
+        {recent.length === 0 ? (
+          <EmptyState
+            icon={<HugeiconsIcon icon={ShoppingBag01Icon} />}
+            title="No orders yet"
+            description="Your purchases and boosts will show up here."
+            action={
+              <Button asChild size="sm" className="mt-2">
+                <Link href="/marketplace">Browse the marketplace</Link>
+              </Button>
+            }
+          />
+        ) : (
+          <ul className="surface flex flex-col gap-0.5 rounded-2xl p-1.5">
+            {recent.map((o) => (
+              <li key={o.id}>
+                <Link
+                  href="/orders"
+                  className="group flex items-center justify-between gap-4 rounded-xl px-3 py-3 transition-colors hover:bg-white/[0.04]"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-muted-foreground transition-colors group-hover:text-[#ff9a4a]">
+                      <HugeiconsIcon icon={o.kind === "account" ? PackageIcon : Rocket01Icon} strokeWidth={1.75} className="size-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[0.8125rem] font-medium">{o.title ?? "—"}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(o.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <Badge variant={statusVariant(o.status)} className="hidden sm:inline-flex">
+                      {o.status.replace("_", " ")}
+                    </Badge>
+                    <span className="w-24 text-right text-[0.8125rem] font-medium tabular-nums">
+                      {o.amount ? <Price ngn={o.amount} /> : "—"}
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </DashboardShell>
+  );
+}
+
+function QuickTile({
+  href,
+  icon,
+  label,
+  hint,
+}: {
+  href: string;
+  icon: typeof Wallet01Icon;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <SpotlightCard href={href} className="flex flex-col gap-6 p-5">
+      <span className="flex size-10 items-center justify-center rounded-2xl bg-[linear-gradient(140deg,rgb(255_90_31/0.2),rgb(255_211_26/0.06))] text-[#ffb27a]">
+        <HugeiconsIcon icon={icon} strokeWidth={1.75} className="size-[18px]" />
+      </span>
+      <div>
+        <p className="flex items-center gap-1 text-[0.8125rem] font-medium">
+          {label}
+          <HugeiconsIcon
+            icon={ArrowRight01Icon}
+            strokeWidth={2}
+            className="size-3.5 -translate-x-1 opacity-0 transition-all duration-300 group-hover/spot:translate-x-0 group-hover/spot:opacity-100"
+          />
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
+      </div>
+    </SpotlightCard>
   );
 }

@@ -10,9 +10,6 @@ import { toast } from "sonner";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Field, FieldDescription, FieldGroup } from "@/components/ui/field";
 import {
@@ -117,16 +114,10 @@ export function SignupForm({
 
   return (
     <div
-      className={cn("flex flex-col gap-4 font-display", className)}
+      className={cn("flex flex-col gap-4", className)}
       {...props}>
       <Card className="shadow-none">
-        <CardHeader>
-          <CardTitle>Welcome to Roguesocials</CardTitle>
-          <CardDescription>
-            Enter your details below to create your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FieldGroup className="gap-3">
@@ -222,7 +213,7 @@ export function SignupForm({
                             </div>
                           </FormControl>
                           <div
-                            className="mt-2 h-1 w-full overflow-hidden rounded-full bg-border"
+                            className="mt-2 h-1 w-full overflow-hidden bg-border"
                             role="progressbar"
                             aria-valuenow={strengthScore}
                             aria-valuemin={0}
@@ -282,7 +273,7 @@ export function SignupForm({
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="rounded-full">
+                    className="eyebrow h-10 w-full">
                     {loading ? (
                       <HugeiconsIcon
                         icon={Loading03Icon}
@@ -290,7 +281,7 @@ export function SignupForm({
                         className="mr-2 size-4 animate-spin"
                       />
                     ) : (
-                      "Sign Up"
+                      "Create account"
                     )}
                   </Button>
 

@@ -78,7 +78,7 @@ export function PurchaseButton({
     <>
       <Button
         size="lg"
-        className="w-full rounded-full"
+        className="eyebrow h-11 w-full"
         disabled={outOfStock}
         onClick={() => setOpen(true)}
       >
@@ -92,9 +92,9 @@ export function PurchaseButton({
               You&apos;re about to buy: {title}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label htmlFor="qty" className="text-sm font-medium">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="qty" className="eyebrow text-muted-foreground">
                 Quantity
               </label>
               <Input
@@ -106,17 +106,32 @@ export function PurchaseButton({
                 onChange={(e) =>
                   setQuantity(Math.max(1, Math.min(stock, parseInt(e.target.value, 10) || 1)))
                 }
-                className="rounded-lg"
+                className="h-10 tabular-nums"
               />
             </div>
-            <div className="text-sm">
-              <p className="text-muted-foreground">
-                Your balance: {format(balance)}
-              </p>
-              <p className="text-muted-foreground text-xs mt-1">
-                Final price is calculated at checkout with the live exchange rate.
-              </p>
+            <div className="grid grid-cols-2">
+              <div className="rounded-xl bg-white/[0.03] px-4 py-3">
+                <p className="eyebrow text-muted-foreground">Estimated total</p>
+                <p className="mt-2 text-base font-semibold tabular-nums">
+                  {format(parseFloat(price) * quantity)}
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/[0.03] px-4 py-3">
+                <p className="eyebrow text-muted-foreground">Your balance</p>
+                <p
+                  className={
+                    balance < parseFloat(price) * quantity
+                      ? "mt-2 text-base font-semibold text-destructive tabular-nums"
+                      : "mt-2 text-base font-semibold tabular-nums"
+                  }
+                >
+                  {format(balance)}
+                </p>
+              </div>
             </div>
+            <p className="subtext text-xs text-muted-foreground">
+              Final price is calculated at checkout with the live exchange rate.
+            </p>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
@@ -134,10 +149,10 @@ export function PurchaseButton({
                     size={16}
                     className="mr-2 size-4 animate-spin"
                   />
-                  Processing...
+                  Processing…
                 </>
               ) : (
-                "Confirm Purchase"
+                "Confirm purchase"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

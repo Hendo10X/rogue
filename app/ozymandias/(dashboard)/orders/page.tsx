@@ -24,7 +24,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { CheckmarkBadge01Icon, Loading03Icon } from "@hugeicons/core-free-icons";
+import { CheckmarkBadge01Icon, Loading03Icon, Refresh01Icon, Search01Icon } from "@hugeicons/core-free-icons";
+import { StatCard, StatGrid } from "@/components/page-header";
+import { Input } from "@/components/ui/input";
+import { Segmented } from "@/components/ui/segmented";
 
 interface OrderRow {
   id: string;
@@ -44,11 +47,11 @@ interface OrderRow {
 
 function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
-    pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-    processing: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
-    completed: "bg-green-500/15 text-green-600 dark:text-green-400",
-    failed: "bg-red-500/15 text-red-600 dark:text-red-400",
-    manual_review: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+    pending: "bg-amber-500/15 text-amber-300",
+    processing: "bg-blue-500/15 text-sky-300",
+    completed: "bg-green-500/15 text-emerald-400",
+    failed: "bg-red-500/15 text-red-400",
+    manual_review: "bg-purple-500/15 text-violet-300",
   };
   const label = status === "manual_review" ? "Manual Review" : status.charAt(0).toUpperCase() + status.slice(1);
   return (
@@ -61,6 +64,8 @@ function StatusBadge({ status }: { status: string }) {
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | "queue" | "marketplace" | "boosting">("all");
+  const [query, setQuery] = useState("");
   
   // Fulfillment Modal State
   const [fulfillingOrder, setFulfillingOrder] = useState<OrderRow | null>(null);
@@ -113,7 +118,7 @@ export default function AdminOrdersPage() {
   if (loading && orders.length === 0) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Orders</h1>
+        <div className="flex flex-col gap-1.5"><h1 className="text-2xl font-semibold tracking-[-0.03em]">Orders</h1></div>
         <p className="text-muted-foreground flex items-center gap-2">
           <Spinner className="size-4" /> Loading…
         </p>
@@ -121,14 +126,76 @@ export default function AdminOrdersPage() {
     );
   }
 
+  const queue = orders.filter((o) => o.status === "manual_review" && o.type === "marketplace");
+  const q = query.trim().toLowerCase();
+  const shown = orders.filter((o) => {
+    if (filter === "queue" && !(o.status === "manual_review" && o.type === "marketplace")) return false;
+    if (filter === "marketplace" && o.type !== "marketplace") return false;
+    if (filter === "boosting" && o.type !== "boosting") return false;
+    if (!q) return true;
+    return [o.id, o.userEmail, o.title, o.serviceName, o.link, o.status]
+      .filter(Boolean)
+      .some((v) => String(v).toLowerCase().includes(q));
+  });
+  const tabs = [
+    { id: "all" as const, label: "All", count: orders.length },
+    { id: "queue" as const, label: "Needs action", count: queue.length },
+    { id: "marketplace" as const, label: "Marketplace", count: orders.filter((o) => o.type === "marketplace").length },
+    { id: "boosting" as const, label: "Boosting", count: orders.filter((o) => o.type === "boosting").length },
+  ];
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Orders</h1>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-1.5">
+          
+          <h1 className="text-2xl font-semibold tracking-[-0.03em]">Orders</h1>
+          <p className="text-sm text-muted-foreground">
+            {orders.length.toLocaleString()} order{orders.length === 1 ? "" : "s"} across the marketplace and boosting.
+          </p>
+        </div>
+        <Button variant="outline" className="eyebrow" onClick={fetchOrders} disabled={loading}>
+          <HugeiconsIcon icon={loading ? Loading03Icon : Refresh01Icon} className={loading ? "animate-spin" : undefined} />
+          Refresh
+        </Button>
+      </div>
+
+      <StatGrid>
+        <StatCard label="Orders" value={orders.length.toLocaleString()} hint="Latest from both channels" />
+        <StatCard
+          label="Needs action"
+          value={queue.length.toLocaleString()}
+          tone={queue.length > 0 ? "danger" : undefined}
+          hint={queue.length > 0 ? "Manual review — fulfil by hand" : "Queue is clear"}
+        />
+        <StatCard label="Completed" value={orders.filter((o) => o.status === "completed").length.toLocaleString()} hint="Delivered" />
+        <StatCard label="Failed" value={orders.filter((o) => o.status === "failed").length.toLocaleString()} hint="Refunded to wallet" />
+      </StatGrid>
+
+      {/* Filter pills + search */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <Segmented
+          id="admin-orders"
+          value={filter}
+          onChange={setFilter}
+          options={tabs.map((t) => ({ value: t.id, label: t.label, count: t.count }))}
+          className="max-w-full self-start overflow-x-auto"
+        />
+        <label className="relative flex items-center md:w-80">
+          <HugeiconsIcon icon={Search01Icon} strokeWidth={2} className="pointer-events-none absolute left-4 size-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by ID, email, product…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-10 rounded-full pl-10"
+          />
+        </label>
+      </div>
       {/* Desktop table */}
-      <div className="hidden md:block rounded-lg border bg-background shadow-none">
+      <div className="surface hidden overflow-hidden rounded-2xl p-1.5 md:block">
         <Table>
           <TableHeader>
-            <TableRow className="border-b">
+            <TableRow >
               <TableHead>Type</TableHead>
               <TableHead>ID</TableHead>
               <TableHead>User</TableHead>
@@ -140,15 +207,15 @@ export default function AdminOrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.length === 0 ? (
+            {shown.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-muted-foreground py-8 text-center">
-                  No orders yet
+                  No orders match
                 </TableCell>
               </TableRow>
             ) : (
-              orders.map((o) => (
-                <TableRow key={`${o.type}-${o.id}`} className="border-b">
+              shown.map((o) => (
+                <TableRow key={`${o.type}-${o.id}`} >
                   <TableCell className="capitalize">{o.type}</TableCell>
                   <TableCell className="font-mono text-xs">{o.id.slice(0, 8)}</TableCell>
                   <TableCell>{o.userEmail ?? "—"}</TableCell>
@@ -188,13 +255,13 @@ export default function AdminOrdersPage() {
 
       {/* Mobile cards */}
       <div className="flex flex-col gap-3 md:hidden">
-        {orders.length === 0 ? (
-          <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
-            No orders yet
+        {shown.length === 0 ? (
+          <div className="surface rounded-2xl p-10 text-center text-sm text-muted-foreground">
+            No orders match
           </div>
         ) : (
-          orders.map((o) => (
-            <div key={`${o.type}-${o.id}`} className="rounded-lg border bg-card p-4 space-y-3">
+          shown.map((o) => (
+            <div key={`${o.type}-${o.id}`} className="space-y-3 surface rounded-2xl p-4">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium truncate max-w-[200px]">

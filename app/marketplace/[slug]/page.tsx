@@ -3,7 +3,8 @@ import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { Price } from "@/components/currency-provider";
-import { DashboardNavbar } from "@/components/dashboard-navbar";
+import { DashboardShell } from "@/components/dashboard/shell";
+import { PageHeader } from "@/components/page-header";
 import { PurchaseButton } from "@/components/marketplace/purchase-button";
 
 async function getListing(slug: string) {
@@ -45,8 +46,7 @@ export default async function ListingPage({
   }
 
   return (
-    <div className="min-h-screen bg-background font-display">
-      <DashboardNavbar
+      <DashboardShell
         user={{
           id: session.user.id,
           name: session.user.name ?? "User",
@@ -54,48 +54,44 @@ export default async function ListingPage({
           image: session.user.image,
         }}
         walletBalance={walletBalance}
-      />
-      <main className="container mx-auto max-w-2xl px-4 py-8">
-        <div className="space-y-6">
-          <div>
-            <p className="text-muted-foreground text-sm">
-              {listing.platform}
-              {listing.categoryName && ` · ${listing.categoryName}`}
-            </p>
-            <h1 className="mt-2 font-display text-2xl font-semibold">
-              {listing.title}
-            </h1>
-            <p className="text-muted-foreground text-sm">{listing.supplierName}</p>
-          </div>
-          <div className="rounded-lg border p-4">
-            <p className="text-muted-foreground whitespace-pre-wrap text-sm">
+      >
+        <PageHeader
+          eyebrow={[listing.platform, listing.categoryName].filter(Boolean).join(" · ")}
+          title={listing.title}
+          description={listing.supplierName}
+        />
+        <div className="grid w-full max-w-2xl sm:grid-cols-2">
+          <div className="surface rounded-2xl px-5 py-5 sm:col-span-2">
+            <span className="eyebrow text-muted-foreground">Description</span>
+            <p className="subtext mt-3 text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
               {listing.description?.trim() ? listing.description : "No description"}
             </p>
           </div>
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="text-muted-foreground text-sm">Price</p>
-              <p className="text-xl font-semibold">
-                <Price ngn={listing.price} />
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">In stock</p>
-              <p className="font-medium">{Math.round(Number(listing.stock)).toLocaleString("en-US")}</p>
-            </div>
+          <div className="surface rounded-2xl px-5 py-4">
+            <span className="eyebrow text-muted-foreground">Price</span>
+            <p className="mt-2 text-xl font-semibold tracking-[-0.025em] tabular-nums">
+              <Price ngn={listing.price} />
+            </p>
           </div>
-          <PurchaseButton
-            slug={listing.slug}
-            price={listing.price}
-            currency={listing.currency}
-            stock={listing.stock}
-            title={listing.title}
-            userBalance={
-              walletBalance.find((w) => w.currency === "NGN")?.balance ?? "0"
-            }
-          />
+          <div className="surface rounded-2xl px-5 py-4">
+            <span className="eyebrow text-muted-foreground">In stock</span>
+            <p className="mt-2 text-xl font-semibold tracking-[-0.025em] tabular-nums">
+              {Math.round(Number(listing.stock)).toLocaleString("en-US")}
+            </p>
+          </div>
+          <div className="surface rounded-2xl p-4 sm:col-span-2">
+            <PurchaseButton
+              slug={listing.slug}
+              price={listing.price}
+              currency={listing.currency}
+              stock={listing.stock}
+              title={listing.title}
+              userBalance={
+                walletBalance.find((w) => w.currency === "NGN")?.balance ?? "0"
+              }
+            />
+          </div>
         </div>
-      </main>
-    </div>
+      </DashboardShell>
   );
 }

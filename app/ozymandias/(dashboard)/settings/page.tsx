@@ -180,7 +180,7 @@ export default function AdminSettingsPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Settings</h1>
+        <div className="flex flex-col gap-1.5"><h1 className="text-2xl font-semibold tracking-[-0.03em]">Settings</h1></div>
         <p className="text-muted-foreground">Loading…</p>
       </div>
     );
@@ -188,14 +188,14 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Settings</h1>
+      <div className="flex flex-col gap-1.5"><h1 className="text-2xl font-semibold tracking-[-0.03em]">Settings</h1></div>
       
       <div className="grid gap-6 md:grid-cols-2">
         {/* Profit Margins */}
-        <Card className="border shadow-none">
-          <CardHeader>
-            <h2 className="font-medium">Profit / Markup (Naira)</h2>
-            <p className="text-muted-foreground text-sm">
+        <Card>
+          <CardHeader >
+            <h2 className="text-sm font-semibold tracking-[-0.01em]">Profit / Markup (Naira)</h2>
+            <p className="text-sm text-muted-foreground">
               Boosting markup is the fixed Naira amount added to boosting
               services. Marketplace logs now use the tiered pricing below — this
               marketplace value only affects manual log baselines.
@@ -232,12 +232,12 @@ export default function AdminSettingsPage() {
         </Card>
 
         {/* Site Announcement */}
-        <Card className="border shadow-none">
-          <CardHeader>
+        <Card>
+          <CardHeader >
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-medium">Site Announcement</h2>
-                <p className="text-muted-foreground text-sm">
+                <h2 className="text-sm font-semibold tracking-[-0.01em]">Site Announcement</h2>
+                <p className="text-sm text-muted-foreground">
                   Display a global message to all users on the home page.
                 </p>
               </div>
@@ -282,10 +282,10 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Marketplace Log Pricing (tiered) */}
-      <Card className="border shadow-none">
-        <CardHeader>
-          <h2 className="font-medium">Marketplace Log Pricing</h2>
-          <p className="text-muted-foreground text-sm">
+      <Card>
+        <CardHeader >
+          <h2 className="text-sm font-semibold tracking-[-0.01em]">Marketplace Log Pricing</h2>
+          <p className="text-sm text-muted-foreground">
             Cheap logs (below the threshold) get a flat Naira fee added. Logs at
             or above the threshold get a percentage markup instead. Any
             auto-synced log that would still price above the cap is hidden from
@@ -347,10 +347,10 @@ export default function AdminSettingsPage() {
       </Card>
 
       {/* Rogue API */}
-      <Card className="border shadow-none">
-        <CardHeader>
-          <h2 className="font-medium">Rogue API — Reseller Markup</h2>
-          <p className="text-muted-foreground text-sm">
+      <Card>
+        <CardHeader >
+          <h2 className="text-sm font-semibold tracking-[-0.01em]">Rogue API — Reseller Markup</h2>
+          <p className="text-sm text-muted-foreground">
             Your profit % added on top of the supplier&apos;s cost for orders
             placed through the public Rogue API. e.g. 30 means API users pay
             supplier cost + 30%. Because it&apos;s a markup over cost (not a
@@ -378,10 +378,10 @@ export default function AdminSettingsPage() {
       </Card>
 
       {/* Supplier balance alert */}
-      <Card className="border shadow-none">
-        <CardHeader>
-          <h2 className="font-medium">Supplier Balance Alert</h2>
-          <p className="text-muted-foreground text-sm">
+      <Card>
+        <CardHeader >
+          <h2 className="text-sm font-semibold tracking-[-0.01em]">Supplier Balance Alert</h2>
+          <p className="text-sm text-muted-foreground">
             Every order is paid from your prepaid balance with the supplier
             (e.g. AcctShop). When it runs out, every order fails with
             &quot;Insufficient balance&quot; even though stock looks fine. You get
@@ -410,18 +410,18 @@ export default function AdminSettingsPage() {
       </Card>
 
       {/* Security PIN */}
-      <Card className="border shadow-none">
-        <CardHeader>
-          <h2 className="font-medium">Security PIN</h2>
-          <p className="text-muted-foreground text-sm">
+      <Card>
+        <CardHeader >
+          <h2 className="text-sm font-semibold tracking-[-0.01em]">Security PIN</h2>
+          <p className="text-sm text-muted-foreground">
             Set a 4-digit PIN required for sensitive actions like funding or deleting users.
-            {hasActionPin && <span className="ml-1 text-green-600 dark:text-green-400 font-medium">PIN is currently set.</span>}
+            {hasActionPin && <span className="ml-1 text-emerald-400 font-medium">PIN is currently set.</span>}
           </p>
         </CardHeader>
         <CardContent>
           <div className="flex items-end gap-3">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label className="text-xs text-muted-foreground">
                 {hasActionPin ? "Change PIN (leave blank to clear)" : "Set PIN"}
               </label>
               <Input
@@ -446,12 +446,12 @@ export default function AdminSettingsPage() {
       </Card>
 
       {/* Boosting Announcement */}
-      <Card className="border shadow-none">
-        <CardHeader>
+      <Card>
+        <CardHeader >
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-medium">Boosting Announcement</h2>
-              <p className="text-muted-foreground text-sm">
+              <h2 className="text-sm font-semibold tracking-[-0.01em]">Boosting Announcement</h2>
+              <p className="text-sm text-muted-foreground">
                 Display a modal announcement specifically on the Boosting page when users land on it.
               </p>
             </div>
@@ -480,10 +480,10 @@ export default function AdminSettingsPage() {
       </Card>
 
       {/* Manual Marketplace Logs */}
-      <Card className="border shadow-none">
-        <CardHeader>
-          <h2 className="font-medium">Manual Marketplace Logs</h2>
-          <p className="text-muted-foreground text-sm">
+      <Card>
+        <CardHeader >
+          <h2 className="text-sm font-semibold tracking-[-0.01em]">Manual Marketplace Logs</h2>
+          <p className="text-sm text-muted-foreground">
             Create custom logs that do not rely on any external supplier. These
             appear in the marketplace and are fulfilled manually from the admin
             orders page.
@@ -641,10 +641,10 @@ export default function AdminSettingsPage() {
 
       {/* Existing Manual Logs */}
       {manualListings.length > 0 && (
-        <Card className="border shadow-none">
-          <CardHeader>
-            <h2 className="font-medium">Existing Manual Logs</h2>
-            <p className="text-muted-foreground text-sm">
+        <Card>
+          <CardHeader >
+            <h2 className="text-sm font-semibold tracking-[-0.01em]">Existing Manual Logs</h2>
+            <p className="text-sm text-muted-foreground">
               Edit price / stock or remove logs from the marketplace.
             </p>
           </CardHeader>
@@ -655,7 +655,7 @@ export default function AdminSettingsPage() {
                 return (
                   <div
                     key={log.id}
-                    className="rounded-lg border bg-card p-4 space-y-2"
+                    className="space-y-2 surface rounded-2xl p-4"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
@@ -667,7 +667,7 @@ export default function AdminSettingsPage() {
                             : null}
                         </p>
                       </div>
-                      <span className="text-xs rounded-full bg-muted px-2 py-0.5 capitalize">
+                      <span className="text-xs bg-muted px-2 py-0.5 capitalize">
                         {log.status}
                       </span>
                     </div>

@@ -46,17 +46,17 @@ export default function AdminChangePasswordPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Change Password</h1>
-      <Card className="max-w-md border shadow-none">
-        <CardHeader>
-          <h2 className="font-medium">New password</h2>
-          <p className="text-muted-foreground text-sm">
+      <div className="flex flex-col gap-1.5"><h1 className="text-2xl font-semibold tracking-[-0.03em]">Change Password</h1></div>
+      <Card className="max-w-md">
+        <CardHeader >
+          <h2 className="text-sm font-semibold tracking-[-0.01em]">New password</h2>
+          <p className="text-sm text-muted-foreground">
             Alphanumeric only, at least 6 characters
           </p>
         </CardHeader>
         <CardContent>
           {done ? (
-            <p className="text-muted-foreground text-sm">Password updated.</p>
+            <p className="text-sm text-muted-foreground">Password updated.</p>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <FieldSet>

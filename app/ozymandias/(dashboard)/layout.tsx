@@ -38,13 +38,13 @@ export default async function DashboardLayout({
   } catch { /* non-critical */ }
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <header className="border-b bg-background">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4">
-          <AdminNav username={admin.username} />
-        </div>
+    <div className="flex min-h-svh flex-col">
+      <header className="sticky top-0 z-40 bg-background/80 shadow-[0_1px_0_rgb(255_255_255/0.05)] backdrop-blur-xl">
+        <AdminNav username={admin.username} />
       </header>
-      <main className="mx-auto max-w-7xl p-4">{children}</main>
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
+        {children}
+      </main>
     </div>
   );
 }

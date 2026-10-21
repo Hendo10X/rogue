@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
-import { DashboardNavbar } from "@/components/dashboard-navbar";
+import { DashboardShell } from "@/components/dashboard/shell";
 import { Button } from "@/components/ui/button";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
@@ -25,9 +25,9 @@ export default async function DepositSuccessPage() {
   const walletBalance = Array.isArray(balance) ? balance : [balance];
 
   return (
-    <div className="min-h-screen bg-background font-display">
+    <>
       <BalanceRefresher />
-      <DashboardNavbar
+      <DashboardShell
         user={{
           id: session.user.id,
           name: session.user.name ?? "User",
@@ -35,35 +35,34 @@ export default async function DepositSuccessPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
-      />
-      <main className="container mx-auto max-w-md px-4 py-12">
-        <div className="flex flex-col items-center gap-6 text-center">
-          <div className="bg-primary/10 flex size-20 items-center justify-center rounded-full">
+      >
+        <div className="flex w-full max-w-md flex-col surface rounded-2xl">
+          <div className="flex items-center gap-3 px-5 py-4">
             <HugeiconsIcon
               icon={CheckmarkCircle02Icon}
-              size={40}
-              className="text-link"
+              strokeWidth={1.75}
+              className="size-5 text-primary"
             />
           </div>
-          <div>
-            <h1 className="font-display text-2xl font-semibold">
-              Payment submitted
+          <div className="px-5 py-6">
+            <h1 className="text-xl font-semibold tracking-[-0.03em]">
+              Your deposit is on its way.
             </h1>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Your deposit is being processed. Your balance will update
-              automatically once the payment is confirmed.
+            <p className="subtext mt-2 text-sm text-muted-foreground">
+              We&apos;re confirming the payment. Your balance updates
+              automatically the moment it clears.
             </p>
           </div>
-          <div className="flex gap-3">
-            <Button asChild variant="outline" className="rounded-full">
+          <div className="grid grid-cols-2">
+            <Button asChild variant="ghost" className="eyebrow h-11">
               <Link href="/wallet/deposit">Deposit more</Link>
             </Button>
-            <Button asChild className="rounded-full">
-              <Link href="/marketplace">Go to Marketplace</Link>
+            <Button asChild className="eyebrow h-11">
+              <Link href="/marketplace">Go to marketplace</Link>
             </Button>
           </div>
         </div>
-      </main>
-    </div>
+      </DashboardShell>
+    </>
   );
 }

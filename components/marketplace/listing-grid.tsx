@@ -6,7 +6,7 @@ import { ListingDetailModal } from "./listing-detail-modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Select,
   SelectContent,
@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { FavouriteIcon } from "@hugeicons/core-free-icons";
+import { FavouriteIcon, Search01Icon, ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 
 function FacebookLogo({ className }: { className?: string }) {
   return (
@@ -29,7 +29,8 @@ function FacebookLogo({ className }: { className?: string }) {
 }
 
 function PlatformSvgIcon({ src, alt }: { src: string; alt: string }) {
-  return <img src={src} alt={alt} className="size-5 shrink-0 rounded-sm" />;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt={alt} className="size-5 shrink-0" />;
 }
 
 function getPlatformIcon(platform: string) {
@@ -131,6 +132,19 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
   const [selectedListing, setSelectedListing] = useState<ListingItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const debouncedSearch = useDebounce(searchInput, 300);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // "/" jumps to search from anywhere on the page, as in the admin tables.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      if (e.key !== "/" || target?.closest("input, textarea, [contenteditable]")) return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const userBalance =
     walletBalance.find((w) => w.currency === "NGN")?.balance ?? "0";
@@ -165,43 +179,80 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
   const otherPlatforms = platforms.filter((p) => !p.toLowerCase().includes("facebook"));
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-start lg:items-center">
-        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-4">
+      {/* Toolbar — search, platform, sub-category. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <label className="relative flex flex-1 items-center">
+          <HugeiconsIcon
+            icon={Search01Icon}
+            strokeWidth={2}
+            className="pointer-events-none absolute left-4 size-4 text-muted-foreground"
+          />
           <Input
-            placeholder="Search listings..."
+            ref={searchRef}
+            placeholder="Search listings…"
             value={searchInput}
             onChange={(e) => {
               setSearchInput(e.target.value);
               setPage(1);
             }}
-            className="max-w-xs rounded-lg"
+            className="h-11 rounded-full pr-12 pl-10"
           />
+          <kbd className="pointer-events-none absolute right-4 hidden h-5 min-w-5 items-center justify-center rounded-md bg-white/[0.06] px-1.5 font-mono text-[0.625rem] text-muted-foreground sm:inline-flex">
+            /
+          </kbd>
+        </label>
+        <Select
+          value={primaryPlatform || "all"}
+          onValueChange={(val) => {
+            setPrimaryPlatform(val === "all" ? "" : val);
+            setFacebookCategory("");
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="h-11! w-full rounded-full px-4 sm:w-[200px]">
+            <SelectValue placeholder="All platforms" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All platforms</SelectItem>
+            {facebookPlatforms.length > 0 && (
+              <SelectItem value="facebook">
+                <div className="flex items-center gap-2">
+                  <FacebookLogo className="size-4 shrink-0" />
+                  <span className="uppercase">Facebook</span>
+                </div>
+              </SelectItem>
+            )}
+            {otherPlatforms.map((p) => (
+              <SelectItem key={p} value={p}>
+                <div className="flex items-center gap-2">
+                  <div className="flex size-5 shrink-0 items-center justify-center">
+                    {getPlatformIcon(p)}
+                  </div>
+                  <span className="uppercase">{p}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {primaryPlatform === "facebook" && facebookPlatforms.length > 0 && (
           <Select
-            value={primaryPlatform || "all"}
+            value={facebookCategory || "all"}
             onValueChange={(val) => {
-              setPrimaryPlatform(val === "all" ? "" : val);
-              setFacebookCategory("");
+              setFacebookCategory(val === "all" ? "" : val);
               setPage(1);
             }}
           >
-            <SelectTrigger className="h-9 w-[180px] rounded-lg bg-background">
-              <SelectValue placeholder="All platforms" />
+            <SelectTrigger className="h-11! w-full rounded-full px-4 text-[#ffb27a] sm:w-[260px]">
+              <SelectValue placeholder="All Facebook categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All platforms</SelectItem>
-              {facebookPlatforms.length > 0 && (
-                <SelectItem value="facebook">
-                  <div className="flex items-center gap-2">
-                    <FacebookLogo className="size-4 shrink-0" />
-                    <span className="uppercase">Facebook</span>
-                  </div>
-                </SelectItem>
-              )}
-              {otherPlatforms.map((p) => (
+              <SelectItem value="all">All Facebook categories</SelectItem>
+              {facebookPlatforms.map((p) => (
                 <SelectItem key={p} value={p}>
                   <div className="flex items-center gap-2">
-                    <div className="flex size-5 items-center justify-center shrink-0">
+                    <div className="flex size-5 shrink-0 items-center justify-center">
                       {getPlatformIcon(p)}
                     </div>
                     <span className="uppercase">{p}</span>
@@ -210,64 +261,44 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
               ))}
             </SelectContent>
           </Select>
+        )}
+      </div>
 
-          {primaryPlatform === "facebook" && facebookPlatforms.length > 0 && (
-            <Select
-              value={facebookCategory || "all"}
-              onValueChange={(val) => {
-                setFacebookCategory(val === "all" ? "" : val);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="h-9 w-[280px] rounded-lg bg-background border-primary/50 text-primary">
-                <SelectValue placeholder="All Facebook Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Facebook Categories</SelectItem>
-                {facebookPlatforms.map((p) => (
-                  <SelectItem key={p} value={p}>
-                    <div className="flex items-center gap-2">
-                      <div className="flex size-5 items-center justify-center shrink-0">
-                        {getPlatformIcon(p)}
-                      </div>
-                      <span className="uppercase">{p}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
+      <div className="flex h-4 items-center justify-between px-1">
+        <span className="eyebrow text-muted-foreground">
+          {pagination ? `Page ${page} of ${Math.max(1, pagination.totalPages)}` : "Listings"}
+        </span>
+        {isFetching && !isLoading && <Spinner className="size-3.5 text-muted-foreground" />}
       </div>
 
       <div className="relative">
-        {isFetching && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/20 backdrop-blur-[1px] rounded-lg">
-            <Spinner className="size-8" />
-          </div>
-        )}
-        
         {isLoading && !data ? (
-          <div className="flex min-h-[320px] items-center justify-center">
-            <Spinner className="size-8" />
+          <div className="flex min-h-[320px] items-center justify-center surface rounded-2xl">
+            <Spinner className="size-6" />
           </div>
         ) : isError || !data ? (
-          <div className="rounded-lg border border-dashed p-8 text-center">
-            <p className="text-muted-foreground">
+          <div className="surface rounded-2xl px-6 py-16 text-center">
+            <p className="subtext text-sm text-muted-foreground">
               {error instanceof Error ? error.message : "Failed to load listings"}
             </p>
           </div>
         ) : items.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-12 text-center">
-            <p className="text-muted-foreground">
-              No listings found matching your criteria.
+          <div className="surface rounded-2xl px-6 py-16 text-center">
+            <p className="text-sm font-medium">Nothing matches that.</p>
+            <p className="subtext mt-1 text-xs text-muted-foreground">
+              Try another platform or a shorter search.
             </p>
           </div>
         ) : (
           <>
-            <div className={isFetching ? "opacity-40 pointer-events-none grayscale-[0.5] transition-all duration-300" : "transition-all duration-300"}>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div
+              className={
+                isFetching
+                  ? "pointer-events-none opacity-50 transition-opacity duration-300"
+                  : "transition-opacity duration-300"
+              }
+            >
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {items.map((item: any) => {
                   const listing: ListingItem = {
                     id: String(item.id),
@@ -285,6 +316,7 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
                     <ListingCard
                       key={listing.id}
                       {...listing}
+                      icon={getPlatformIcon(listing.platform)}
                       onViewClick={() => openListingModal(listing)}
                     />
                   );
@@ -292,27 +324,27 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
               </div>
             </div>
             {pagination && pagination.totalPages > 1 && (
-              <div className="mt-6 flex justify-center gap-2">
+              <div className="mt-6 flex items-center justify-center gap-2">
                 <Button
                   variant="outline"
-                  size="sm"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="rounded-full"
+                  className="h-9 px-4"
                 >
+                  <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
                   Previous
                 </Button>
-                <span className="flex items-center px-4 text-sm">
+                <span className="flex items-center px-3 text-[0.8125rem] text-muted-foreground tabular-nums">
                   {page} / {pagination.totalPages}
                 </span>
                 <Button
                   variant="outline"
-                  size="sm"
                   disabled={page >= pagination.totalPages}
                   onClick={() => setPage((p) => p + 1)}
-                  className="rounded-full"
+                  className="h-9 px-4"
                 >
                   Next
+                  <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
                 </Button>
               </div>
             )}

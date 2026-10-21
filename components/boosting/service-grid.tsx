@@ -22,18 +22,21 @@ import {
   AlertDialogTitle,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowLeft01Icon, ArrowRight01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import type { ReallySimpleSocialService } from "@/lib/boosting/really-simple-social";
 
+/* eslint-disable @next/next/no-img-element */
 function getCategoryIcon(category: string) {
   const c = category.toLowerCase();
-  if (c.includes("instagram")) return <img src="/svgs/instagram-icon.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
-  if (c.includes("tiktok")) return <img src="/svgs/tiktok-icon-dark.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
-  if (c.includes("telegram")) return <img src="/svgs/telegram.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
-  if (c.includes("whatsapp")) return <img src="/svgs/whatsapp-icon.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
-  if (c.includes("threads")) return <img src="/svgs/threads.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
-  if (c.includes("facebook")) return <img src="/svgs/facebook-icon.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
-  if (c.includes("twitter") || c.includes(" x ") || c === "x") return <img src="/svgs/x.svg" alt="" className="size-4 shrink-0 rounded-sm" />;
+  if (c.includes("instagram")) return <img src="/svgs/instagram-icon.svg" alt="" className="size-4 shrink-0" />;
+  if (c.includes("tiktok")) return <img src="/svgs/tiktok-icon-dark.svg" alt="" className="size-4 shrink-0" />;
+  if (c.includes("telegram")) return <img src="/svgs/telegram.svg" alt="" className="size-4 shrink-0" />;
+  if (c.includes("whatsapp")) return <img src="/svgs/whatsapp-icon.svg" alt="" className="size-4 shrink-0" />;
+  if (c.includes("threads")) return <img src="/svgs/threads.svg" alt="" className="size-4 shrink-0" />;
+  if (c.includes("facebook")) return <img src="/svgs/facebook-icon.svg" alt="" className="size-4 shrink-0" />;
+  if (c.includes("twitter") || c.includes(" x ") || c === "x") return <img src="/svgs/x.svg" alt="" className="size-4 shrink-0" />;
   if (c.includes("youtube")) return <span className="text-sm leading-none">▶️</span>;
   if (c.includes("spotify") || c.includes("music")) return <span className="text-sm leading-none">🎵</span>;
   if (c.includes("snapchat") || c.includes("snap")) return <span className="text-sm leading-none">👻</span>;
@@ -88,6 +91,19 @@ export function ServiceGrid({
   const [selectedService, setSelectedService] =
     useState<ReallySimpleSocialService | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // "/" jumps to search from anywhere on the page.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      if (e.key !== "/" || target?.closest("input, textarea, [contenteditable]")) return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // Boosting announcement dialog
   const [announcementOpen, setAnnouncementOpen] = useState(false);
@@ -150,8 +166,8 @@ export function ServiceGrid({
 
   if (isError) {
     return (
-      <div className="rounded-lg border border-dashed p-8 text-center">
-        <p className="text-muted-foreground">
+      <div className="surface rounded-2xl px-6 py-16 text-center">
+        <p className="subtext text-sm text-muted-foreground">
           {error instanceof Error ? error.message : "Failed to load services"}
         </p>
       </div>
@@ -159,18 +175,19 @@ export function ServiceGrid({
   }
 
   return (
-    <>
+    <div className="flex flex-col gap-4">
       {/* Boosting-specific announcement dialog */}
       <AlertDialog open={announcementOpen} onOpenChange={setAnnouncementOpen}>
         <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>📢 Boosting Notice</AlertDialogTitle>
-            <AlertDialogDescription className="whitespace-pre-wrap text-sm leading-relaxed">
+            <AlertDialogTitle className="sr-only">Boosting notice</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
               {announcementMsg}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction
+              className="eyebrow"
               onClick={() => {
                 // Store dismissed state in sessionStorage so it doesn't re-show this session
                 fetch("/api/boosting/announcement")
@@ -188,86 +205,110 @@ export function ServiceGrid({
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="mb-6 flex flex-col gap-6 sm:flex-row sm:items-start lg:items-center">
-        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+      {/* Toolbar — search and category. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <label className="relative flex flex-1 items-center">
+          <HugeiconsIcon
+            icon={Search01Icon}
+            strokeWidth={2}
+            className="pointer-events-none absolute left-4 size-4 text-muted-foreground"
+          />
           <Input
-            placeholder="Search services..."
+            ref={searchRef}
+            placeholder="Search services…"
             value={search}
             onChange={handleSearchChange}
-            className="max-w-xs rounded-lg"
+            className="h-11 rounded-full pr-12 pl-10"
           />
-          <Select
-            value={category}
-            onValueChange={(val) => {
-              setCategory(val);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="h-9 w-[220px] rounded-lg bg-background">
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((cat: string) => (
-                <SelectItem key={cat} value={cat}>
-                  <div className="flex items-center gap-2">
-                    {getCategoryIcon(cat)}
-                    <span>{cat}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+          <kbd className="pointer-events-none absolute right-4 hidden h-5 min-w-5 items-center justify-center rounded-md bg-white/[0.06] px-1.5 font-mono text-[0.625rem] text-muted-foreground sm:inline-flex">
+            /
+          </kbd>
+        </label>
+        <Select
+          value={category}
+          onValueChange={(val) => {
+            setCategory(val);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="h-11! w-full rounded-full px-4 sm:w-[260px]">
+            <SelectValue placeholder="All categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All categories</SelectItem>
+            {categories.map((cat: string) => (
+              <SelectItem key={cat} value={cat}>
+                <div className="flex items-center gap-2">
+                  {getCategoryIcon(cat)}
+                  <span>{cat}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="relative">
-        {isFetching && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/20 backdrop-blur-[1px] rounded-lg">
-            <Spinner className="size-8" />
+      <div className="flex h-4 items-center justify-between px-1">
+        <span className="eyebrow text-muted-foreground">
+          {pagination ? `Page ${page} of ${Math.max(1, pagination.totalPages)}` : "Services"}
+        </span>
+        {isFetching && <Spinner className="size-3.5 text-muted-foreground" />}
+      </div>
+
+      <div
+        className={
+          isLoading || isFetching
+            ? "pointer-events-none opacity-50 transition-opacity duration-300"
+            : "transition-opacity duration-300"
+        }
+      >
+        {isLoading && items.length === 0 ? (
+          <div className="flex min-h-[320px] items-center justify-center surface rounded-2xl">
+            <Spinner className="size-6" />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="surface rounded-2xl px-6 py-16 text-center">
+            <p className="text-sm font-medium">No services match that.</p>
+            <p className="subtext mt-1 text-xs text-muted-foreground">
+              Try another category or a shorter search.
+            </p>
+          </div>
+        ) : (
+          <div className="surface flex flex-col gap-0.5 rounded-2xl p-1.5">
+            {items.map((service: ReallySimpleSocialService) => (
+              <ServiceCard
+                key={service.service}
+                service={service}
+                icon={getCategoryIcon(service.category)}
+                onViewClick={() => openModal(service)}
+              />
+            ))}
           </div>
         )}
-        <div className={(isLoading || isFetching) ? "opacity-40 pointer-events-none grayscale-[0.5] transition-all duration-300" : "transition-all duration-300"}>
-          {items.length === 0 && !isLoading ? (
-            <div className="rounded-lg border border-dashed p-12 text-center">
-              <p className="text-muted-foreground">
-                No services found matching your criteria.
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((service: ReallySimpleSocialService) => (
-                <ServiceCard
-                  key={service.service}
-                  service={service}
-                  onViewClick={() => openModal(service)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       {pagination && pagination.totalPages > 1 && (
-        <div className="mt-6 flex justify-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <Button
             variant="outline"
-            size="sm"
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="rounded-full">
+            className="h-9 px-4"
+          >
+            <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
             Previous
           </Button>
-          <span className="flex items-center px-4 text-sm">
+          <span className="flex items-center px-3 text-[0.8125rem] text-muted-foreground tabular-nums">
             {page} / {pagination.totalPages}
           </span>
           <Button
             variant="outline"
-            size="sm"
             disabled={page >= pagination.totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="rounded-full">
+            className="h-9 px-4"
+          >
             Next
+            <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
           </Button>
         </div>
       )}
@@ -279,6 +320,6 @@ export function ServiceGrid({
         userBalance={userBalance}
         onSuccess={handleOrderSuccess}
       />
-    </>
+    </div>
   );
 }

@@ -86,11 +86,11 @@ export function ApiKeysManager() {
 
   return (
     <Card className="border shadow-none">
-      <CardHeader>
-        <CardTitle className="text-base">API Access</CardTitle>
+      <CardHeader >
+        <CardTitle>API Access</CardTitle>
         <CardDescription>
           Generate keys to use the Rogue API. Send your key as{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">
+          <code className="bg-muted px-1 py-0.5 text-xs">
             Authorization: Bearer &lt;key&gt;
           </code>
           . Endpoints: <code className="text-xs">/api/v1/services</code>,{" "}
@@ -100,12 +100,12 @@ export function ApiKeysManager() {
       </CardHeader>
       <CardContent className="space-y-4">
         {newKey && (
-          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2">
+          <div className="border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2">
             <p className="text-sm font-medium">
               Copy your new key now — it won&apos;t be shown again.
             </p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 break-all rounded bg-muted px-2 py-1 text-xs">
+              <code className="flex-1 break-all bg-muted px-2 py-1 text-xs">
                 {newKey}
               </code>
               <Button
@@ -127,18 +127,18 @@ export function ApiKeysManager() {
 
         <div className="flex items-end gap-2">
           <div className="flex-1 space-y-2">
-            <label className="text-sm font-medium">Key name</label>
+            <label className="eyebrow text-muted-foreground">Key name</label>
             <Input
               placeholder="e.g. Reseller bot"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="rounded-lg"
+              
             />
           </div>
           <Button
             onClick={createKey}
             disabled={creating}
-            className="rounded-full"
+            className="eyebrow"
           >
             {creating ? (
               <HugeiconsIcon icon={Loading03Icon} size={16} className="mr-2 animate-spin" />
@@ -156,7 +156,7 @@ export function ApiKeysManager() {
             {keys.map((k) => (
               <div
                 key={k.id}
-                className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                className="flex items-center justify-between gap-3 border p-3"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{k.name}</p>

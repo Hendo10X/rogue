@@ -184,152 +184,174 @@ export default async function LandingPage({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background font-display">
+    <div className="flex min-h-svh flex-col">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Navbar />
 
-      <main className="flex-grow">
+      <main className="flex-1">
         {/* Hero */}
-        <section className="container mx-auto px-6 pt-10 pb-8 md:pt-16">
-          <nav className="text-muted-foreground mb-4 text-sm">
-            <Link href="/" className="hover:underline">
-              Home
-            </Link>{" "}
-            / <span className="text-foreground">{cfg.h1}</span>
-          </nav>
-          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-            {cfg.h1}
-          </h1>
-          <div className="text-muted-foreground mt-5 max-w-2xl space-y-4 text-base leading-relaxed">
-            {cfg.intro.map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
-          </div>
+        <section >
+          <div className="mx-auto w-full max-w-[88rem] px-4 py-16 sm:px-8 sm:py-20">
+            <nav className="eyebrow mb-6 flex items-center gap-2 text-muted-foreground">
+              <Link href="/" className="transition-colors hover:text-foreground">
+                Home
+              </Link>
+              <span>/</span>
+              <span className="text-primary">{cfg.platformLabel}</span>
+            </nav>
+            <h1 className="max-w-[18ch] text-4xl leading-[0.98] font-semibold tracking-[-0.04em] text-balance sm:text-6xl">
+              {cfg.h1}
+            </h1>
+            <div className="subtext mt-6 max-w-2xl space-y-4 text-base leading-relaxed text-muted-foreground">
+              {cfg.intro.map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
+            </div>
 
-          {(accounts?.count || smm?.count) ? (
-            <p className="mt-5 text-sm font-medium text-primary">
-              {accounts
-                ? `${accounts.count.toLocaleString("en-US")} listings · ${accounts.totalStock.toLocaleString("en-US")} in stock`
-                : `${smm!.count.toLocaleString("en-US")} boosting services available`}
-            </p>
-          ) : null}
+            {(accounts?.count || smm?.count) ? (
+              <p className="eyebrow mt-6 flex items-center gap-2 text-primary">
+                <span className="size-1.5 bg-primary" />
+                {accounts
+                  ? `${accounts.count.toLocaleString("en-US")} listings · ${accounts.totalStock.toLocaleString("en-US")} in stock`
+                  : `${smm!.count.toLocaleString("en-US")} boosting services available`}
+              </p>
+            ) : null}
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="/signup"
-              className="rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-white hover:opacity-90"
-            >
-              Sign up to buy
-            </Link>
-            <Link
-              href={cfg.type === "smm" ? "/boosting" : "/marketplace"}
-              className="rounded-full border px-5 py-2.5 text-sm font-medium hover:bg-muted"
-            >
-              Browse marketplace
-            </Link>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/signup"
+                className="eyebrow inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-primary-foreground transition-colors hover:bg-[color-mix(in_oklch,var(--primary),black_14%)]"
+              >
+                Sign up to buy
+              </Link>
+              <Link
+                href={cfg.type === "smm" ? "/boosting" : "/marketplace"}
+                className="eyebrow inline-flex h-11 items-center justify-center rounded-full border bg-input/20 px-6 transition-colors hover:bg-input/50"
+              >
+                Browse {cfg.type === "smm" ? "boosting" : "marketplace"}
+              </Link>
+            </div>
           </div>
         </section>
 
         {/* Live preview */}
-        <section className="container mx-auto px-6 py-8">
-          <h2 className="mb-4 text-2xl font-semibold">
-            {cfg.type === "smm" ? "Popular services" : `${cfg.platformLabel} accounts in stock`}
-          </h2>
+        <section >
+          <div className="mx-auto w-full max-w-[88rem] px-4 py-16 sm:px-8">
+            <div className="mb-8 flex flex-col gap-3">
+              <h2 className="text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
+                {cfg.type === "smm" ? "Popular services" : `${cfg.platformLabel} accounts in stock`}
+              </h2>
+            </div>
 
-          {accounts && accounts.items.length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {accounts.items.map((it, i) => (
-                <div key={i} className="rounded-xl border p-4">
-                  <p className="line-clamp-2 text-sm font-medium">{it.title}</p>
-                  {it.subtitle && (
-                    <p className="text-muted-foreground mt-1 text-xs">{it.subtitle}</p>
-                  )}
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="font-semibold">{ngn(it.price)}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {it.stock.toLocaleString("en-US")} in stock
-                    </span>
+            {accounts && accounts.items.length > 0 && (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {accounts.items.map((it, i) => (
+                  <div key={i} className="flex flex-col justify-between gap-4 surface rounded-2xl p-5">
+                    <div>
+                      <p className="line-clamp-2 text-sm font-medium">{it.title}</p>
+                      {it.subtitle && (
+                        <p className="subtext mt-1 text-xs text-muted-foreground">{it.subtitle}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold tabular-nums">{ngn(it.price)}</span>
+                      <span className="subtext text-[0.6875rem] text-muted-foreground tabular-nums">
+                        {it.stock.toLocaleString("en-US")} in stock
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
 
-          {smm && smm.cats.length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {smm.cats.map((c, i) => (
-                <div key={i} className="rounded-xl border p-4">
-                  <p className="line-clamp-2 text-sm font-medium">{c.category}</p>
-                  <p className="mt-3 font-semibold">
-                    from {ngn(c.from)}{" "}
-                    <span className="text-muted-foreground text-xs font-normal">/ 1,000</span>
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
+            {smm && smm.cats.length > 0 && (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {smm.cats.map((c, i) => (
+                  <div key={i} className="flex flex-col justify-between gap-4 surface rounded-2xl p-5">
+                    <p className="line-clamp-2 text-sm font-medium">{c.category}</p>
+                    <p className="text-sm font-semibold tabular-nums">
+                      from {ngn(c.from)}{" "}
+                      <span className="subtext text-xs font-normal text-muted-foreground">/ 1,000</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
 
-          {((accounts && accounts.items.length === 0) ||
-            (smm && smm.cats.length === 0)) && (
-            <div className="rounded-xl border border-dashed p-8 text-center">
-              <p className="text-muted-foreground">
-                Fresh stock is added regularly.{" "}
-                <Link href="/signup" className="text-primary hover:underline">
-                  Create an account
-                </Link>{" "}
-                to get notified and browse everything.
-              </p>
-            </div>
-          )}
+            {((accounts && accounts.items.length === 0) ||
+              (smm && smm.cats.length === 0)) && (
+              <div className="surface rounded-2xl px-6 py-12 text-center">
+                <p className="subtext text-sm text-muted-foreground">
+                  Fresh stock is added regularly.{" "}
+                  <Link href="/signup" className="text-primary hover:underline">
+                    Create an account
+                  </Link>{" "}
+                  to get notified and browse everything.
+                </p>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Trust */}
-        <section className="container mx-auto px-6 py-8">
-          <div className="grid gap-4 sm:grid-cols-3">
+        <section >
+          <div className="mx-auto grid w-full max-w-[88rem] px-4 sm:grid-cols-3 sm:px-8">
             {[
               ["Instant delivery", "Auto-fulfilled orders land in your dashboard within seconds of payment."],
               ["Secure payments", "Pay with crypto (BTC, ETH, USDT) or card & bank transfer. Details never stored."],
               ["Refund or replace", "If delivery fails or doesn't match the listing, you're refunded or replaced."],
-            ].map(([t, d]) => (
-              <div key={t} className="rounded-xl border p-5">
-                <p className="font-medium">{t}</p>
-                <p className="text-muted-foreground mt-1 text-sm">{d}</p>
+            ].map(([t, d], i) => (
+              <div key={t} className="py-8 last:border-b-0 sm:px-8 sm:first:pl-0 sm:last:border-r-0">
+                <span className="eyebrow text-primary tabular-nums">{String(i + 1).padStart(2, "0")}</span>
+                <p className="mt-4 text-sm font-medium">{t}</p>
+                <p className="subtext mt-1.5 text-xs leading-relaxed text-muted-foreground">{d}</p>
               </div>
             ))}
           </div>
         </section>
 
         {/* FAQ */}
-        <section className="container mx-auto px-6 py-8">
-          <h2 className="mb-4 text-2xl font-semibold">Frequently asked questions</h2>
-          <div className="max-w-3xl space-y-4">
-            {cfg.faq.map((f, i) => (
-              <div key={i} className="rounded-xl border p-5">
-                <p className="font-medium">{f.question}</p>
-                <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                  {f.answer}
-                </p>
-              </div>
-            ))}
+        <section >
+          <div className="mx-auto grid w-full max-w-[88rem] gap-10 px-4 py-16 sm:px-8 lg:grid-cols-12">
+            <div className="lg:col-span-4">
+              <h2 className="mt-4 text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
+                Frequently asked questions
+              </h2>
+            </div>
+            <div className="lg:col-span-8">
+              {cfg.faq.map((f, i) => (
+                <div key={i} className="flex gap-5 py-5">
+                  <span className="eyebrow pt-1 text-primary tabular-nums">{String(i + 1).padStart(2, "0")}</span>
+                  <div>
+                    <p className="text-base font-medium tracking-[-0.015em]">{f.question}</p>
+                    <p className="subtext mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {f.answer}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Related */}
-        <section className="container mx-auto px-6 py-8">
-          <h2 className="mb-4 text-2xl font-semibold">More on Rogue Socials</h2>
-          <div className="flex flex-wrap gap-3">
-            {related.map((p) => (
-              <Link
-                key={p.slug}
-                href={`/buy/${p.slug}`}
-                className="rounded-full border px-4 py-2 text-sm hover:bg-muted"
-              >
-                {p.h1}
-              </Link>
-            ))}
+        <section>
+          <div className="mx-auto w-full max-w-[88rem] px-4 py-16 sm:px-8">
+            <span className="eyebrow text-muted-foreground">More on Rogue Socials</span>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {related.map((p) => (
+                <Link
+                  key={p.slug}
+                  href={`/buy/${p.slug}`}
+                  className="rounded-full bg-white/[0.04] px-4 py-2 text-[0.8125rem] text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                >
+                  {p.h1}
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
       </main>

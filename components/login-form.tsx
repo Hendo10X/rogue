@@ -10,9 +10,6 @@ import { toast } from "sonner";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Field, FieldDescription, FieldGroup } from "@/components/ui/field";
 import {
@@ -74,15 +71,9 @@ export function LoginForm({
   }
 
   return (
-    <div className={cn("flex flex-col gap-6 font-display", className)} {...props}>
+    <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="shadow-none">
-        <CardHeader>
-          <CardTitle>Login to your account</CardTitle>
-          <CardDescription>
-            Enter your email below to login to your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <FieldGroup>
@@ -126,11 +117,11 @@ export function LoginForm({
                   />
                 </Field>
                 <Field>
-                  <Button type="submit" disabled={loading} className="rounded-full">
+                  <Button type="submit" disabled={loading} className="eyebrow h-10 w-full">
                     {loading ? (
                       <HugeiconsIcon icon={Loading03Icon} size={16} className="mr-2 size-4 animate-spin" />
                     ) : (
-                      "Login"
+                      "Sign in"
                     )}
                   </Button>
 

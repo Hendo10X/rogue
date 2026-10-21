@@ -17,7 +17,7 @@ function getBaseUrl() {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <pre className="overflow-x-auto rounded-xl border bg-muted/40 p-4 text-xs leading-relaxed sm:text-sm">
+    <pre className="overflow-x-auto border bg-[oklch(0.12_0_0)] p-4 text-[0.75rem] leading-relaxed">
       <code className="font-mono">{children}</code>
     </pre>
   );
@@ -26,11 +26,11 @@ function Code({ children }: { children: React.ReactNode }) {
 function Pill({ method }: { method: string }) {
   const color =
     method === "GET"
-      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-      : "bg-blue-500/15 text-blue-600 dark:text-blue-400";
+      ? "bg-primary/15 text-primary"
+      : "bg-rogue-accent/15 text-rogue-accent";
   return (
     <span
-      className={`inline-block rounded-md px-2 py-0.5 font-mono text-xs font-semibold ${color}`}
+      className={`inline-block px-1.5 py-0.5 font-mono text-[0.625rem] font-semibold ${color}`}
     >
       {method}
     </span>
@@ -47,7 +47,7 @@ function Endpoint({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border p-5">
+    <div className="surface rounded-2xl p-5">
       <div className="flex flex-wrap items-center gap-2">
         <Pill method={method} />
         <code className="font-mono text-sm font-medium break-all">{path}</code>
@@ -74,49 +74,52 @@ export default function ApiDocsPage() {
   const base = getBaseUrl();
 
   return (
-    <div className="min-h-screen bg-background font-display">
+    <div className="flex min-h-svh flex-col">
       <Navbar />
-      <main className="container mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <main className="flex-1">
         {/* Header */}
-        <header className="mb-10 border-b pb-8">
-          <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-            Developers
-          </span>
-          <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
+        <header >
+          <div className="mx-auto w-full max-w-[88rem] px-4 py-16 sm:px-8 sm:py-20">
+          <h1 className="mt-5 text-4xl leading-[0.98] font-semibold tracking-[-0.04em] sm:text-5xl">
             Rogue Socials API
           </h1>
-          <p className="mt-3 max-w-2xl text-muted-foreground">
+          <p className="subtext mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground">
             Resell our social-media boosting services from your own app, bot, or
             panel. Fetch live services, place orders, and track them
             programmatically — billed from your Rogue wallet at your reseller
             rate.
           </p>
-          <div className="mt-5 flex flex-wrap gap-3 text-sm">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a
               href="/signup"
-              className="rounded-full bg-primary px-4 py-2 font-medium text-white hover:opacity-90"
+              className="eyebrow inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-primary-foreground transition-colors hover:bg-[color-mix(in_oklch,var(--primary),black_14%)]"
             >
               Create an account
             </a>
             <a
               href="/settings"
-              className="rounded-full border px-4 py-2 font-medium hover:bg-muted"
+              className="eyebrow inline-flex h-11 items-center justify-center rounded-full border bg-input/20 px-6 transition-colors hover:bg-input/50"
             >
               Get your API key
             </a>
           </div>
+          </div>
         </header>
 
-        <div className="grid gap-10 lg:grid-cols-[200px_1fr]">
+        <div className="mx-auto grid w-full max-w-[88rem] px-4 sm:px-8 lg:grid-cols-[220px_1fr]">
           {/* Sidebar */}
           <aside className="hidden lg:block">
-            <nav className="sticky top-8 space-y-1 text-sm">
-              {NAV.map((item) => (
+            <nav className="sticky top-14 flex flex-col py-10">
+              <span className="eyebrow mb-3 px-4 text-muted-foreground">On this page</span>
+              {NAV.map((item, i) => (
                 <a
                   key={item.id}
                   href={`#${item.id}`}
-                  className="block rounded-lg px-3 py-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="group flex items-center gap-3 rounded-lg px-3 py-2 text-[0.8125rem] text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-foreground"
                 >
+                  <span className="eyebrow text-[0.5625rem] text-muted-foreground/60 tabular-nums group-hover:text-primary">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
                   {item.label}
                 </a>
               ))}
@@ -124,13 +127,13 @@ export default function ApiDocsPage() {
           </aside>
 
           {/* Content */}
-          <div className="min-w-0 space-y-12">
+          <div className="min-w-0 space-y-14 py-10 lg:pl-12 lg:py-14">
             {/* Overview */}
-            <section id="overview" className="scroll-mt-8 space-y-4">
-              <h2 className="text-2xl font-semibold">Overview</h2>
+            <section id="overview" className="scroll-mt-20 space-y-4">
+              <h2 className="text-2xl font-semibold tracking-[-0.03em]">Overview</h2>
               <p className="text-muted-foreground">
                 The API is a small REST interface. All endpoints live under{" "}
-                <code className="rounded bg-muted px-1.5 py-0.5 text-sm">
+                <code className="bg-muted px-1.5 py-0.5 text-sm">
                   {base}/api/v1
                 </code>
                 , accept and return JSON, and require an API key. Successful
@@ -140,14 +143,14 @@ export default function ApiDocsPage() {
                 appropriate HTTP status.
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border p-4">
-                  <p className="text-sm font-medium">Base URL</p>
+                <div className="surface rounded-2xl p-4">
+                  <p className="eyebrow text-muted-foreground">Base URL</p>
                   <code className="text-sm text-muted-foreground">
                     {base}/api/v1
                   </code>
                 </div>
-                <div className="rounded-xl border p-4">
-                  <p className="text-sm font-medium">Format</p>
+                <div className="surface rounded-2xl p-4">
+                  <p className="eyebrow text-muted-foreground">Format</p>
                   <p className="text-sm text-muted-foreground">
                     JSON over HTTPS · prices in NGN
                   </p>
@@ -156,8 +159,8 @@ export default function ApiDocsPage() {
             </section>
 
             {/* Authentication */}
-            <section id="authentication" className="scroll-mt-8 space-y-4">
-              <h2 className="text-2xl font-semibold">Authentication</h2>
+            <section id="authentication" className="scroll-mt-20 space-y-4">
+              <h2 className="text-2xl font-semibold tracking-[-0.03em]">Authentication</h2>
               <p className="text-muted-foreground">
                 Generate a key from{" "}
                 <a href="/settings" className="text-primary hover:underline">
@@ -175,8 +178,8 @@ export default function ApiDocsPage() {
             </section>
 
             {/* Pricing */}
-            <section id="pricing" className="scroll-mt-8 space-y-4">
-              <h2 className="text-2xl font-semibold">Pricing &amp; billing</h2>
+            <section id="pricing" className="scroll-mt-20 space-y-4">
+              <h2 className="text-2xl font-semibold tracking-[-0.03em]">Pricing &amp; billing</h2>
               <p className="text-muted-foreground">
                 There is no subscription or access fee. You pay per order,
                 deducted from your Rogue wallet balance in NGN. Top up your
@@ -200,8 +203,8 @@ website_rate_per_1000 = the public website price (for reference)`}</Code>
             </section>
 
             {/* Services */}
-            <section id="services" className="scroll-mt-8 space-y-4">
-              <h2 className="text-2xl font-semibold">List services</h2>
+            <section id="services" className="scroll-mt-20 space-y-4">
+              <h2 className="text-2xl font-semibold tracking-[-0.03em]">List services</h2>
               <Endpoint method="GET" path="/api/v1/services">
                 <p>
                   Returns all available services with your reseller pricing.
@@ -212,7 +215,7 @@ website_rate_per_1000 = the public website price (for reference)`}</Code>
               </Endpoint>
               <Code>{`curl ${base}/api/v1/services \\
   -H "Authorization: Bearer rogue_xxx"`}</Code>
-              <p className="text-sm font-medium">Response</p>
+              <p className="eyebrow text-muted-foreground">Response</p>
               <Code>{`{
   "data": [
     {
@@ -235,8 +238,8 @@ website_rate_per_1000 = the public website price (for reference)`}</Code>
             </section>
 
             {/* Place order */}
-            <section id="place-order" className="scroll-mt-8 space-y-4">
-              <h2 className="text-2xl font-semibold">Place an order</h2>
+            <section id="place-order" className="scroll-mt-20 space-y-4">
+              <h2 className="text-2xl font-semibold tracking-[-0.03em]">Place an order</h2>
               <Endpoint method="POST" path="/api/v1/orders">
                 <p>
                   Places an order and debits your wallet. Body fields:{" "}
@@ -254,7 +257,7 @@ website_rate_per_1000 = the public website price (for reference)`}</Code>
     "link": "https://instagram.com/yourhandle",
     "quantity": 1000
   }'`}</Code>
-              <p className="text-sm font-medium">Response</p>
+              <p className="eyebrow text-muted-foreground">Response</p>
               <Code>{`{
   "data": {
     "id": "b1f3...",
@@ -268,8 +271,8 @@ website_rate_per_1000 = the public website price (for reference)`}</Code>
             </section>
 
             {/* Order status */}
-            <section id="order-status" className="scroll-mt-8 space-y-4">
-              <h2 className="text-2xl font-semibold">Order status</h2>
+            <section id="order-status" className="scroll-mt-20 space-y-4">
+              <h2 className="text-2xl font-semibold tracking-[-0.03em]">Order status</h2>
               <Endpoint method="GET" path="/api/v1/orders/:id">
                 <p>
                   Live status of a single order (refreshed from the supplier).
@@ -280,7 +283,7 @@ website_rate_per_1000 = the public website price (for reference)`}</Code>
               </Endpoint>
               <Code>{`curl ${base}/api/v1/orders/b1f3... \\
   -H "Authorization: Bearer rogue_xxx"`}</Code>
-              <p className="text-sm font-medium">Response</p>
+              <p className="eyebrow text-muted-foreground">Response</p>
               <Code>{`{
   "data": {
     "id": "b1f3...",
@@ -299,8 +302,8 @@ website_rate_per_1000 = the public website price (for reference)`}</Code>
             </section>
 
             {/* Balance */}
-            <section id="balance" className="scroll-mt-8 space-y-4">
-              <h2 className="text-2xl font-semibold">Balance</h2>
+            <section id="balance" className="scroll-mt-20 space-y-4">
+              <h2 className="text-2xl font-semibold tracking-[-0.03em]">Balance</h2>
               <Endpoint method="GET" path="/api/v1/balance">
                 <p>Your current wallet balance.</p>
               </Endpoint>
@@ -311,17 +314,17 @@ website_rate_per_1000 = the public website price (for reference)`}</Code>
             </section>
 
             {/* Errors */}
-            <section id="errors" className="scroll-mt-8 space-y-4">
-              <h2 className="text-2xl font-semibold">Errors</h2>
-              <div className="overflow-hidden rounded-2xl border">
+            <section id="errors" className="scroll-mt-20 space-y-4">
+              <h2 className="text-2xl font-semibold tracking-[-0.03em]">Errors</h2>
+              <div className="overflow-hidden surface rounded-2xl">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="px-4 py-2 font-medium">Status</th>
-                      <th className="px-4 py-2 font-medium">Meaning</th>
+                      <th className="eyebrow px-4 py-2.5 text-muted-foreground">Status</th>
+                      <th className="eyebrow px-4 py-2.5 text-muted-foreground">Meaning</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
+                  <tbody >
                     {[
                       ["401", "Missing or invalid API key"],
                       ["400", "Bad request (missing fields, low balance)"],

@@ -7,7 +7,8 @@ import { order, listing, supplier, accountDelivery, boostingOrder } from "@/db/s
 import { eq, desc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
-import { DashboardNavbar } from "@/components/dashboard-navbar";
+import { DashboardShell } from "@/components/dashboard/shell";
+import { PageHeader } from "@/components/page-header";
 import { OrderList } from "@/components/orders/order-list";
 
 async function getOrders(userId: string) {
@@ -108,8 +109,7 @@ export default async function OrdersPage() {
   ]);
 
   return (
-    <div className="min-h-screen bg-background font-display">
-      <DashboardNavbar
+      <DashboardShell
         user={{
           id: session.user.id,
           name: session.user.name ?? "User",
@@ -117,16 +117,12 @@ export default async function OrdersPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
-      />
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="font-display text-2xl font-semibold">Orders</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Track your orders and view delivery credentials
-          </p>
-        </div>
+      >
+        <PageHeader
+          title="Orders"
+          description="Track your orders and view delivery credentials."
+        />
         <OrderList initialOrders={orders} />
-      </main>
-    </div>
+      </DashboardShell>
   );
 }
