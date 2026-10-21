@@ -26,12 +26,12 @@ export function CurrencySwitcher({ className }: { className?: string }) {
         <Button
           variant="outline"
           size="sm"
-          className={className ?? "rounded-full"}
+          className={className ?? "eyebrow"}
         >
           {currency}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="font-display min-w-28">
+      <DropdownMenuContent align="end" className="min-w-28">
         {available.map((code) => (
           <DropdownMenuItem
             key={code}

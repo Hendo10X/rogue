@@ -4,8 +4,11 @@ import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 
 export const dynamic = "force-dynamic";
-import { DashboardNavbar } from "@/components/dashboard-navbar";
+import { DashboardShell } from "@/components/dashboard/shell";
+import { isAdminEmail } from "@/lib/admin-emails";
+import { PageHeader } from "@/components/page-header";
 import { DepositForm } from "@/components/deposit-form";
+import { claimReferralFromRequest } from "@/lib/referral-claim";
 
 export default async function DepositPage() {
   const session = await auth.api.getSession({
@@ -16,13 +19,13 @@ export default async function DepositPage() {
     redirect("/login");
   }
 
+  await claimReferralFromRequest(session.user);
   await getOrCreateWallet(session.user.id, "NGN");
   const balance = await getWalletBalance(session.user.id);
   const walletBalance = Array.isArray(balance) ? balance : [balance];
 
   return (
-    <div className="min-h-screen bg-background font-display">
-      <DashboardNavbar
+      <DashboardShell
         user={{
           id: session.user.id,
           name: session.user.name ?? "User",
@@ -30,21 +33,15 @@ export default async function DepositPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
-      />
-      <main className="container mx-auto max-w-md px-4 py-12">
-        <div className="space-y-6">
-          <div className="text-center">
-            <h1 className="font-display text-2xl font-semibold">
-              Fund your wallet
-            </h1>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Deposit via crypto (Plisio) or card/bank transfer (Korapay).
-              Payments are secure and encrypted.
-            </p>
-          </div>
+        isAdmin={await isAdminEmail(session.user.email)}
+      >
+        <PageHeader
+          title="Fund your wallet"
+          description="Top up by card or bank transfer (Korapay, Flutterwave), crypto (Plisio), or a manual bank transfer. Your balance pays for every order."
+        />
+        <div className="w-full max-w-xl">
           <DepositForm />
         </div>
-      </main>
-    </div>
+      </DashboardShell>
   );
 }

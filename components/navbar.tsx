@@ -1,25 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { motion } from "motion/react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Menu01Icon, Information, TelegramIcon } from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon, ArrowUpRight01Icon, Menu01Icon } from "@hugeicons/core-free-icons";
 
 import { cn } from "@/lib/utils";
-
 import { Button } from "@/components/ui/button";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuIndicator,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  NavigationMenuViewport,
-} from "@/components/ui/navigation-menu";
+import { LogoLink, Wordmark } from "@/components/logo";
 import {
   Sheet,
   SheetContent,
@@ -27,286 +17,141 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 
-interface MenuItem {
-  title: string;
-  url: string;
-}
+type NavLink = { href: string; label: string };
 
-interface Navbar1Props {
-  className?: string;
-  logo?: {
-    url: string;
-    src?: string;
-    srcDesktop?: string;
-    srcMobile?: string;
-    alt: string;
-    title: string;
-    className?: string;
-  };
-  menu?: MenuItem[];
-  auth?: {
-    login: {
-      title: string;
-      url: string;
-    };
-    signup: {
-      title: string;
-      url: string;
-    };
-  };
-}
+/** Section anchors on the home page; elsewhere they route back to it. */
+const SECTIONS: NavLink[] = [
+  { href: "#products", label: "Products" },
+  { href: "#how", label: "How it works" },
+  { href: "#api", label: "API" },
+  { href: "#faq", label: "FAQ" },
+];
 
-const Navbar = ({
-  logo = {
-    url: "/",
-    srcDesktop: "/Roguelong.svg",
-    srcMobile: "/Rogue.svg",
-    alt: "Rogue",
-    title: "Rogue",
-  },
-  menu = [
-    { title: "Marketplace", url: "/login" },
-    { title: "Services", url: "#features" },
-    { title: "How it works", url: "#how-it-works" },
-    { title: "API", url: "/docs/api" },
-    { title: "Game coins", url: "https://www.roguearena.gg" },
-    { title: "Foreign numbers", url: "https://www.roguearena.gg" },
-  ],
-  auth = {
-    login: { title: "Login", url: "/login" },
-    signup: { title: "Sign up", url: "/signup" },
-  },
-  className,
-}: Navbar1Props) => {
-  const [sheetOpen, setSheetOpen] = useState(false);
+const EXTERNAL: NavLink[] = [
+  { href: "https://www.roguearena.gg", label: "Game coins" },
+  { href: "https://www.roguearena.gg", label: "Foreign numbers" },
+  { href: "https://t.me/rogue4l", label: "Support" },
+];
+
+function useHref() {
   const pathname = usePathname();
-  const isHome = pathname === "/";
+  return (href: string) =>
+    href.startsWith("#") && pathname !== "/" ? `/${href}` : href;
+}
 
-  const scrollToSection = (href: string) => {
-    if (href.startsWith("#")) {
-      setSheetOpen(false);
-      const id = href.slice(1);
-      const el = document.getElementById(id);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-  };
+/**
+ * A floating pill header. It tightens and gains a glass backdrop once the
+ * page scrolls, and a soft highlight glides between links on hover.
+ */
+export function Navbar({ className }: { className?: string }) {
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [hover, setHover] = useState<string | null>(null);
+  const resolve = useHref();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const links = [...SECTIONS, ...EXTERNAL];
 
   return (
-    <section className={cn("pb-2 pt-4 px-4 font-display sm:px-6 lg:px-9", className)}>
-      <div className="w-full">
-        {/* Desktop Menu */}
-        <nav className="hidden items-center justify-between lg:flex">
-          <div className="flex items-center gap-6">
-            {/* Logo - desktop: Roguelong.svg (light), Roguelong-darkmode.svg (dark) */}
-            <Link href={logo.url} className="flex items-center gap-2">
-              <Image
-                src="/Roguesocialsyellow.svg"
-                className="h-28 w-auto"
-                alt={logo.alt}
-                width={480}
-                height={112}
-              />
-            </Link>
-            <div className="flex items-center">
-              <NavigationMenu viewport={false}>
-                <NavigationMenuList>
-                  {menu.map((item) => {
-                    const navLinkClass =
-                      "group inline-flex h-10 w-max items-center justify-center rounded-full bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground";
-                    return (
-                      <NavigationMenuItem key={item.title}>
-                        {item.url.startsWith("#") && isHome ? (
-                          <button
-                            type="button"
-                            onClick={() => scrollToSection(item.url)}
-                            className={navLinkClass}>
-                            {item.title}
-                          </button>
-                        ) : (
-                          <Link
-                            href={
-                              item.url.startsWith("#")
-                                ? `/${item.url}`
-                                : item.url
-                            }
-                            target={item.url.startsWith("http") ? "_blank" : undefined}
-                            rel={item.url.startsWith("http") ? "noopener noreferrer" : undefined}
-                            className={navLinkClass}>
-                            {item.title}
-                          </Link>
-                        )}
-                      </NavigationMenuItem>
-                    );
-                  })}
-                  <NavigationMenuItem>
-                    <NavigationMenuTrigger className="group inline-flex h-10 w-max items-center justify-center rounded-full bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground">
-                      Support
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <ul className="grid w-[200px] gap-1 p-2">
-                        <li>
-                          <NavigationMenuLink asChild>
-                            <Link
-                              href="https://t.me/rogue4l"
-                              className="select-none leading-none no-underline outline-none transition-colors">
-                              <HugeiconsIcon icon={Information} size={16} className="size-4 shrink-0" />
-                              <div className="text-sm font-medium leading-none">Contact Support</div>
-                            </Link>
-                          </NavigationMenuLink>
-                        </li>
-                        <li>
-                          <NavigationMenuLink asChild>
-                            <Link
-                              href="https://t.me/roguesocials"
-                              className="select-none leading-none no-underline outline-none transition-colors">
-                              <HugeiconsIcon icon={TelegramIcon} size={16} className="size-4 shrink-0" />
-                              <div className="text-sm font-medium leading-none">Telegram Channel</div>
-                            </Link>
-                          </NavigationMenuLink>
-                        </li>
-                      </ul>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-                </NavigationMenuList>
-              </NavigationMenu>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm" className="border-primary text-primary bg-transparent hover:bg-primary hover:text-white">
-              <Link href={auth.login.url}>{auth.login.title}</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href={auth.signup.url}>{auth.signup.title}</Link>
-            </Button>
-          </div>
+    <header className={cn("sticky top-0 z-40 px-3 pt-3 sm:px-6", className)}>
+      <div
+        className={cn(
+          "mx-auto flex h-14 w-full max-w-6xl items-center rounded-full pr-2 pl-4 transition-all duration-500 ease-out",
+          scrolled
+            ? "bg-[oklch(0.17_0.004_60/0.72)] shadow-[0_0_0_1px_rgb(255_255_255/0.06),0_12px_40px_-12px_rgb(0_0_0/0.6)] backdrop-blur-xl"
+            : "bg-transparent"
+        )}
+      >
+        <LogoLink />
+
+        <nav
+          className="mx-auto hidden items-center lg:flex"
+          onMouseLeave={() => setHover(null)}
+        >
+          {links.map((l) => {
+            const external = l.href.startsWith("http");
+            return (
+              <Link
+                key={l.label}
+                href={resolve(l.href)}
+                onMouseEnter={() => setHover(l.label)}
+                {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                className={cn(
+                  "relative flex h-9 items-center gap-1 rounded-full px-3.5 text-[0.8125rem] whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground",
+                  external && "hidden xl:flex"
+                )}
+              >
+                {hover === l.label && (
+                  <motion.span
+                    layoutId="nav-hover"
+                    className="absolute inset-0 rounded-full bg-white/[0.06]"
+                    transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                  />
+                )}
+                <span className="relative">{l.label}</span>
+                {external && (
+                  <HugeiconsIcon icon={ArrowUpRight01Icon} strokeWidth={2} className="relative size-3 opacity-50" />
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* Mobile Menu */}
-        <div className="block lg:hidden text-lg">
-          <div className="flex items-center justify-between">
-            {/* Logo - mobile */}
-            <Link href={logo.url} className="flex items-center gap-2">
-              <Image
-                src="/Roguesocialsyellow.svg"
-                className="h-20 w-auto"
-                alt={logo.alt}
-                width={360}
-                height={80}
-              />
-            </Link>
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="hover:bg-muted hover:text-foreground">
-                  <HugeiconsIcon
-                    icon={Menu01Icon}
-                    size={16}
-                    className="size-4"
-                  />
+        <div className="ml-auto flex items-center gap-1.5 lg:ml-0">
+          <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+            <Link href="/login">Sign in</Link>
+          </Button>
+          <Button asChild size="sm" className="hidden md:inline-flex">
+            <Link href="/signup">Get started</Link>
+          </Button>
+
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu">
+                <HugeiconsIcon icon={Menu01Icon} strokeWidth={2} />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-72 max-w-[85vw] gap-0 p-2">
+              <SheetHeader className="px-3 py-3">
+                <SheetTitle>
+                  <Wordmark />
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col gap-0.5">
+                {links.map((l) => (
+                  <Link
+                    key={l.label}
+                    href={resolve(l.href)}
+                    onClick={() => setOpen(false)}
+                    {...(l.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    className="rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-white/[0.05] hover:text-foreground"
+                  >
+                    {l.label}
+                  </Link>
+                ))}
+              </nav>
+              <div className="mt-auto flex flex-col gap-2 p-2">
+                <Button asChild variant="outline" size="lg">
+                  <Link href="/login" onClick={() => setOpen(false)}>Sign in</Link>
                 </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="top"
-                motionOpen={sheetOpen}
-                showCloseButton
-                closeButtonSize="lg"
-                className="overflow-y-auto font-display">
-                <SheetHeader>
-                  <SheetTitle>
-                    <Link href={logo.url} className="flex items-center gap-2">
-                      <Image
-                        src="/Roguesocialsyellow.svg"
-                        className="h-20 w-auto"
-                        alt={logo.alt}
-                        width={360}
-                        height={80}
-                      />
-                    </Link>
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="flex flex-col gap-4 p-4">
-                  <nav className="flex flex-col gap-4">
-                    {menu.map((item) => {
-                      const mobileNavLinkClass = "text-left text-md font-semibold text-link dark:text-white dark:hover:text-rogue-lime transition-colors hover:opacity-90";
-                      return item.url.startsWith("#") && isHome ? (
-                        <button
-                          key={item.title}
-                          type="button"
-                          onClick={() => scrollToSection(item.url)}
-                          className={mobileNavLinkClass}>
-                          {item.title}
-                        </button>
-                      ) : (
-                        <Link
-                          key={item.title}
-                          href={
-                            item.url.startsWith("#")
-                              ? `/${item.url}`
-                              : item.url
-                          }
-                          target={item.url.startsWith("http") ? "_blank" : undefined}
-                          rel={item.url.startsWith("http") ? "noopener noreferrer" : undefined}
-                          onClick={() => setSheetOpen(false)}
-                          className={mobileNavLinkClass}>
-                          {item.title}
-                        </Link>
-                      );
-                    })}
-                  </nav>
-
-                  <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="support" className="border-none">
-                      <AccordionTrigger className="flex h-10 w-full items-center justify-between rounded-full bg-transparent p-0 text-md font-semibold text-link dark:text-white dark:hover:text-rogue-lime transition-colors hover:bg-transparent hover:text-foreground hover:no-underline">
-                        Support
-                      </AccordionTrigger>
-                      <AccordionContent className="pb-0 pt-2">
-                        <div className="flex flex-col gap-2 pl-4">
-                          <Link
-                            href="https://t.me/rogue4l"
-                            onClick={() => setSheetOpen(false)}
-                            className="flex items-center gap-3 rounded-md px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
-                            <HugeiconsIcon icon={Information} size={16} className="size-4 shrink-0" />
-                            Contact Support
-                          </Link>
-                          <Link
-                            href="https://t.me/roguesocials"
-                            onClick={() => setSheetOpen(false)}
-                            className="flex items-center gap-3 rounded-md px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
-                            <HugeiconsIcon icon={TelegramIcon} size={16} className="size-4 shrink-0" />
-                            Telegram Channel
-                          </Link>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-
-                  <div className="flex flex-col gap-3">
-                    <Button asChild variant="outline" className="border-primary text-primary bg-transparent hover:bg-primary hover:text-white">
-                      <Link href={auth.login.url}>{auth.login.title}</Link>
-                    </Button>
-                    <Button asChild>
-                      <Link href={auth.signup.url}>{auth.signup.title}</Link>
-                    </Button>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
+                <Button asChild size="lg">
+                  <Link href="/signup" onClick={() => setOpen(false)}>
+                    Get started
+                    <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
+                  </Link>
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
-    </section>
+    </header>
   );
-};
-
-export { Navbar };
+}

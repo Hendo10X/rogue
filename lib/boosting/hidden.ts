@@ -1,9 +1,13 @@
 import { getSetting, setSetting } from "@/lib/admin-auth";
 
+import { ACTIVE_SUPPLIER } from "@/lib/boosting/provider";
+
 // Boosting services are fetched live from the provider (no DB row per service),
 // so "hidden from storefront" is persisted as a blocklist of service IDs in
-// admin_settings under this key.
-const KEY = "boosting_hidden_services";
+// admin_settings. IDs are only meaningful for one supplier, so the list is
+// keyed by supplier — the old Socially.ng list stays under the original
+// "boosting_hidden_services" key and never hides unrelated services.
+const KEY = `boosting_hidden_services_${ACTIVE_SUPPLIER}`;
 
 export async function getHiddenServiceIds(): Promise<Set<number>> {
   const raw = await getSetting(KEY);

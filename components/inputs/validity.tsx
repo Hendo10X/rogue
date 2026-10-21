@@ -114,7 +114,7 @@ const InputVerification = () => {
 
         {/* Password strength indicator */}
         <div
-          className="mb-4 mt-3 h-1 w-full overflow-hidden rounded-full bg-border"
+          className="mb-4 mt-3 h-1 w-full overflow-hidden bg-border"
           role="progressbar"
           aria-valuenow={strengthScore}
           aria-valuemin={0}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getMarkupNaira } from "@/lib/admin-auth";
-import { fetchServices } from "@/lib/boosting/socially";
+import { fetchServices, WEBSITE_PROVIDER } from "@/lib/boosting/provider";
 import { getHiddenServiceIds } from "@/lib/boosting/hidden";
 
 export async function GET(req: NextRequest) {
@@ -27,11 +27,11 @@ export async function GET(req: NextRequest) {
     ).sort();
 
     let filteredServices = visibleServices.map((s) => {
-      // socially.ng returns rates already in NGN — no USD conversion needed
+      // The supplier returns rates already in NGN — no USD conversion needed
       const rateNgnPer1000 = (parseFloat(s.rate) || 0) + markupNaira;
       return {
         ...s,
-        provider: "socially",
+        provider: WEBSITE_PROVIDER,
         rate: rateNgnPer1000.toFixed(2),
         currency: "NGN",
         _sortRate: rateNgnPer1000,

@@ -56,7 +56,7 @@ export default function ApiAnalyticsPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">API Analytics</h1>
+        <div className="flex flex-col gap-1.5"><h1 className="text-2xl font-semibold tracking-[-0.03em]">API Analytics</h1></div>
         <p className="text-muted-foreground flex items-center gap-2">
           <Spinner className="size-4" /> Loading…
         </p>
@@ -67,7 +67,7 @@ export default function ApiAnalyticsPage() {
   if (!data) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">API Analytics</h1>
+        <div className="flex flex-col gap-1.5"><h1 className="text-2xl font-semibold tracking-[-0.03em]">API Analytics</h1></div>
         <p className="text-muted-foreground">Failed to load analytics.</p>
       </div>
     );
@@ -78,8 +78,8 @@ export default function ApiAnalyticsPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">API Analytics</h1>
-        <p className="text-muted-foreground text-sm">
+        <div className="flex flex-col gap-1.5"><h1 className="text-2xl font-semibold tracking-[-0.03em]">API Analytics</h1></div>
+        <p className="text-sm text-muted-foreground">
           Purchases made through the public Rogue API, broken down by type and by
           the reseller site (API key) that placed them.
         </p>
@@ -87,33 +87,33 @@ export default function ApiAnalyticsPage() {
 
       {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="border shadow-none">
+        <Card>
           <CardHeader className="pb-2">
-            <p className="text-muted-foreground text-sm">Logs purchased via API</p>
+            <p className="text-sm text-muted-foreground">Logs purchased via API</p>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">{data.totals.logs.count}</p>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               {ngn(data.totals.logs.revenue)} revenue
             </p>
           </CardContent>
         </Card>
-        <Card className="border shadow-none">
+        <Card>
           <CardHeader className="pb-2">
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               Boosting purchased via API
             </p>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">{data.totals.boosting.count}</p>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               {ngn(data.totals.boosting.revenue)} revenue
             </p>
           </CardContent>
         </Card>
-        <Card className="border shadow-none">
+        <Card>
           <CardHeader className="pb-2">
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               Current API reseller markup
             </p>
           </CardHeader>
@@ -121,7 +121,7 @@ export default function ApiAnalyticsPage() {
             <p className="text-2xl font-semibold">
               {data.currentApiMarkupPercent}%
             </p>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               Applied live to every new API order
             </p>
           </CardContent>
@@ -139,12 +139,12 @@ export default function ApiAnalyticsPage() {
 
       {/* Per-site table */}
       <div className="space-y-2">
-        <h2 className="font-medium">By site (API key)</h2>
+        <h2 className="text-sm font-semibold tracking-[-0.01em]">By site (API key)</h2>
 
-        <div className="hidden md:block rounded-lg border bg-background shadow-none">
+        <div className="surface hidden overflow-hidden rounded-2xl p-1.5 md:block">
           <Table>
             <TableHeader>
-              <TableRow className="border-b">
+              <TableRow >
                 <TableHead>Site / Key</TableHead>
                 <TableHead>Owner</TableHead>
                 <TableHead className="text-right">Logs</TableHead>
@@ -166,14 +166,14 @@ export default function ApiAnalyticsPage() {
                 </TableRow>
               ) : (
                 data.sites.map((s) => (
-                  <TableRow key={s.keyId} className="border-b">
+                  <TableRow key={s.keyId} >
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{s.name}</span>
                         {!s.active && (
                           <Badge
                             variant="secondary"
-                            className="bg-red-500/15 text-red-600 dark:text-red-400"
+                            className="bg-red-500/15 text-red-400"
                           >
                             disabled
                           </Badge>
@@ -217,12 +217,12 @@ export default function ApiAnalyticsPage() {
         {/* Mobile cards */}
         <div className="flex flex-col gap-3 md:hidden">
           {data.sites.length === 0 ? (
-            <div className="text-muted-foreground rounded-lg border bg-card p-6 text-center">
+            <div className="surface rounded-2xl p-10 text-center text-sm text-muted-foreground">
               No API purchases yet
             </div>
           ) : (
             data.sites.map((s) => (
-              <div key={s.keyId} className="space-y-3 rounded-lg border bg-card p-4">
+              <div key={s.keyId} className="space-y-3 border bg-card p-4">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="flex items-center gap-2 font-medium">
@@ -230,13 +230,13 @@ export default function ApiAnalyticsPage() {
                       {!s.active && (
                         <Badge
                           variant="secondary"
-                          className="bg-red-500/15 text-red-600 dark:text-red-400"
+                          className="bg-red-500/15 text-red-400"
                         >
                           disabled
                         </Badge>
                       )}
                     </p>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-sm text-muted-foreground">
                       {s.ownerEmail ?? "—"}
                     </p>
                     <p className="text-muted-foreground font-mono text-xs">

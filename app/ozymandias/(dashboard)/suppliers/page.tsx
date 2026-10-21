@@ -221,7 +221,7 @@ export default function AdminSuppliersPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Suppliers</h1>
+        <div className="flex flex-col gap-1.5"><h1 className="text-2xl font-semibold tracking-[-0.03em]">Suppliers</h1></div>
         <p className="text-muted-foreground">Loading…</p>
       </div>
     );
@@ -230,7 +230,7 @@ export default function AdminSuppliersPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Suppliers</h1>
+        <div className="flex flex-col gap-1.5"><h1 className="text-2xl font-semibold tracking-[-0.03em]">Suppliers</h1></div>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -279,10 +279,10 @@ export default function AdminSuppliersPage() {
         </div>
       </div>
       {/* Desktop table */}
-      <div className="hidden md:block rounded-lg border bg-background shadow-none">
+      <div className="surface hidden overflow-hidden rounded-2xl p-1.5 md:block">
         <Table>
           <TableHeader>
-            <TableRow className="border-b">
+            <TableRow >
               <TableHead>Name</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>Status</TableHead>
@@ -299,22 +299,22 @@ export default function AdminSuppliersPage() {
               </TableRow>
             ) : (
               suppliers.map((s) => (
-                <TableRow key={s.id} className="border-b">
+                <TableRow key={s.id} >
                   <TableCell>{s.name}</TableCell>
                   <TableCell className="font-mono text-xs">{s.slug}</TableCell>
                   <TableCell>{s.status}</TableCell>
                   <TableCell>
-                    <span className={s.low ? "font-semibold text-red-600 dark:text-red-400" : ""}>
+                    <span className={s.low ? "font-semibold text-red-400" : ""}>
                       {s.balance}
                     </span>
                     {s.low && (
-                      <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-red-600 dark:text-red-400">
+                      <span className="ml-2 bg-red-500/15 px-2 py-0.5 text-xs font-medium text-red-400">
                         Low — top up
                       </span>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {s.slug === "socially" ? null : (
+                    {s.slug === "boosting" ? null : (
                       <div className="flex justify-end gap-1">
                         <Button
                           variant="ghost"
@@ -339,7 +339,7 @@ export default function AdminSuppliersPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-red-600 hover:text-red-600 dark:text-red-400"
+                          className="text-red-600 hover:text-red-400"
                           onClick={() => handleRemove(s)}
                           disabled={
                             removingId === s.id ||
@@ -370,15 +370,15 @@ export default function AdminSuppliersPage() {
       {/* Mobile cards */}
       <div className="flex flex-col gap-3 md:hidden">
         {suppliers.length === 0 ? (
-          <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
+          <div className="surface rounded-2xl p-10 text-center text-sm text-muted-foreground">
             No suppliers configured
           </div>
         ) : (
           suppliers.map((s) => (
-            <div key={s.id} className="rounded-lg border bg-card p-4 space-y-2">
+            <div key={s.id} className="space-y-2 surface rounded-2xl p-4">
               <div className="flex items-center justify-between">
                 <p className="font-medium">{s.name}</p>
-                <span className="text-xs capitalize rounded-full bg-muted px-2 py-0.5">{s.status}</span>
+                <span className="text-xs capitalize bg-muted px-2 py-0.5">{s.status}</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
@@ -387,13 +387,13 @@ export default function AdminSuppliersPage() {
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Balance</p>
-                  <p className={s.low ? "font-semibold text-red-600 dark:text-red-400" : ""}>
+                  <p className={s.low ? "font-semibold text-red-400" : ""}>
                     {s.balance}
                     {s.low && " · Low"}
                   </p>
                 </div>
               </div>
-              {s.slug !== "socially" && (
+              {s.slug !== "boosting" && (
                 <div className="flex flex-col gap-2">
                   <Button
                     variant="outline"
@@ -419,7 +419,7 @@ export default function AdminSuppliersPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full text-red-600 dark:text-red-400"
+                    className="w-full text-red-400"
                     onClick={() => handleRemove(s)}
                     disabled={
                       removingId === s.id ||

@@ -38,7 +38,7 @@ function SheetOverlay({
     <SheetPrimitive.Overlay
       data-slot="sheet-overlay"
       className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/60 backdrop-blur-sm",
         className
       )}
       {...props}
@@ -65,7 +65,7 @@ function SheetContent({
   const closeButton = showCloseButton && (
     <SheetPrimitive.Close
       className={cn(
-        "absolute right-4 top-4 rounded-lg opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-0 disabled:pointer-events-none",
+        "absolute right-3 top-3 flex size-8 items-center justify-center rounded-full opacity-70 hover:bg-white/[0.06] transition-opacity hover:opacity-100 focus:outline-none focus:ring-0 disabled:pointer-events-none",
         closeButtonSize === "lg" && "flex size-12 items-center justify-center",
         closeButtonSize === "default" && "size-4",
         closeButtonClassName
@@ -81,11 +81,11 @@ function SheetContent({
   )
 
   const contentClassName = cn(
-    "bg-background fixed z-50 flex flex-col gap-4 shadow-none",
+    "bg-popover fixed z-50 flex flex-col gap-4 shadow-[0_0_0_1px_rgb(255_255_255/0.06),0_30px_80px_-20px_rgb(0_0_0/0.8)]",
     side === "right" &&
-      "inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
+      "inset-y-2 right-2 w-3/4 overflow-hidden rounded-2xl sm:max-w-sm data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
     side === "left" &&
-      "inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
+      "inset-y-2 left-2 w-3/4 overflow-hidden rounded-2xl sm:max-w-sm data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
     side === "bottom" &&
       "inset-x-0 bottom-0 h-auto border-t data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
     side === "top" &&

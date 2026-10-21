@@ -4,8 +4,7 @@ import { auth } from "@/utils/auth";
 import { db } from "@/db/drizzle";
 import { order, listing, supplier, accountDelivery, boostingOrder } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
-import * as rss from "@/lib/boosting/really-simple-social";
-import * as rp from "@/lib/boosting/reseller-provider";
+import { getOrderStatus } from "@/lib/boosting/provider";
 
 export const dynamic = "force-dynamic";
 
@@ -98,11 +97,8 @@ export async function GET() {
     for (const o of toRefresh) {
       try {
         const orderId = Number(o.externalOrderId);
-        const provider = o.provider === "rp" ? "rp" : "rss";
-        const s =
-          provider === "rp"
-            ? await rp.getOrderStatus(orderId)
-            : await rss.getOrderStatus(orderId);
+        // Route to the supplier that fulfilled it (old Socially.ng orders stay there).
+        const s = await getOrderStatus(o.provider, orderId);
 
         const nextStatus = toInternalBoostingStatus({
           supplierStatus: s.status,

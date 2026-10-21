@@ -59,7 +59,7 @@ export function GoogleSignInButton({
     <Button
       type="button"
       variant="outline"
-      className="w-full rounded-full"
+      className="h-10 w-full"
       disabled={loading}
       onClick={handleClick}
     >

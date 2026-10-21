@@ -116,7 +116,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
     <div className="space-y-6">
       {/* Account Overview */}
       <Card className="border shadow-none">
-        <CardHeader>
+        <CardHeader >
           <div className="flex items-center gap-4">
             <Avatar className="size-16">
               <AvatarImage src={user.image ?? undefined} alt={user.name} />
@@ -144,8 +144,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
 
       {/* Profile Settings */}
       <Card className="border shadow-none">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+        <CardHeader >
+          <CardTitle className="flex items-center gap-2">
             <HugeiconsIcon icon={UserIcon} size={18} />
             Profile
           </CardTitle>
@@ -156,7 +156,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
         <CardContent>
           <form onSubmit={handleUpdateProfile} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">
+              <label htmlFor="name" className="eyebrow text-muted-foreground">
                 Display Name
               </label>
               <Input
@@ -164,16 +164,16 @@ export function SettingsForm({ user }: SettingsFormProps) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
-                className="rounded-lg"
+                
                 disabled={savingProfile}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Email</label>
+              <label className="eyebrow text-muted-foreground">Email</label>
               <Input
                 value={user.email}
                 disabled
-                className="rounded-lg opacity-60"
+                className="opacity-60"
               />
               <p className="text-muted-foreground text-xs">
                 Email cannot be changed
@@ -182,7 +182,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
             <Button
               type="submit"
               disabled={savingProfile || name.trim() === user.name}
-              className="rounded-full"
+              className="eyebrow"
             >
               {savingProfile ? (
                 <>
@@ -203,8 +203,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
 
       {/* Change Password */}
       <Card className="border shadow-none">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+        <CardHeader >
+          <CardTitle className="flex items-center gap-2">
             <HugeiconsIcon icon={LockPasswordIcon} size={18} />
             Password
           </CardTitle>
@@ -215,7 +215,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
         <CardContent>
           <form onSubmit={handleChangePassword} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="current-pw" className="text-sm font-medium">
+              <label htmlFor="current-pw" className="eyebrow text-muted-foreground">
                 Current Password
               </label>
               <Input
@@ -224,12 +224,12 @@ export function SettingsForm({ user }: SettingsFormProps) {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Enter current password"
-                className="rounded-lg"
+                
                 disabled={savingPassword}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="new-pw" className="text-sm font-medium">
+              <label htmlFor="new-pw" className="eyebrow text-muted-foreground">
                 New Password
               </label>
               <Input
@@ -238,12 +238,12 @@ export function SettingsForm({ user }: SettingsFormProps) {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="At least 8 characters"
-                className="rounded-lg"
+                
                 disabled={savingPassword}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="confirm-pw" className="text-sm font-medium">
+              <label htmlFor="confirm-pw" className="eyebrow text-muted-foreground">
                 Confirm New Password
               </label>
               <Input
@@ -252,14 +252,14 @@ export function SettingsForm({ user }: SettingsFormProps) {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-enter new password"
-                className="rounded-lg"
+                
                 disabled={savingPassword}
               />
             </div>
             <Button
               type="submit"
               disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
-              className="rounded-full"
+              className="eyebrow"
             >
               {savingPassword ? (
                 <>
@@ -283,7 +283,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
 
       {/* Danger Zone */}
       <Card className="border border-destructive/20 shadow-none">
-        <CardHeader>
+        <CardHeader >
           <CardTitle className="text-destructive text-base">
             Danger Zone
           </CardTitle>
@@ -303,7 +303,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
             <Button
               variant="destructive"
               size="sm"
-              className="shrink-0 rounded-full"
+              className="shrink-0"
               onClick={() =>
                 toast.error(
                   "Please contact support at support@roguesocials.com to delete your account."

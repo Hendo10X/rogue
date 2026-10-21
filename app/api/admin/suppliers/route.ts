@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { db } from "@/db/drizzle";
 import { supplier } from "@/db/schema";
 import { verifyAdminSession } from "@/lib/admin-auth";
-import { getBalance as getSociallyBalance } from "@/lib/boosting/socially";
+import { getBalance as getBoostingBalance, ACTIVE_SUPPLIER_NAME } from "@/lib/boosting/provider";
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -72,10 +72,10 @@ export async function GET() {
   const suppliers = await db.select().from(supplier).orderBy(supplier.name);
 
   // Fetch balances in parallel
-  const [sociallyBalance, svcBalance, acctShopBalance] = await Promise.all([
+  const [boostingBalance, svcBalance, acctShopBalance] = await Promise.all([
     (async () => {
-      if (!process.env.SOCIALLY_API_KEY?.trim()) return null;
-      try { return await getSociallyBalance(); } catch { return { balance: "N/A", currency: "NGN" }; }
+      if (!process.env.REALLYSIMPLESOCIAL_API_KEY?.trim()) return null;
+      try { return await getBoostingBalance(); } catch { return { balance: "N/A", currency: "NGN" }; }
     })(),
     getShopViaCloneBalance(),
     getAcctShopBalance(),
@@ -95,14 +95,14 @@ export async function GET() {
     };
   });
 
-  if (sociallyBalance) {
-    const ngn = parseFloat(String(sociallyBalance.balance));
+  if (boostingBalance) {
+    const ngn = parseFloat(String(boostingBalance.balance));
     rows.unshift({
-      id: "boosting-socially",
-      name: "Socially.ng (Boosting)",
-      slug: "socially",
+      id: "boosting-supplier",
+      name: `${ACTIVE_SUPPLIER_NAME} (Boosting)`,
+      slug: "boosting",
       status: "active",
-      balance: `${sociallyBalance.balance} ${sociallyBalance.currency}`,
+      balance: `${boostingBalance.balance} ${boostingBalance.currency}`,
       low: Number.isFinite(ngn) && ngn < 5000,
     });
   }

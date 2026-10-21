@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, DM_Sans } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Toaster from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
@@ -19,8 +19,8 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
   display: "swap",
 });
@@ -74,7 +74,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#E54D1B",
+  themeColor: "#0A0A0A",
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+  // iOS zooms into any field with text under 16px and leaves the page zoomed.
+  // Capping the scale stops that jump when tapping into an input.
+  maximumScale: 1,
 };
 
 const structuredData = [
@@ -102,7 +108,7 @@ export default async function RootLayout({
 }>) {
   const { currency, rates } = await resolveCurrency();
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="dark">
       <head>
         <script defer src="https://cloud.umami.is/script.js" data-website-id="60187f63-0781-44b0-9c80-2f13523f0cf6"></script>
         <script
@@ -115,7 +121,7 @@ export default async function RootLayout({
         </noscript>
       </head>
       <body
-        className={`${dmSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <script
           type="application/ld+json"

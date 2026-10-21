@@ -4,25 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
 import { useCurrency } from "@/components/currency-provider";
 import { formatMoney } from "@/lib/currency";
+import { cn } from "@/lib/utils";
 
 type PaymentProvider = "korapay" | "flutterwave" | "plisio" | "manual";
 
@@ -65,6 +52,13 @@ const PAYMENT_OPTIONS: { value: PaymentProvider; label: string }[] = [
   { value: "plisio", label: "Crypto — USDT, BTC, ETH (Plisio)" },
   { value: "manual", label: "Manual Bank Transfer" },
 ];
+
+const METHOD_COPY: Record<PaymentProvider, [string, string]> = {
+  korapay: ["Korapay", "Card, bank transfer or USSD · NGN"],
+  flutterwave: ["Flutterwave", "Card or bank transfer · NGN"],
+  plisio: ["Plisio", "Crypto — USDT, BTC, ETH · USD"],
+  manual: ["Manual transfer", "Pay into our account, send the receipt"],
+};
 
 export function DepositForm() {
   const router = useRouter();
@@ -222,131 +216,159 @@ export function DepositForm() {
 
   if (invoiceUrl) {
     return (
-      <Card className="shadow-none">
-        <CardContent className="pt-6">
-          <p className="text-muted-foreground text-center text-sm">
-            Redirecting to payment...
-          </p>
-          <Button
-            className="mt-4 w-full rounded-full"
-            variant="outline"
-            onClick={() => (window.location.href = invoiceUrl)}>
-            Open payment page
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="surface rounded-2xl px-5 py-6">
+        <p className="mt-2 text-sm text-muted-foreground">
+          Taking you to the payment page…
+        </p>
+        <Button
+          className="mt-5 w-full"
+          variant="outline"
+          onClick={() => (window.location.href = invoiceUrl)}>
+          Open payment page
+        </Button>
+      </div>
     );
   }
 
-  return (
-    <Card className="shadow-none">
-      <CardHeader>
-        <CardTitle>Deposit amount</CardTitle>
-        <CardDescription>
-          Choose your payment method and enter the amount.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Payment method</label>
-            <Select
-              value={provider}
-              onValueChange={(v) => setProvider(v as PaymentProvider)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select payment method" />
-              </SelectTrigger>
-              <SelectContent>
-                {PAYMENT_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+  const isUsd = provider === "plisio";
+  const presets = isUsd ? [10, 25, 50, 100] : [2000, 5000, 10000, 25000];
 
-          {provider === "manual" ? (
-            <div className="rounded-lg border p-4 space-y-3">
-              <p className="text-sm font-medium">Bank Transfer Details</p>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Account Name</span>
-                  <span className="font-medium">Rogue Socials Marketplace</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Account Number</span>
-                  <span className="font-mono font-semibold tracking-wider">4005379809</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Bank</span>
-                  <span className="font-medium">Moniepoint MFB</span>
-                </div>
-              </div>
-              <p className="text-muted-foreground text-xs pt-1 border-t">
-                Pay the exact amount to the account above. Then tap the button
-                below to send your payment receipt to us on Telegram — we&apos;ll
-                credit your wallet manually.
-              </p>
-              <Button asChild className="w-full rounded-full">
-                <a
-                  href="https://t.me/rogue4l"
-                  target="_blank"
-                  rel="noopener noreferrer">
-                  I have paid — send receipt
-                </a>
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <label htmlFor="amount" className="text-sm font-medium">
-                  Amount ({provider === "plisio" ? "USD" : "NGN"})
-                </label>
-                <Input
-                  id="amount"
-                  type="number"
-                  min={1}
-                  max={10000000}
-                  step={provider === "plisio" ? 0.01 : 1}
-                  placeholder={provider === "plisio" ? "50" : "1000"}
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  disabled={loading}
-                  className="rounded-lg"
-                />
-                <p className="text-muted-foreground text-xs">
-                  {provider === "plisio"
-                    ? "Pay with USDT, BTC, ETH, etc."
-                    : "Pay with card or bank transfer (Naira)"}
-                </p>
-                {showEquivalent && (
-                  <p className="text-muted-foreground text-xs">
-                    ≈ {formatMoney(convert(enteredNgn), currency)} at today&apos;s rate
-                  </p>
+  return (
+    <form onSubmit={handleSubmit} className="surface flex flex-col gap-5 rounded-3xl p-5 sm:p-6">
+      <span className="text-sm font-medium">Payment method</span>
+      <div role="radiogroup" aria-label="Payment method" className="grid gap-2 sm:grid-cols-2">
+        {PAYMENT_OPTIONS.map((opt) => {
+          const on = provider === opt.value;
+          const [name, detail] = METHOD_COPY[opt.value];
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => setProvider(opt.value)}
+              className={cn(
+                "relative flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left transition-all duration-200 active:scale-[0.99]",
+                on
+                  ? "ring-rogue bg-[linear-gradient(140deg,rgb(255_90_31/0.14),rgb(255_211_26/0.04))]"
+                  : "bg-white/[0.03] hover:bg-white/[0.055]"
+              )}
+            >
+              <span
+                className={cn(
+                  "flex size-[18px] shrink-0 items-center justify-center rounded-full transition-all duration-200",
+                  on ? "bg-rogue-gradient" : "shadow-[inset_0_0_0_1.5px_rgb(255_255_255/0.2)]"
                 )}
+              >
+                <span className={cn("size-1.5 rounded-full bg-white transition-transform duration-200", on ? "scale-100" : "scale-0")} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[0.8125rem] font-medium">{name}</span>
+                <span className="block text-xs text-muted-foreground">{detail}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {provider === "manual" ? (
+        <div className="flex flex-col">
+          <dl className="grid gap-2 sm:grid-cols-3">
+            {[
+              ["Account name", "Rogue Socials Marketplace"],
+              ["Account number", "4005379809"],
+              ["Bank", "Moniepoint MFB"],
+            ].map(([term, value]) => (
+              <div key={term} className="rounded-2xl bg-white/[0.03] px-4 py-3.5">
+                <dt className="text-xs text-muted-foreground">{term}</dt>
+                <dd
+                  className={cn(
+                    "mt-1.5 text-xs font-medium",
+                    term === "Account number" && "font-mono text-sm tracking-wider"
+                  )}
+                >
+                  {value}
+                </dd>
               </div>
-              <Button
-                type="submit"
+            ))}
+          </dl>
+          <p className="py-4 text-[0.8125rem] leading-relaxed text-muted-foreground">
+            Pay the exact amount to the account above. Then tap the button
+            below to send your payment receipt to us on Telegram — we&apos;ll
+            credit your wallet manually.
+          </p>
+          <div>
+            <Button asChild size="lg" className="w-full">
+              <a
+                href="https://t.me/rogue4l"
+                target="_blank"
+                rel="noopener noreferrer">
+                I have paid — send receipt
+              </a>
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col">
+          <div className="flex flex-col gap-3">
+            <label htmlFor="amount" className="text-sm font-medium">
+              Amount ({isUsd ? "USD" : "NGN"})
+            </label>
+            <div className="relative">
+              <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-lg text-muted-foreground">
+                {isUsd ? "$" : "₦"}
+              </span>
+              <Input
+                id="amount"
+                type="number"
+                min={1}
+                max={10000000}
+                step={isUsd ? 0.01 : 1}
+                placeholder={isUsd ? "50" : "1000"}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
                 disabled={loading}
-                className="w-full rounded-full">
-                {loading ? (
-                  <>
-                    <HugeiconsIcon
-                      icon={Loading03Icon}
-                      size={16}
-                      className="mr-2 size-4 animate-spin"
-                    />
-                    Creating payment...
-                  </>
-                ) : (
-                  "Continue to payment"
-                )}
-              </Button>
-            </>
-          )}
-        </form>
-      </CardContent>
-    </Card>
+                className="h-14 rounded-2xl pl-9 text-2xl font-semibold tracking-[-0.03em] tabular-nums md:text-2xl"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {presets.map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setAmount(String(v))}
+                  className={cn(
+                    "h-8 rounded-full px-3.5 text-[0.8125rem] tabular-nums transition-all duration-200 active:scale-95",
+                    amount === String(v)
+                      ? "bg-[#ff7a1a]/15 text-[#ffc08f] shadow-[inset_0_0_0_1px_rgb(255_140_60/0.4)]"
+                      : "bg-white/[0.04] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
+                  )}
+                >
+                  {isUsd ? `$${v}` : `₦${v.toLocaleString()}`}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isUsd ? "Pay with USDT, BTC, ETH, etc." : "Pay with card or bank transfer (Naira)"}
+              {showEquivalent && (
+                <> · ≈ {formatMoney(convert(enteredNgn), currency)} at today&apos;s rate</>
+              )}
+            </p>
+          </div>
+          <div className="pt-2">
+            <Button type="submit" disabled={loading} size="lg" className="w-full">
+              {loading ? (
+                <>
+                  <HugeiconsIcon icon={Loading03Icon} size={16} className="size-4 animate-spin" />
+                  Creating payment…
+                </>
+              ) : (
+                "Continue to payment"
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+    </form>
   );
 }

@@ -91,7 +91,7 @@ export async function GET() {
     db
       .select({ count: sql<number>`count(*)::int` })
       .from(boostingOrder)
-      .where(and(isNull(boostingOrder.apiKeyId), eq(boostingOrder.provider, "api"))),
+      .where(and(isNull(boostingOrder.apiKeyId), sql`${boostingOrder.provider} like 'api%'`)),
   ]);
 
   const totals = {

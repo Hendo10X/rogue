@@ -1,5 +1,6 @@
 "use client";
 
+import { useSlashFocus } from "@/lib/use-slash-focus";
 import { useCallback, useEffect, useState } from "react";
 import {
   Table,
@@ -34,7 +35,7 @@ interface Pagination {
 }
 
 const selectClass =
-  "h-9 rounded-md border bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring";
+  "h-10 rounded-full bg-white/[0.04] px-4 text-[0.8125rem] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.07)] focus:outline-none focus:ring-2 focus:ring-ring/40";
 
 export default function AdminBoostingPage() {
   const [items, setItems] = useState<ServiceRow[]>([]);
@@ -45,6 +46,7 @@ export default function AdminBoostingPage() {
   const [togglingId, setTogglingId] = useState<number | null>(null);
 
   const [q, setQ] = useState("");
+  const searchRef = useSlashFocus();
   const [category, setCategory] = useState("all");
   const [page, setPage] = useState(1);
 
@@ -119,8 +121,8 @@ export default function AdminBoostingPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold">Boosting services</h1>
-        <p className="text-muted-foreground text-sm">
+        <div className="flex flex-col gap-1.5"><h1 className="text-2xl font-semibold tracking-[-0.03em]">Boosting services</h1></div>
+        <p className="text-sm text-muted-foreground">
           Switch a service off to hide it from the storefront. {hiddenCount}{" "}
           currently hidden.
         </p>
@@ -128,14 +130,20 @@ export default function AdminBoostingPage() {
 
       <form
         onSubmit={onSearchSubmit}
-        className="flex flex-wrap items-center gap-2"
+        className="flex flex-col gap-2 md:flex-row md:items-center"
       >
-        <Input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by name or ID…"
-          className="h-9 w-56"
-        />
+        <label className="relative flex flex-1 items-center">
+          <Input
+            ref={searchRef}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search by name or ID…"
+            className="h-10 rounded-full pr-12 pl-4"
+          />
+          <kbd className="pointer-events-none absolute right-4 hidden h-5 min-w-5 items-center justify-center rounded-md bg-white/[0.06] px-1.5 font-mono text-[0.625rem] text-muted-foreground sm:inline-flex">
+            /
+          </kbd>
+        </label>
         <select
           value={category}
           onChange={(e) => {
@@ -151,20 +159,22 @@ export default function AdminBoostingPage() {
             </option>
           ))}
         </select>
-        <Button type="submit" variant="outline" size="sm" disabled={loading}>
+        <Button type="submit" variant="ghost" disabled={loading} className="h-10 px-5">
           Search
         </Button>
       </form>
 
       {loading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <div className="surface flex min-h-[240px] items-center justify-center rounded-2xl">
+          <Spinner className="size-5 text-muted-foreground" />
+        </div>
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block rounded-lg border bg-background">
+          <div className="surface hidden overflow-hidden rounded-2xl p-1.5 md:block">
             <Table>
               <TableHeader>
-                <TableRow className="border-b">
+                <TableRow >
                   <TableHead>ID</TableHead>
                   <TableHead>Service</TableHead>
                   <TableHead>Status</TableHead>
@@ -180,7 +190,7 @@ export default function AdminBoostingPage() {
                   </TableRow>
                 ) : (
                   items.map((r) => (
-                    <TableRow key={r.service} className="border-b">
+                    <TableRow key={r.service} >
                       <TableCell className="font-mono text-xs">
                         {r.service}
                       </TableCell>
@@ -220,14 +230,14 @@ export default function AdminBoostingPage() {
           {/* Mobile cards */}
           <div className="flex flex-col gap-3 md:hidden">
             {items.length === 0 ? (
-              <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
+              <div className="surface rounded-2xl p-10 text-center text-sm text-muted-foreground">
                 No services found
               </div>
             ) : (
               items.map((r) => (
                 <div
                   key={r.service}
-                  className="rounded-lg border bg-card p-4 space-y-3"
+                  className="space-y-3 surface rounded-2xl p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-medium">{r.name}</p>
@@ -247,7 +257,7 @@ export default function AdminBoostingPage() {
                       <p className="truncate text-xs">{r.category}</p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between border-t pt-3">
+                  <div className="flex items-center justify-between pt-3">
                     <span className="text-sm text-muted-foreground">
                       Show in storefront
                     </span>
@@ -268,7 +278,7 @@ export default function AdminBoostingPage() {
 
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between">
-              <p className="text-muted-foreground text-sm">
+              <p className="text-sm text-muted-foreground">
                 {pagination.total} services · page {pagination.page} of{" "}
                 {pagination.totalPages}
               </p>

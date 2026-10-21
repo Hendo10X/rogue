@@ -1,14 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { AnimatePresence, motion } from "motion/react";
+import { Segmented } from "@/components/ui/segmented";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -25,12 +19,15 @@ import { useCurrency } from "@/components/currency-provider";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Copy01Icon,
-  Calendar03Icon,
   ArrowRight01Icon,
+  PackageIcon,
+  Rocket01Icon,
+  Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface Order {
   id: string;
@@ -49,19 +46,25 @@ interface Order {
   credentials: string[];
 }
 
+const STATUS_TONE: Record<string, string> = {
+  pending: "text-amber-300 bg-amber-400/10",
+  processing: "text-sky-300 bg-sky-400/10",
+  completed: "text-emerald-300 bg-emerald-400/10",
+  failed: "text-red-300 bg-red-400/10",
+  manual_review: "text-violet-300 bg-violet-400/10",
+};
+
 function StatusBadge({ status }: { status: string }) {
-  const variants: Record<string, string> = {
-    pending: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-    processing: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
-    completed: "bg-green-500/15 text-green-600 dark:text-green-400",
-    failed: "bg-red-500/15 text-red-600 dark:text-red-400",
-    manual_review: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
-  };
-  const label = status === "manual_review" ? "Manual Review" : status.charAt(0).toUpperCase() + status.slice(1);
+  const label = status === "manual_review" ? "Manual review" : status.charAt(0).toUpperCase() + status.slice(1);
   return (
-    <Badge variant="secondary" className={variants[status] ?? ""}>
+    <span
+      className={cn(
+        "inline-flex h-5 items-center rounded-full px-2 text-[0.6875rem] font-medium",
+        STATUS_TONE[status] ?? "bg-muted text-muted-foreground"
+      )}
+    >
       {label}
-    </Badge>
+    </span>
   );
 }
 
@@ -78,24 +81,15 @@ function CredentialsBlock({ credentials }: { credentials: string[] }) {
 
   if (credentials.length === 0) return null;
   return (
-    <div className="rounded-lg border bg-muted/30 p-3 text-sm">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-muted-foreground font-medium">Credentials</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 gap-1 text-xs"
-          onClick={copy}
-        >
-          <HugeiconsIcon
-            icon={Copy01Icon}
-            size={14}
-            className={copied ? "text-green-500" : ""}
-          />
+    <div className="rounded-xl bg-black/25">
+      <div className="flex items-center justify-between px-3 py-1.5">
+        <span className="text-xs text-muted-foreground">Credentials</span>
+        <Button variant="ghost" size="xs"  onClick={copy}>
+          <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} size={12} className={copied ? "text-emerald-400" : ""} />
           {copied ? "Copied" : "Copy"}
         </Button>
       </div>
-      <pre className="whitespace-pre-wrap break-all font-mono text-xs">
+      <pre className="max-h-48 overflow-y-auto px-3 py-2.5 font-mono text-[0.6875rem] leading-relaxed break-all whitespace-pre-wrap">
         {text}
       </pre>
     </div>
@@ -117,43 +111,40 @@ function OrderViewModal({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
-          <AlertDialogTitle className="line-clamp-2">{order.title}</AlertDialogTitle>
+          <AlertDialogTitle className="line-clamp-2 leading-snug">{order.title}</AlertDialogTitle>
           <AlertDialogDescription asChild>
-            <div className="flex flex-wrap items-center gap-2 pt-2">
+            <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={order.status} />
-              <Badge variant="outline">{order.platform}</Badge>
-              <span className="text-xs">
-                {new Date(order.createdAt).toLocaleDateString()} · Qty:{" "}
-                {order.quantity}
+              <span className="subtext text-xs">
+                {new Date(order.createdAt).toLocaleString()}
               </span>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="flex flex-col gap-4 py-4">
-          <div>
-            <p className="text-xl font-semibold">
-              {format(parseFloat(order.amount))}
-            </p>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-white/[0.03] px-4 py-3">
+            <p className="text-xs text-muted-foreground">Amount</p>
+            <p className="mt-2 text-lg font-semibold tabular-nums">{format(parseFloat(order.amount))}</p>
           </div>
-          {(order.status === "completed" || order.status === "failed") && (
-            <CredentialsBlock credentials={order.credentials} />
-          )}
+          <div className="rounded-xl bg-white/[0.03] px-4 py-3">
+            <p className="text-xs text-muted-foreground">Quantity</p>
+            <p className="mt-2 text-lg font-semibold tabular-nums">{order.quantity.toLocaleString()}</p>
+          </div>
         </div>
+        {(order.status === "completed" || order.status === "failed") && (
+          <CredentialsBlock credentials={order.credentials} />
+        )}
         <AlertDialogFooter>
-          <AlertDialogCancel className="rounded-full">
-            Close
-          </AlertDialogCancel>
+          <AlertDialogCancel >Close</AlertDialogCancel>
           {order.slug ? (
-            <AlertDialogAction asChild className="rounded-full">
+            <AlertDialogAction asChild >
               <Link href={`/marketplace/${order.slug}`}>
                 View listing
-                <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="ml-2" />
+                <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
               </Link>
             </AlertDialogAction>
           ) : (
-            <AlertDialogAction className="rounded-full">
-              OK
-            </AlertDialogAction>
+            <AlertDialogAction >OK</AlertDialogAction>
           )}
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -167,10 +158,19 @@ async function fetchOrders() {
   return res.json();
 }
 
+type Filter = "all" | "marketplace" | "boosting";
+
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "marketplace", label: "Accounts" },
+  { id: "boosting", label: "Boosting" },
+];
+
 export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
   const { format } = useCurrency();
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [filter, setFilter] = useState<Filter>("all");
   const { data: orders = initialOrders, isLoading } = useQuery({
     queryKey: ["orders"],
     queryFn: fetchOrders,
@@ -185,93 +185,104 @@ export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
 
   if (isLoading && orders.length === 0) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center">
-        <Spinner className="size-8" />
+      <div className="flex min-h-[200px] items-center justify-center surface rounded-2xl">
+        <Spinner className="size-6" />
       </div>
     );
   }
 
   if (orders.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-16">
-          <p className="text-muted-foreground mb-4 text-center">
-            No orders yet. Browse the marketplace to make your first purchase.
+      <div className="flex flex-col items-center justify-center gap-4 surface rounded-2xl px-6 py-16 text-center">
+        <div>
+          <p className="text-sm font-medium">No orders yet.</p>
+          <p className="subtext mt-1 text-xs text-muted-foreground">
+            Browse the marketplace to make your first purchase.
           </p>
-          <Button asChild className="rounded-full">
-            <Link href="/marketplace">
-              Browse marketplace
-              <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="ml-2" />
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+        </div>
+        <Button asChild >
+          <Link href="/marketplace">
+            Browse marketplace
+            <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
+          </Link>
+        </Button>
+      </div>
     );
   }
 
+  const counts = {
+    all: orders.length,
+    marketplace: orders.filter((o: Order) => o.type !== "boosting").length,
+    boosting: orders.filter((o: Order) => o.type === "boosting").length,
+  };
+  const visible = orders.filter((o: Order) =>
+    filter === "all" ? true : filter === "boosting" ? o.type === "boosting" : o.type !== "boosting"
+  );
+
   return (
-    <>
-      <div className="space-y-4">
-        {orders.map((o: Order) => (
-          <Card key={o.id} className="overflow-hidden">
-            <CardHeader className="pb-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusBadge status={o.status} />
-                  <Badge variant="outline" className="text-xs">
-                    {o.platform}
-                  </Badge>
-                </div>
-                <span className="text-muted-foreground text-xs">
-                  <HugeiconsIcon icon={Calendar03Icon} size={12} className="mr-1 inline" />
-                  {new Date(o.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-              <CardTitle className="text-base">
-                <button
-                  type="button"
-                  onClick={() => openOrderView(o)}
-                  className="hover:text-link text-left hover:underline text-link"
-                >
-                  {o.title}
-                </button>
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Qty: {o.quantity}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-0">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold">
-                  {format(parseFloat(o.amount))}
-                </span>
-                {(o.status === "processing" || o.status === "pending" || o.status === "manual_review") && (
-                  <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                    <Spinner className="size-3" />
-                    {o.status === "manual_review" ? "In Review..." : "Processing..."}
-                  </span>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="rounded-full"
-                  onClick={() => openOrderView(o)}
-                >
-                  View
-                </Button>
-              </div>
-              {(o.status === "completed" || o.status === "failed") && (
-                <CredentialsBlock credentials={o.credentials} />
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <OrderViewModal
-        order={viewOrder}
-        open={modalOpen}
-        onOpenChange={setModalOpen}
+    <div className="flex flex-col gap-4">
+      <Segmented
+        id="orders"
+        value={filter}
+        onChange={setFilter}
+        options={FILTERS.map((f) => ({ value: f.id, label: f.label, count: counts[f.id] }))}
+        className="self-start"
       />
-    </>
+
+      {visible.length === 0 ? (
+        <div className="surface rounded-2xl px-6 py-12 text-center">
+          <p className="text-[0.8125rem] text-muted-foreground">No orders in this view.</p>
+        </div>
+      ) : (
+        <ul className="surface flex flex-col gap-0.5 rounded-2xl p-1.5">
+          <AnimatePresence initial={false}>
+            {visible.map((o: Order) => {
+              const busy = o.status === "processing" || o.status === "pending" || o.status === "manual_review";
+              const showCreds = (o.status === "completed" || o.status === "failed") && o.credentials.length > 0;
+              return (
+                <motion.li
+                  key={o.id}
+                  layout
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                  className="rounded-xl"
+                >
+                  <button
+                    type="button"
+                    onClick={() => openOrderView(o)}
+                    className="group flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left transition-colors hover:bg-white/[0.045]"
+                  >
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-muted-foreground transition-colors group-hover:text-[#ff9a4a]">
+                      <HugeiconsIcon icon={o.type === "boosting" ? Rocket01Icon : PackageIcon} strokeWidth={1.75} className="size-[18px]" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-1 text-[0.8125rem] font-medium">{o.title}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {o.platform} · qty {o.quantity.toLocaleString()} · {new Date(o.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="hidden items-center gap-2 sm:flex">
+                      {busy && <Spinner className="size-3 text-muted-foreground" />}
+                      <StatusBadge status={o.status} />
+                    </div>
+                    <span className="w-24 text-right text-[0.8125rem] font-semibold tabular-nums">
+                      {format(parseFloat(o.amount))}
+                    </span>
+                  </button>
+                  {showCreds && (
+                    <div className="px-3 pb-3 sm:pl-[4.25rem]">
+                      <CredentialsBlock credentials={o.credentials} />
+                    </div>
+                  )}
+                </motion.li>
+              );
+            })}
+          </AnimatePresence>
+        </ul>
+      )}
+      <OrderViewModal order={viewOrder} open={modalOpen} onOpenChange={setModalOpen} />
+    </div>
   );
 }

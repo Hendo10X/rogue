@@ -1,91 +1,92 @@
 import Link from "next/link";
-import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  TwitterIcon,
-  GithubIcon,
-  Linkedin01Icon,
-  TelegramIcon,
-} from "@hugeicons/core-free-icons";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { TelegramIcon } from "@hugeicons/core-free-icons";
+
+import { Wordmark } from "@/components/logo";
 import { LANDING_PAGES } from "@/lib/landing";
 
-const links = [
-  { label: "Home", href: "/" },
-  { label: "API Docs", href: "/docs/api" },
-  { label: "Support", href: "https://t.me/rogue4l" },
-  { label: "Terms & Conditions", href: "/terms" },
+const COLUMNS = [
+  {
+    title: "Product",
+    links: [
+      { label: "Marketplace", href: "/marketplace" },
+      { label: "Boosting", href: "/boosting" },
+      { label: "Fund wallet", href: "/wallet/deposit" },
+      { label: "API docs", href: "/docs/api" },
+    ],
+  },
+  {
+    title: "Rogue",
+    links: [
+      { label: "Game coins", href: "https://www.roguearena.gg" },
+      { label: "Foreign numbers", href: "https://www.roguearena.gg" },
+      { label: "Telegram channel", href: "https://t.me/roguesocials" },
+      { label: "Support", href: "https://t.me/rogue4l" },
+    ],
+  },
+  {
+    title: "Buy",
+    links: LANDING_PAGES.slice(0, 4).map((p) => ({ label: p.platformLabel, href: `/buy/${p.slug}` })),
+  },
 ];
 
-const social = [
-  { icon: TwitterIcon, href: "#", label: "Twitter" },
-  { icon: GithubIcon, href: "#", label: "GitHub" },
-  { icon: Linkedin01Icon, href: "#", label: "LinkedIn" },
-  { icon: TelegramIcon, href: "https://t.me/roguesocials", label: "Telegram" },
-];
+function FooterLink({ href, label }: { href: string; label: string }) {
+  const external = href.startsWith("http");
+  return (
+    <Link
+      href={href}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      className="w-fit text-sm text-muted-foreground transition-colors hover:text-foreground"
+    >
+      {label}
+    </Link>
+  );
+}
 
 export default function Footer() {
   return (
-    <footer className="bg-[#E54D1B] dark:bg-secondary border-t border-white/10 py-12 text-white @container">
-      <div className="mx-auto max-w-3xl px-6">
-        <div className="grid gap-8">
-          <div className="col-span-full border-b border-white/20 pb-8">
-            <Link href="/" className="flex items-center gap-2">
-              <Image
-                src="/Roguesocialsyellow.svg"
-                alt="Logo"
-                width={500}
-                height={140}
-                className="h-36 w-auto"
-              />
-            </Link>
-            <div className="-ml-2 mt-6 flex gap-2">
-              {social.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="text-white hover:opacity-80 flex size-8 items-center justify-center transition-colors"
-                  aria-label={item.label}>
-                  <HugeiconsIcon
-                    icon={item.icon}
-                    size={18}
-                    className="size-4"
-                  />
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <nav className="flex flex-wrap gap-x-8 gap-y-3">
-            {links.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className="text-white hover:opacity-80 text-sm transition-colors">
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-          <nav className="flex flex-wrap gap-x-6 gap-y-2 border-t border-white/20 pt-6">
-            {LANDING_PAGES.map((p) => (
-              <Link
-                key={p.slug}
-                href={`/buy/${p.slug}`}
-                className="text-white/80 hover:text-white text-xs transition-colors">
-                {p.h1}
-              </Link>
-            ))}
-          </nav>
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/20 pt-8">
-            <p className="text-sm">
-              &copy; {new Date().getFullYear()} Rogue. All rights reserved.
+    <footer className="px-3 pb-3 sm:px-6 sm:pb-6">
+      <div className="surface mx-auto w-full max-w-6xl rounded-3xl px-6 py-12 sm:px-10">
+        <div className="grid gap-10 lg:grid-cols-12">
+          <div className="flex flex-col gap-5 lg:col-span-5">
+            <Wordmark size="md" />
+            <p className="max-w-xs text-sm leading-relaxed text-pretty text-muted-foreground">
+              Aged and fresh social accounts, plus boosting for every major
+              platform — paid from one wallet.
             </p>
-            <ThemeToggle className="text-white hover:text-white/80" />
+            <a
+              href="https://t.me/roguesocials"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex w-fit items-center gap-2 rounded-full bg-white/[0.05] px-3.5 py-2 text-[0.8125rem] text-foreground/90 transition-colors hover:bg-white/[0.09]"
+            >
+              <HugeiconsIcon icon={TelegramIcon} strokeWidth={1.75} className="size-4 text-[#ff9a4a]" />
+              Join the channel
+            </a>
           </div>
-          <div className="text-center space-y-1">
-            <p className="text-sm font-semibold text-white/70">Rogue Socials</p>
-            <p className="text-xs text-white/40">A Rogue Energy Company</p>
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-7">
+            {COLUMNS.map((col) => (
+              <div key={col.title} className="flex flex-col gap-3">
+                <span className="text-sm font-medium">{col.title}</span>
+                {col.links.map((l) => (
+                  <FooterLink key={l.label} {...l} />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-12 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Rogue Socials · A Rogue Energy company
+          </p>
+          <div className="flex gap-5">
+            <Link href="/terms" className="text-xs text-muted-foreground transition-colors hover:text-foreground">
+              Terms
+            </Link>
+            <Link href="/docs/api" className="text-xs text-muted-foreground transition-colors hover:text-foreground">
+              Developers
+            </Link>
           </div>
         </div>
       </div>

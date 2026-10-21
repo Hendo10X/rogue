@@ -18,7 +18,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ThemeProvider attribute="class" forcedTheme="dark" defaultTheme="dark">
         <LazyMotion features={domAnimation}>{children}</LazyMotion>
       </ThemeProvider>
     </QueryClientProvider>

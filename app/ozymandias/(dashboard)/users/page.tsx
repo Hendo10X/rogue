@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { useSlashFocus } from "@/lib/use-slash-focus";
 
 interface UserRow {
   id: string;
@@ -71,7 +72,7 @@ function TruncatedIp({ ip }: { ip: string }) {
       >
         {short}
       </button>
-      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded bg-popover text-popover-foreground border px-2.5 py-1 text-xs font-mono shadow-md opacity-0 transition-opacity group-hover/ip:opacity-100 z-50">
+      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap bg-popover text-popover-foreground border px-2.5 py-1 text-xs font-mono opacity-0 transition-opacity group-hover/ip:opacity-100 z-50">
         {ip}
       </span>
     </span>
@@ -81,7 +82,7 @@ function TruncatedIp({ ip }: { ip: string }) {
 function PinInput({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Security PIN</label>
+      <label className="text-xs text-muted-foreground">Security PIN</label>
       <Input
         type="password"
         inputMode="numeric"
@@ -101,6 +102,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const searchRef = useSlashFocus();
 
   // Modal State
   const [adjustingUser, setAdjustingUser] = useState<UserRow | null>(null);
@@ -284,33 +286,46 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Users Management</h1>
-        <span className="text-muted-foreground text-sm">{users.length} total</span>
+      <div className="flex flex-col gap-1.5">
+        
+        <h1 className="text-2xl font-semibold tracking-[-0.03em]">Users</h1>
+        <p className="text-sm text-muted-foreground">
+          {users.length.toLocaleString()} registered account{users.length === 1 ? "" : "s"}
+          {search ? ` · ${filteredUsers.length.toLocaleString()} shown` : ""}.
+        </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Input
-          placeholder="Search by name, email, or phone..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
+      {/* Toolbar — search plus the bulk exports. */}
+      <div className="flex flex-col gap-2 md:flex-row md:items-center">
+        <label className="relative flex flex-1 items-center">
+          <Input
+            ref={searchRef}
+            placeholder="Search by name, email, or phone…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-10 rounded-full pr-12 pl-4"
+          />
+          <kbd className="pointer-events-none absolute right-4 hidden h-5 min-w-5 items-center justify-center rounded-md bg-white/[0.06] px-1.5 font-mono text-[0.625rem] text-muted-foreground sm:inline-flex">
+            /
+          </kbd>
+        </label>
+        <div className="flex">
         {/* Export all phone numbers as a .vcf to bulk-add into a phonebook */}
-        <Button variant="outline" onClick={downloadContactsVcf}>
+        <Button variant="outline" className="h-10 flex-1 px-4" onClick={downloadContactsVcf}>
           Export contacts (.vcf)
           {filteredUsers.length > 0 ? ` (${filteredUsers.length})` : ""}
         </Button>
 
         {/* Copy all emails to the clipboard */}
-        <Button variant="secondary" onClick={copyEmails}>
-          Copy Email
+        <Button variant="outline" className="h-10 flex-1 px-4" onClick={copyEmails}>
+          Copy emails
           {filteredUsers.length > 0 ? ` (${filteredUsers.length})` : ""}
         </Button>
+        </div>
       </div>
 
       {/* Desktop table */}
-      <div className="hidden md:block rounded-md border bg-card">
+      <div className="surface hidden overflow-hidden rounded-2xl p-1.5 md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -383,12 +398,12 @@ export default function AdminUsersPage() {
       {/* Mobile cards */}
       <div className="flex flex-col gap-3 md:hidden">
         {filteredUsers.length === 0 ? (
-          <div className="rounded-lg border bg-card p-6 text-center text-muted-foreground">
+          <div className="surface rounded-2xl p-10 text-center text-sm text-muted-foreground">
             {query ? "No users match your search." : "No users found."}
           </div>
         ) : (
           filteredUsers.map((user) => (
-            <div key={user.id} className="rounded-lg border bg-card p-4 space-y-3">
+            <div key={user.id} className="space-y-3 surface rounded-2xl p-4">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium">{user.name}</p>
@@ -514,7 +529,7 @@ export default function AdminUsersPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Amount (NGN)</label>
+              <label className="text-xs text-muted-foreground">Amount (NGN)</label>
               <Input
                 type="number"
                 min="0.01"

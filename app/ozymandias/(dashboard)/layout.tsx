@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import { verifyAdminSession, getSetting, setSetting } from "@/lib/admin-auth";
 import { AdminNav } from "../admin-nav";
+import { getSessionWithAdmin } from "@/lib/admin-access";
 
 const MAX_IP_ENTRIES = 200;
 
@@ -12,9 +13,13 @@ export default async function DashboardLayout({
 }) {
   const cookieStore = await cookies();
   const token = cookieStore.get("admin_session")?.value;
-  if (!token) redirect("/ozymandias/login");
-  const admin = await verifyAdminSession(token);
-  if (!admin) redirect("/ozymandias/login");
+  const admin = token ? await verifyAdminSession(token) : null;
+  if (!admin) {
+    // An allowed email that's signed in to Rogue gets a fresh admin session;
+    // anyone else lands on the explanation page.
+    const { isAdmin } = await getSessionWithAdmin();
+    redirect(isAdmin ? "/api/admin/auth/email" : "/ozymandias/login");
+  }
 
   // Log IP access (non-blocking)
   try {
@@ -38,13 +43,13 @@ export default async function DashboardLayout({
   } catch { /* non-critical */ }
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <header className="border-b bg-background">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4">
-          <AdminNav username={admin.username} />
-        </div>
+    <div className="flex min-h-svh flex-col">
+      <header className="sticky top-0 z-40 bg-background/80 shadow-[0_1px_0_rgb(255_255_255/0.05)] backdrop-blur-xl">
+        <AdminNav username={admin.username} />
       </header>
-      <main className="mx-auto max-w-7xl p-4">{children}</main>
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
+        {children}
+      </main>
     </div>
   );
 }

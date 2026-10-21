@@ -544,6 +544,86 @@ export const boostingOrderRelations = relations(boostingOrder, ({ one }) => ({
   }),
 }));
 
+/**
+ * Admins added from Ozymandias → Settings. The built-in owner emails live in
+ * code (lib/admin-emails.ts) and are never stored here.
+ */
+export const adminEmail = pgTable("admin_email", {
+  email: text("email").primaryKey(),
+  addedBy: text("added_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/**
+ * Pre-loaded logs for a manual listing, one credential line per row. A
+ * purchase claims rows atomically (available → sold), so each log is handed
+ * out exactly once and the listing's stock follows the unsold count.
+ */
+export const manualLogItem = pgTable(
+  "manual_log_item",
+  {
+    id: text("id").primaryKey(),
+    listingId: text("listing_id")
+      .notNull()
+      .references(() => listing.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    status: text("status").default("available").notNull(),
+    orderId: text("order_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    soldAt: timestamp("sold_at"),
+  },
+  (table) => [
+    index("manual_log_item_listing_status_idx").on(table.listingId, table.status),
+    index("manual_log_item_order_idx").on(table.orderId),
+  ],
+);
+
+/**
+ * Each user's shareable referral code, created the first time they open the
+ * referral card. Kept apart from `user`, which better-auth owns.
+ */
+export const referralCode = pgTable("referral_code", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  code: text("code").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/**
+ * One row per referred user. The referrer earns a percentage of the referred
+ * user's first completed deposit; `status` flips pending → rewarded exactly
+ * once, which is what makes the payout idempotent. Referrals that look like
+ * the same person (shared IP) are stored as `blocked` and never pay.
+ */
+export const referral = pgTable(
+  "referral",
+  {
+    id: text("id").primaryKey(),
+    referrerId: text("referrer_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    referredId: text("referred_id")
+      .notNull()
+      .unique()
+      .references(() => user.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    status: text("status").default("pending").notNull(),
+    rewardAmount: numeric("reward_amount", { precision: 18, scale: 2 }),
+    depositId: text("deposit_id"),
+    // Captured when the referral is claimed, for spotting multi-accounting.
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    flagReason: text("flag_reason"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    rewardedAt: timestamp("rewarded_at"),
+  },
+  (table) => [
+    index("referral_referrer_idx").on(table.referrerId),
+    index("referral_ip_idx").on(table.ipAddress),
+  ],
+);
+
 export const schema = {
   account,
   session,
@@ -563,4 +643,8 @@ export const schema = {
   webhookLog,
   boostingOrder,
   apiKey,
+  referralCode,
+  referral,
+  adminEmail,
+  manualLogItem,
 };

@@ -2,7 +2,11 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
-import { DashboardNavbar } from "@/components/dashboard-navbar";
+import { DashboardShell } from "@/components/dashboard/shell";
+import { isAdminEmail } from "@/lib/admin-emails";
+import { PageHeader } from "@/components/page-header";
+import { ReferralCard } from "@/components/referral/referral-card";
+import { getReferralSummary } from "@/lib/referral";
 import { SettingsForm } from "./settings-form";
 
 export const dynamic = "force-dynamic";
@@ -19,10 +23,10 @@ export default async function SettingsPage() {
   await getOrCreateWallet(session.user.id, "NGN");
   const balance = await getWalletBalance(session.user.id);
   const walletBalance = Array.isArray(balance) ? balance : [balance];
+  const referralSummary = await getReferralSummary(session.user.id);
 
   return (
-    <div className="min-h-screen bg-background font-display">
-      <DashboardNavbar
+      <DashboardShell
         user={{
           id: session.user.id,
           name: session.user.name ?? "User",
@@ -30,14 +34,11 @@ export default async function SettingsPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
-      />
-      <main className="container mx-auto max-w-2xl px-4 py-8">
-        <div className="mb-8">
-          <h1 className="font-display text-2xl font-semibold">Settings</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Manage your account and preferences
-          </p>
-        </div>
+        isAdmin={await isAdminEmail(session.user.email)}
+      >
+        <PageHeader title="Settings" description="Manage your account, password, referrals and API keys." />
+        {referralSummary && <ReferralCard data={referralSummary} className="w-full max-w-2xl" />}
+        <div className="w-full max-w-2xl">
         <SettingsForm
           user={{
             id: session.user.id,
@@ -47,7 +48,7 @@ export default async function SettingsPage() {
             createdAt: session.user.createdAt?.toString() ?? new Date().toISOString(),
           }}
         />
-      </main>
-    </div>
+        </div>
+      </DashboardShell>
   );
 }

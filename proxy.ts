@@ -12,9 +12,11 @@ export async function proxy(request: NextRequest) {
     if (ADMIN_PUBLIC.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
       return NextResponse.next();
     }
+    // No admin cookie yet: try the email-based entry, which opens a session
+    // for allowed accounts and sends everyone else to the login page.
     const session = request.cookies.get("admin_session")?.value;
     if (!session) {
-      return NextResponse.redirect(new URL("/ozymandias/login", request.url));
+      return NextResponse.redirect(new URL("/api/admin/auth/email?from=panel", request.url));
     }
     return NextResponse.next();
   }
@@ -25,7 +27,7 @@ export async function proxy(request: NextRequest) {
       headers: await headers(),
     });
     if (!session) {
-      return NextResponse.redirect(new URL("/sign-in", request.url));
+      return NextResponse.redirect(new URL("/login", request.url));
     }
   }
 
