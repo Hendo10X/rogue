@@ -7,8 +7,14 @@ import { createWallet } from "@/lib/wallet";
 
 function getTrustedOrigins(): string[] {
   const origins = ["http://localhost:3000"];
-  if (process.env.VERCEL_URL) {
-    origins.push(`https://${process.env.VERCEL_URL}`);
+  // VERCEL_URL is the one-off deployment address; VERCEL_BRANCH_URL is the
+  // stable per-branch preview address people actually open (e.g. from a PR).
+  for (const host of [
+    process.env.VERCEL_URL,
+    process.env.VERCEL_BRANCH_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  ]) {
+    if (host) origins.push(`https://${host}`);
   }
   if (process.env.NEXT_PUBLIC_APP_URL) {
     origins.push(process.env.NEXT_PUBLIC_APP_URL);
