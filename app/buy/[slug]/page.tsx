@@ -7,7 +7,7 @@ import { listing } from "@/db/schema";
 import { getMarketplacePricing, computeMarketplacePriceNgn } from "@/lib/pricing";
 import { getUSDtoNGNRate } from "@/lib/currency";
 import { getMarkupNaira } from "@/lib/admin-auth";
-import * as socially from "@/lib/boosting/socially";
+import * as boosting from "@/lib/boosting/provider";
 import { LANDING_PAGES, getLandingBySlug } from "@/lib/landing";
 import { SITE_URL } from "@/lib/site";
 import { Navbar } from "@/components/navbar";
@@ -104,7 +104,7 @@ async function getAccountPreview(match: string) {
 async function getSmmPreview() {
   try {
     const [services, markup] = await Promise.all([
-      socially.fetchServices().catch(() => []),
+      boosting.fetchServices().catch(() => []),
       getMarkupNaira("boosting"),
     ]);
     const byCat = new Map<string, number>();

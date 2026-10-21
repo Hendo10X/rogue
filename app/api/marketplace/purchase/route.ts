@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { claimManualLogItems } from "@/lib/manual-logs";
 import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { db } from "@/db/drizzle";
@@ -147,7 +148,89 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // If this is a manual listing, we stop here and let admin fulfill.
+  // Manual listing with uploaded logs: deliver instantly from the pool.
+  // Anything short of a full claim falls through to the admin-fulfilled path.
+  if (isManual) {
+    let claimed: string[] = [];
+    try {
+      claimed = await claimManualLogItems(list.id, quantity, orderId);
+    } catch (err) {
+      console.error("[Purchase] manual log claim failed", err);
+    }
+
+    if (claimed.length === quantity) {
+      const deliveryData = claimed.join("\n");
+      const parts = (claimed[0] || "").split(":");
+      await db.insert(accountDelivery).values({
+        id: crypto.randomUUID(),
+        orderId,
+        platform: list.platform,
+        username: parts[0] || null,
+        password: parts[1] || null,
+        email: parts[2] || null,
+        emailPassword: parts[3] || null,
+        deliveryStatus: "delivered",
+        deliveredAt: new Date(),
+        notes: deliveryData,
+      });
+      await db.insert(transaction).values({
+        id: crypto.randomUUID(),
+        walletId: walletRow.id,
+        type: "order_payment",
+        amount: `-${totalAmount}`,
+        currency: "NGN",
+        status: "completed",
+        orderId,
+      });
+      await db
+        .update(order)
+        .set({ status: "completed", updatedAt: new Date() })
+        .where(eq(order.id, orderId));
+
+      // Same emails as a supplier delivery: credentials to the buyer, a note to admin.
+      try {
+        const [usr] = await db.select().from(user).where(eq(user.id, session.user.id)).limit(1);
+        if (usr?.email) {
+          const { sendOrderDeliveryEmail, sendAdminOrderNotification } = await import("@/lib/email");
+          await Promise.allSettled([
+            sendOrderDeliveryEmail({
+              to: usr.email,
+              orderId,
+              platform: list.platform,
+              details: {
+                username: parts[0],
+                password: parts[1],
+                email: parts[2],
+                emailPassword: parts[3],
+                notes: deliveryData,
+              },
+            }),
+            sendAdminOrderNotification({
+              orderId,
+              orderType: "marketplace",
+              userEmail: usr.email,
+              userName: usr.name,
+              amount: totalAmount,
+              currency: "NGN",
+              platform: list.platform,
+              status: "completed — delivered from uploaded logs",
+            }),
+          ]);
+        }
+      } catch {
+        // non-critical
+      }
+
+      return NextResponse.json({
+        orderId,
+        status: "completed",
+        message: "Purchase successful! Credentials delivered — check your orders.",
+      });
+    }
+  }
+
+  // If this is a manual listing without enough uploaded logs, we stop here and
+  // let admin fulfill.
   if (isManual) {
     await db.insert(accountDelivery).values({
       id: crypto.randomUUID(),

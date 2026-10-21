@@ -33,7 +33,7 @@ export default async function DepositPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
-        isAdmin={isAdminEmail(session.user.email)}
+        isAdmin={await isAdminEmail(session.user.email)}
       >
         <PageHeader
           title="Fund your wallet"

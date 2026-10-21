@@ -34,7 +34,7 @@ export default async function SettingsPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
-        isAdmin={isAdminEmail(session.user.email)}
+        isAdmin={await isAdminEmail(session.user.email)}
       >
         <PageHeader title="Settings" description="Manage your account, password, referrals and API keys." />
         {referralSummary && <ReferralCard data={referralSummary} className="w-full max-w-2xl" />}

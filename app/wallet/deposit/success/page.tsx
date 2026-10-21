@@ -36,7 +36,7 @@ export default async function DepositSuccessPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
-        isAdmin={isAdminEmail(session.user.email)}
+        isAdmin={await isAdminEmail(session.user.email)}
       >
         <div className="flex w-full max-w-md flex-col surface rounded-2xl">
           <div className="flex items-center gap-3 px-5 py-4">

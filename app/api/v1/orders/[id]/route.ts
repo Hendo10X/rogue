@@ -3,7 +3,7 @@ import { db } from "@/db/drizzle";
 import { boostingOrder } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { authenticateApiRequest, ApiErrors } from "@/lib/api-auth";
-import * as socially from "@/lib/boosting/socially";
+import { getOrderStatus } from "@/lib/boosting/provider";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +31,8 @@ export async function GET(
   let startCount = row.startCount;
   if (row.externalOrderId) {
     try {
-      const live = await socially.getOrderStatus(row.externalOrderId);
+      // Ask the supplier that actually fulfilled this order.
+      const live = await getOrderStatus(row.provider, row.externalOrderId);
       if (live.status) externalStatus = live.status;
       if (live.remains != null) remains = String(live.remains);
       if (live.start_count != null) startCount = String(live.start_count);

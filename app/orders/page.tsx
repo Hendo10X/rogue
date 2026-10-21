@@ -118,7 +118,7 @@ export default async function OrdersPage() {
           image: session.user.image,
         }}
         walletBalance={walletBalance}
-        isAdmin={isAdminEmail(session.user.email)}
+        isAdmin={await isAdminEmail(session.user.email)}
       >
         <PageHeader
           title="Orders"

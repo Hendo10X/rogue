@@ -50,7 +50,7 @@ export async function verifyAdminSession(
   // Admin access is tied to an allowed email. Sessions belonging to the old
   // username/password admins (or to an email that has since been removed)
   // no longer open the panel.
-  if (!isAdminEmail(a.username)) return null;
+  if (!(await isAdminEmail(a.username))) return null;
   return { id: a.id, username: a.username };
 }
 

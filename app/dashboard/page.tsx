@@ -129,7 +129,7 @@ export default async function DashboardPage() {
         image: session.user.image,
       }}
       walletBalance={walletBalance}
-      isAdmin={isAdminEmail(session.user.email)}
+      isAdmin={await isAdminEmail(session.user.email)}
     >
       <PageHeader title={`Welcome back, ${firstName}`} description="Here's your wallet and what you've ordered." />
 

@@ -55,7 +55,7 @@ export default async function ListingPage({
           image: session.user.image,
         }}
         walletBalance={walletBalance}
-        isAdmin={isAdminEmail(session.user.email)}
+        isAdmin={await isAdminEmail(session.user.email)}
       >
         <PageHeader
           eyebrow={[listing.platform, listing.categoryName].filter(Boolean).join(" · ")}

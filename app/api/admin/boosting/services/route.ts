@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import { cookies } from "next/headers";
 import { verifyAdminSession } from "@/lib/admin-auth";
-import { fetchServices } from "@/lib/boosting/socially";
+import { fetchServices } from "@/lib/boosting/provider";
 import { getHiddenServiceIds, setServiceHidden } from "@/lib/boosting/hidden";
 
 async function requireAdmin() {

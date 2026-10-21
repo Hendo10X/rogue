@@ -314,7 +314,7 @@ export default function AdminSuppliersPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {s.slug === "socially" ? null : (
+                    {s.slug === "boosting" ? null : (
                       <div className="flex justify-end gap-1">
                         <Button
                           variant="ghost"
@@ -393,7 +393,7 @@ export default function AdminSuppliersPage() {
                   </p>
                 </div>
               </div>
-              {s.slug !== "socially" && (
+              {s.slug !== "boosting" && (
                 <div className="flex flex-col gap-2">
                   <Button
                     variant="outline"

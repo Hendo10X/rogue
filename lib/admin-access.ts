@@ -4,14 +4,14 @@ import { auth } from "@/utils/auth";
 import { db } from "@/db/drizzle";
 import { admin } from "@/db/schema";
 import { createAdminSession, hashPassword } from "@/lib/admin-auth";
-import { adminEmails, isAdminEmail } from "@/lib/admin-emails";
+import { isAdminEmail } from "@/lib/admin-emails";
 
-export { adminEmails, isAdminEmail };
+export { isAdminEmail };
 
 /** The current storefront session and whether its email is an admin. */
 export async function getSessionWithAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
-  return { session, isAdmin: isAdminEmail(session?.user?.email) };
+  return { session, isAdmin: await isAdminEmail(session?.user?.email) };
 }
 
 /**

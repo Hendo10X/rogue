@@ -18,9 +18,9 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
 import { useCurrency } from "@/components/currency-provider";
-import type { SociallyService } from "@/lib/boosting/socially";
+import type { ReallySimpleSocialService } from "@/lib/boosting/really-simple-social";
 
-interface ExtendedService extends SociallyService {
+interface ExtendedService extends ReallySimpleSocialService {
   provider?: string;
 }
 
@@ -49,8 +49,8 @@ function friendlyError(msg?: string): string {
     return "Insufficient wallet balance. Please fund your wallet and try again.";
   if (m.includes("timeout") || m.includes("timed out"))
     return "The request timed out. Please try again.";
-  // Strip any "Socially.ng:" or "API error" prefixes before showing
-  return msg.replace(/^(socially\.ng:|api error\s*\d*:?\s*)/i, "").trim() || "Order failed. Please try again.";
+  // Strip supplier / "API error" prefixes before showing
+  return msg.replace(/^(socially\.ng:|reallysimplesocial:|reallysimplesocial api error\s*\d*:?\s*|api error\s*\d*:?\s*)/i, "").trim() || "Order failed. Please try again.";
 }
 
 export function ServiceOrderModal({
@@ -103,7 +103,7 @@ export function ServiceOrderModal({
           serviceId: service.service,
           link: link.trim(),
           quantity: qty,
-          provider: service.provider ?? "socially",
+          provider: service.provider ?? "rss",
         }),
       });
       const text = await res.text();

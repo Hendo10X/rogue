@@ -6,7 +6,7 @@ import {
   ApiErrors,
 } from "@/lib/api-auth";
 import { getMarkupNaira } from "@/lib/admin-auth";
-import { fetchServices } from "@/lib/boosting/socially";
+import { fetchServices } from "@/lib/boosting/provider";
 
 export const dynamic = "force-dynamic";
 

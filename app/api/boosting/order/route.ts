@@ -6,7 +6,7 @@ import { boostingOrder, transaction, wallet, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getMarkupNaira } from "@/lib/admin-auth";
 import { getOrCreateWallet, debitWallet, creditWallet, logTransaction } from "@/lib/wallet";
-import * as socially from "@/lib/boosting/socially";
+import * as boosting from "@/lib/boosting/provider";
 import { getHiddenServiceIds } from "@/lib/boosting/hidden";
 
 export async function POST(req: NextRequest) {
@@ -18,14 +18,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { serviceId: number; link: string; quantity: number; provider: string };
+  let body: { serviceId: number; link: string; quantity: number };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { serviceId, link, quantity, provider = "socially" } = body;
+  const { serviceId, link, quantity } = body;
+  // Every new order goes to the active supplier, whatever the client sent.
+  const provider = boosting.WEBSITE_PROVIDER;
   if (!serviceId || !link?.trim() || !quantity || quantity < 1) {
     return NextResponse.json(
       { error: "serviceId, link, and quantity are required" },
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const services = await socially.fetchServices();
+  const services = await boosting.fetchServices();
 
   const service = services.find((s) => s.service === serviceId);
   if (!service) {
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
 
   const markupNaira = await getMarkupNaira("boosting");
 
-  // socially.ng returns rates already in NGN — no USD conversion needed
+  // The supplier returns rates already in NGN — no USD conversion needed
   const rateNgnPer1000 = Number(((parseFloat(service.rate) || 0) + markupNaira).toFixed(2));
   const totalAmountNgn = Number((rateNgnPer1000 * (qty / 1000)).toFixed(2));
 
@@ -80,7 +82,7 @@ export async function POST(req: NextRequest) {
 
   let externalOrderId: number;
   try {
-    const result = await socially.addOrder({
+    const result = await boosting.addOrder({
       service: serviceId,
       link: link.trim(),
       quantity: qty,
@@ -91,7 +93,7 @@ export async function POST(req: NextRequest) {
     }
     externalOrderId = Number(orderIdFromApi);
   } catch (e) {
-    console.error("[Boosting] Socially.ng addOrder failed:", e);
+    console.error("[Boosting] supplier addOrder failed:", e);
     // Refund: credit back the debited amount so the user is not charged on failure
     try {
       await creditWallet(walletRow.id, totalAmountNgn.toFixed(2), "NGN");

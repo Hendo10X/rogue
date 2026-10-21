@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { AdminEmailsManager } from "@/components/admin/admin-emails-manager";
+import { ManualLogUploader } from "@/components/admin/manual-log-uploader";
 import {
   Select,
   SelectContent,
@@ -189,7 +191,9 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1.5"><h1 className="text-2xl font-semibold tracking-[-0.03em]">Settings</h1></div>
-      
+
+      <AdminEmailsManager />
+
       <div className="grid gap-6 md:grid-cols-2">
         {/* Profit Margins */}
         <Card>
@@ -484,9 +488,10 @@ export default function AdminSettingsPage() {
         <CardHeader >
           <h2 className="text-sm font-semibold tracking-[-0.01em]">Manual Marketplace Logs</h2>
           <p className="text-sm text-muted-foreground">
-            Create custom logs that do not rely on any external supplier. These
-            appear in the marketplace and are fulfilled manually from the admin
-            orders page.
+            Create custom logs that do not rely on any external supplier. After
+            creating one, use <strong>Upload logs</strong> on it to add the
+            actual logs (one per line) — buyers then get them instantly. Without
+            uploads, orders wait for you on the admin orders page.
           </p>
         </CardHeader>
         <CardContent>
@@ -645,7 +650,8 @@ export default function AdminSettingsPage() {
           <CardHeader >
             <h2 className="text-sm font-semibold tracking-[-0.01em]">Existing Manual Logs</h2>
             <p className="text-sm text-muted-foreground">
-              Edit price / stock or remove logs from the marketplace.
+              Upload logs for instant delivery, edit price, or remove a listing.
+              Stock follows the unsold uploaded logs automatically.
             </p>
           </CardHeader>
           <CardContent>
@@ -712,7 +718,7 @@ export default function AdminSettingsPage() {
                         </>
                       )}
                     </div>
-                    <div className="flex justify-end gap-2 pt-1">
+                    <div className="flex flex-wrap justify-end gap-2 pt-1">
                       {isEditing ? (
                         <>
                           <Button
@@ -785,6 +791,15 @@ export default function AdminSettingsPage() {
                         </>
                       ) : (
                         <>
+                          <ManualLogUploader
+                            listingId={log.id}
+                            title={log.title}
+                            onStockChange={(stock) =>
+                              setManualListings((prev) =>
+                                prev.map((l) => (l.id === log.id ? { ...l, stock } : l)),
+                              )
+                            }
+                          />
                           <Button
                             variant="outline"
                             size="sm"

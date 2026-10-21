@@ -14,7 +14,7 @@ import {
   creditWallet,
   logTransaction,
 } from "@/lib/wallet";
-import * as socially from "@/lib/boosting/socially";
+import * as boosting from "@/lib/boosting/provider";
 import { getHiddenServiceIds } from "@/lib/boosting/hidden";
 
 export const dynamic = "force-dynamic";
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const services = await socially.fetchServices();
+  const services = await boosting.fetchServices();
   const service = services.find((s) => s.service === serviceId);
   if (!service) return ApiErrors.notFound("Service not found");
 
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
 
   const apiMarkup = await getApiMarkupPercent();
 
-  // socially.ng rates are already in NGN per 1000 and represent supplier cost.
+  // Supplier rates are already in NGN per 1000 and represent supplier cost.
   // Reseller price = supplier cost + API markup% (always above cost).
   const supplierRate = parseFloat(service.rate) || 0;
   const apiRate = applyApiMarkup(supplierRate, apiMarkup);
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
 
   let externalOrderId: number;
   try {
-    const result = await socially.addOrder({ service: serviceId, link, quantity: qty });
+    const result = await boosting.addOrder({ service: serviceId, link, quantity: qty });
     externalOrderId = Number(result?.order);
     if (!Number.isFinite(externalOrderId) || externalOrderId <= 0) {
       throw new Error("Supplier did not accept the order. Check the link and try again.");
@@ -146,7 +146,8 @@ export async function POST(req: NextRequest) {
       amount: totalAmountNgn.toFixed(2),
       currency: "NGN",
       externalOrderId,
-      provider: "api",
+      // "api:<supplier>" keeps API orders countable while recording who filled them.
+      provider: boosting.API_PROVIDER,
       apiKeyId: auth.keyId,
       appliedMarkupPercent: String(apiMarkup),
       status: "processing",
