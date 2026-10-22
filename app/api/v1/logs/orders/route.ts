@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { toApiAmount } from "@/lib/currency";
 import { db } from "@/db/drizzle";
 import { order, listing } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
       title: o.title,
       platform: o.platform,
       quantity: o.quantity,
-      charge: o.amount,
+      charge: toApiAmount(o.amount),
       currency: o.currency,
       status: o.status,
       // Why a failed order failed (supplier's message), else null.

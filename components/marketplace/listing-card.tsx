@@ -75,3 +75,55 @@ export function ListingCard({
     </SpotlightCard>
   );
 }
+
+/**
+ * The same listing as a compact row, for list view: icon, title and meta on
+ * the left, stock and price on the right. The whole row opens the detail sheet.
+ */
+export function ListingRow({
+  title,
+  price,
+  stock,
+  platform,
+  categoryName,
+  icon,
+  onViewClick,
+}: ListingCardProps) {
+  const { format } = useCurrency();
+  const inStock = Math.round(Number(stock));
+  const low = inStock > 0 && inStock <= 5;
+
+  return (
+    <button
+      type="button"
+      onClick={onViewClick}
+      className="group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors duration-200 hover:bg-white/[0.045] sm:gap-4"
+    >
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] [&>*]:size-[18px]">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-2 text-[0.8125rem] leading-snug font-medium sm:line-clamp-1">{title}</p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground capitalize">
+          {platform.toLowerCase()}
+          {categoryName ? ` · ${categoryName}` : ""}
+        </p>
+      </div>
+      <span className="hidden shrink-0 items-center gap-1.5 text-xs text-muted-foreground tabular-nums sm:flex">
+        <span className={low ? "size-1.5 rounded-full bg-amber-400" : "size-1.5 rounded-full bg-emerald-400"} />
+        {inStock.toLocaleString("en-US")} in stock
+      </span>
+      <div className="w-24 shrink-0 text-right">
+        <p className="text-[0.8125rem] font-semibold tabular-nums">{format(parseFloat(price))}</p>
+        <p className="text-[0.6875rem] text-muted-foreground tabular-nums sm:hidden">
+          {inStock.toLocaleString("en-US")} left
+        </p>
+      </div>
+      <HugeiconsIcon
+        icon={ArrowRight01Icon}
+        strokeWidth={2}
+        className="size-4 shrink-0 -translate-x-1 text-muted-foreground opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:text-[#ff9a4a] group-hover:opacity-100"
+      />
+    </button>
+  );
+}

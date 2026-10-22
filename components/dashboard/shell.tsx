@@ -29,6 +29,7 @@ import { useCurrency } from "@/components/currency-provider";
 import { CurrencySwitcher } from "@/components/currency-switcher";
 import { LogoLink, Wordmark } from "@/components/logo";
 import { Button } from "@/components/ui/button";
+import { FitText } from "@/components/ui/fit-text";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -304,7 +305,9 @@ function BalanceCard({ walletBalance }: { walletBalance: ShellProps["walletBalan
         <span className="text-xs text-muted-foreground">Balance</span>
         <CurrencySwitcher className="h-6 px-2 text-xs" />
       </div>
-      <p className="mt-1.5 truncate text-xl font-semibold tracking-[-0.03em] tabular-nums">{balance}</p>
+      <p className="mt-1.5 text-xl leading-tight font-semibold tracking-[-0.03em] tabular-nums">
+        <FitText minScale={0.55}>{balance}</FitText>
+      </p>
       <Button asChild size="sm" className="mt-3 w-full">
         <Link href="/wallet/deposit">
           <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />

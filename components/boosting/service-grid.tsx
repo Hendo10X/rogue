@@ -1,7 +1,8 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ServiceCard } from "./service-card";
+import { ServiceCard, ServiceTile } from "./service-card";
+import { ViewToggle, useViewMode } from "@/components/ui/view-toggle";
 import { ServiceOrderModal } from "./service-order-modal";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
@@ -92,6 +93,7 @@ export function ServiceGrid({
     useState<ReallySimpleSocialService | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const [view, setView] = useViewMode("boosting", "list");
 
   // "/" jumps to search from anywhere on the page.
   useEffect(() => {
@@ -248,11 +250,12 @@ export function ServiceGrid({
         </Select>
       </div>
 
-      <div className="flex h-4 items-center justify-between px-1">
-        <span className="eyebrow text-muted-foreground">
+      <div className="flex items-center justify-between gap-3 pl-1">
+        <span className="flex items-center gap-2 text-[0.8125rem] text-muted-foreground">
           {pagination ? `Page ${page} of ${Math.max(1, pagination.totalPages)}` : "Services"}
+          {isFetching && <Spinner className="size-3.5" />}
         </span>
-        {isFetching && <Spinner className="size-3.5 text-muted-foreground" />}
+        <ViewToggle id="boosting" value={view} onChange={setView} size="sm" />
       </div>
 
       <div
@@ -274,15 +277,24 @@ export function ServiceGrid({
             </p>
           </div>
         ) : (
-          <div className="surface flex flex-col gap-0.5 rounded-2xl p-1.5">
-            {items.map((service: ReallySimpleSocialService) => (
-              <ServiceCard
-                key={service.service}
-                service={service}
-                icon={getCategoryIcon(service.category)}
-                onViewClick={() => openModal(service)}
-              />
-            ))}
+          <div
+            className={
+              view === "grid"
+                ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                : "surface flex flex-col gap-0.5 rounded-2xl p-1.5"
+            }
+          >
+            {items.map((service: ReallySimpleSocialService) => {
+              const Item = view === "grid" ? ServiceTile : ServiceCard;
+              return (
+                <Item
+                  key={service.service}
+                  service={service}
+                  icon={getCategoryIcon(service.category)}
+                  onViewClick={() => openModal(service)}
+                />
+              );
+            })}
           </div>
         )}
       </div>

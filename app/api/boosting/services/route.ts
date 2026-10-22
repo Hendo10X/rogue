@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getMarkupNaira } from "@/lib/admin-auth";
+import { getBoostingPricer } from "@/lib/boosting/profit";
 import { fetchServices, WEBSITE_PROVIDER } from "@/lib/boosting/provider";
 import { getHiddenServiceIds } from "@/lib/boosting/hidden";
 
@@ -12,9 +12,9 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10)));
     const offset = (page - 1) * limit;
 
-    const [services, markupNaira, hidden] = await Promise.all([
+    const [services, pricer, hidden] = await Promise.all([
       fetchServices().catch(() => []),
-      getMarkupNaira("boosting"),
+      getBoostingPricer(),
       getHiddenServiceIds(),
     ]);
 
@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
 
     let filteredServices = visibleServices.map((s) => {
       // The supplier returns rates already in NGN — no USD conversion needed
-      const rateNgnPer1000 = (parseFloat(s.rate) || 0) + markupNaira;
+      // Supplier rate plus this service's profit (or the global markup).
+      const rateNgnPer1000 = pricer.sellRate(s.service, s.rate);
       return {
         ...s,
         provider: WEBSITE_PROVIDER,

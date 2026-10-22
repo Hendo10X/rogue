@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { AdminEmailsManager } from "@/components/admin/admin-emails-manager";
+import { ManualFundingForm } from "@/components/admin/manual-funding-form";
 import { ManualLogUploader } from "@/components/admin/manual-log-uploader";
 import {
   Select,
@@ -26,11 +27,15 @@ export default function AdminSettingsPage() {
     type: "banner" | "modal";
     message: string;
     id: string;
+    linkLabel?: string;
+    linkHref?: string;
   }>({
     active: false,
     type: "banner",
     message: "",
     id: crypto.randomUUID(),
+    linkLabel: "",
+    linkHref: "",
   });
   const [boostingAnnouncement, setBoostingAnnouncement] = useState<{
     active: boolean;
@@ -192,7 +197,10 @@ export default function AdminSettingsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-1.5"><h1 className="text-2xl font-semibold tracking-[-0.03em]">Settings</h1></div>
 
-      <AdminEmailsManager />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AdminEmailsManager />
+        <ManualFundingForm />
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Profit Margins */}
@@ -279,6 +287,24 @@ export default function AdminSettingsPage() {
                     onChange={(e) => setAnnouncement(prev => ({ ...prev, message: e.target.value }))}
                   />
                 </Field>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field>
+                    <FieldLabel>Link label (optional)</FieldLabel>
+                    <Input
+                      placeholder="Fund wallet"
+                      value={announcement.linkLabel ?? ""}
+                      onChange={(e) => setAnnouncement(prev => ({ ...prev, linkLabel: e.target.value }))}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel>Link URL (optional)</FieldLabel>
+                    <Input
+                      placeholder="/wallet/deposit"
+                      value={announcement.linkHref ?? ""}
+                      onChange={(e) => setAnnouncement(prev => ({ ...prev, linkHref: e.target.value }))}
+                    />
+                  </Field>
+                </div>
               </FieldGroup>
             </FieldSet>
           </CardContent>

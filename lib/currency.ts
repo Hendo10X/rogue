@@ -154,6 +154,23 @@ export function buildSupportedRateMap(
   return out;
 }
 
+/**
+ * A database or supplier amount ("1234.00000000", "1234.000") for display:
+ * thousands separators, at most two decimals, no trailing zeros
+ * ("1,234", "1,234.5"). Anything that isn't a number comes back unchanged.
+ */
+export function formatAmount(value: string | number | null | undefined): string {
+  const n = typeof value === "number" ? value : parseFloat(String(value ?? ""));
+  if (!Number.isFinite(n)) return String(value ?? "—");
+  return n.toLocaleString("en-NG", { maximumFractionDigits: 2 });
+}
+
+/** A database amount as a fixed two-decimal string, for API responses. */
+export function toApiAmount(value: string | number | null | undefined): string {
+  const n = typeof value === "number" ? value : parseFloat(String(value ?? "0"));
+  return (Number.isFinite(n) ? n : 0).toFixed(2);
+}
+
 /** Format an amount already expressed in `code`. */
 export function formatMoney(amount: number, code: string): string {
   const meta = getCurrencyMeta(code);

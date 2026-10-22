@@ -6,7 +6,8 @@ import { db } from "@/db/drizzle";
 import { listing } from "@/db/schema";
 import { getMarketplacePricing, computeMarketplacePriceNgn } from "@/lib/pricing";
 import { getUSDtoNGNRate } from "@/lib/currency";
-import { getMarkupNaira } from "@/lib/admin-auth";
+import { getBoostingPricer } from "@/lib/boosting/profit";
+import { getHiddenServiceIds } from "@/lib/boosting/hidden";
 import * as boosting from "@/lib/boosting/provider";
 import { LANDING_PAGES, getLandingBySlug } from "@/lib/landing";
 import { SITE_URL } from "@/lib/site";
@@ -103,13 +104,16 @@ async function getAccountPreview(match: string) {
 
 async function getSmmPreview() {
   try {
-    const [services, markup] = await Promise.all([
+    const [all, pricer, hidden] = await Promise.all([
       boosting.fetchServices().catch(() => []),
-      getMarkupNaira("boosting"),
+      getBoostingPricer(),
+      getHiddenServiceIds(),
     ]);
+    // Same services and prices as the store: hidden ones left out.
+    const services = all.filter((s) => !hidden.has(s.service));
     const byCat = new Map<string, number>();
     for (const s of services) {
-      const rate = (parseFloat(s.rate) || 0) + markup;
+      const rate = pricer.sellRate(s.service, s.rate);
       const cur = byCat.get(s.category);
       if (cur === undefined || rate < cur) byCat.set(s.category, rate);
     }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { formatAmount } from "@/lib/currency";
 
 export const dynamic = "force-dynamic";
 import { cookies } from "next/headers";
@@ -102,7 +103,7 @@ export async function GET() {
       name: `${ACTIVE_SUPPLIER_NAME} (Boosting)`,
       slug: "boosting",
       status: "active",
-      balance: `${boostingBalance.balance} ${boostingBalance.currency}`,
+      balance: `${formatAmount(boostingBalance.balance)} ${boostingBalance.currency}`,
       low: Number.isFinite(ngn) && ngn < 5000,
     });
   }

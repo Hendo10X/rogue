@@ -3,11 +3,8 @@ import { db } from "@/db/drizzle";
 import { listing, supplier } from "@/db/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 import { getUSDtoNGNRate } from "@/lib/currency";
-import {
-  getMarketplacePricing,
-  computeMarketplacePriceNgn,
-  capSupplierUsd,
-} from "@/lib/pricing";
+import { getMarketplacePricing, capSupplierUsd } from "@/lib/pricing";
+import { getLogProfits, priceListingNgn } from "@/lib/log-profit";
 import { autoSyncIfStale } from "@/lib/suppliers/auto-sync";
 
 export async function GET(req: NextRequest) {
@@ -101,13 +98,10 @@ export async function GET(req: NextRequest) {
         .offset(offset),
     ]);
 
+    const profits = await getLogProfits();
     const itemsWithDynamicPrice = items.map((item: any) => {
-      const isManual = !!(item.metadata && item.metadata.manual === true);
-      // Manual logs keep their admin-set NGN price; supplier logs use the
-      // tiered model (flat fee for cheap logs, % above the threshold).
-      const finalPrice = isManual
-        ? Math.round(parseFloat(item.price))
-        : computeMarketplacePriceNgn(parseFloat(item.supplierPrice), rate, pricing);
+      // Manual price, per-listing profit, or the tiered model — see priceListingNgn.
+      const finalPrice = priceListingNgn(item, rate, pricing, profits);
       const { metadata, ...rest } = item;
       return {
         ...rest,

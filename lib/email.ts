@@ -1,6 +1,7 @@
 
 import { Resend } from "resend";
 import { sendTelegramMessage, escapeHtml } from "./telegram";
+import { formatAmount } from "./currency";
 
 let _resend: Resend | null = null;
 export function getResend() {
@@ -90,7 +91,7 @@ export async function sendAdminOrderNotification({
   status,
 }: AdminOrderNotifyParams) {
   const amountFormatted = currency === "NGN"
-    ? `₦${parseFloat(amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}`
+    ? `₦${formatAmount(amount)}`
     : `${parseFloat(amount).toFixed(2)} ${currency}`;
 
   const productLabel = orderType === "marketplace"
@@ -156,7 +157,7 @@ export async function sendAdminDepositNotification({
   currency,
 }: AdminDepositNotifyParams) {
   const amountFormatted = currency === "NGN"
-    ? `₦${parseFloat(amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}`
+    ? `₦${formatAmount(amount)}`
     : `${parseFloat(amount).toFixed(2)} ${currency}`;
 
   const providerLabels: Record<string, string> = {
@@ -204,7 +205,7 @@ export async function sendBoostingOrderPlacedEmail({
   status,
 }: BoostingOrderPlacedEmailParams) {
   const amountFormatted = currency === "NGN"
-    ? `₦${parseFloat(amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}`
+    ? `₦${formatAmount(amount)}`
     : `${parseFloat(amount).toFixed(2)} ${currency}`;
 
   const html = `

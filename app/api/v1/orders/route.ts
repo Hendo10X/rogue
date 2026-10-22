@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { formatAmount, toApiAmount } from "@/lib/currency";
 import { db } from "@/db/drizzle";
 import { boostingOrder } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
       service_name: o.serviceName,
       link: o.link,
       quantity: o.quantity,
-      charge: o.amount,
+      charge: toApiAmount(o.amount),
       currency: o.currency,
       status: o.status,
       external_status: o.externalStatus,
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
   const balance = parseFloat(walletRow.balance);
   if (balance + 0.01 < totalAmountNgn) {
     return ApiErrors.badRequest(
-      `Insufficient balance (₦${balance.toFixed(2)} < ₦${totalAmountNgn.toFixed(2)}). Fund your wallet first.`,
+      `Insufficient balance (₦${formatAmount(balance)} < ₦${formatAmount(totalAmountNgn)}). Fund your wallet first.`,
     );
   }
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isUserSuspended, SUSPENDED_MESSAGE } from "@/lib/suspension";
 import { auth } from "@/utils/auth";
 import { headers } from "next/headers";
 import { getOrCreateWallet } from "@/lib/wallet";
@@ -13,6 +14,9 @@ export async function POST(req: NextRequest) {
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (await isUserSuspended(session.user.id)) {
+    return NextResponse.json({ error: SUSPENDED_MESSAGE }, { status: 403 });
   }
 
   let body: { amount: number; currency?: string; provider?: "plisio" | "korapay" | "flutterwave" };

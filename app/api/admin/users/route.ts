@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getSuspendedUserIds } from "@/lib/suspension";
 export const dynamic = "force-dynamic";
 import { cookies } from "next/headers";
 import { verifyAdminSession } from "@/lib/admin-auth";
@@ -43,6 +44,7 @@ export async function GET() {
       )
       .orderBy(desc(user.createdAt));
 
+    const suspended = await getSuspendedUserIds();
     const output = users.map((u: typeof users[number]) => {
       let ip = (u.ipAddress ?? "").trim();
       if (ip.startsWith("::ffff:")) ip = ip.slice(7);
@@ -55,6 +57,7 @@ export async function GET() {
         createdAt: u.createdAt,
         balance: u.balance ?? "0",
         ipAddress: ip,
+        suspended: suspended.has(u.id),
       };
     });
 

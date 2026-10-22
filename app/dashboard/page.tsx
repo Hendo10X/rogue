@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { redirectIfSuspended } from "@/lib/suspension";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -22,6 +23,7 @@ import { DashboardShell } from "@/components/dashboard/shell";
 import { isAdminEmail } from "@/lib/admin-emails";
 import { EmptyState, PageHeader, SectionLabel, StatCard } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { FitText } from "@/components/ui/fit-text";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Price } from "@/components/currency-provider";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +97,7 @@ export default async function DashboardPage() {
   if (!session?.user) {
     redirect("/login");
   }
+  await redirectIfSuspended(session.user.id);
 
   await claimReferralFromRequest(session.user);
 
@@ -146,8 +149,11 @@ export default async function DashboardPage() {
               </span>
             </div>
             <div className="flex flex-wrap items-end justify-between gap-6">
-              <p className="text-5xl font-semibold tracking-[-0.05em] tabular-nums sm:text-6xl">
-                <Price ngn={primaryBalance ? primaryBalance.balance : 0} />
+              {/* One line at any amount: the figure shrinks to fit instead of wrapping. */}
+              <p className="min-w-0 flex-1 basis-56 text-5xl leading-none font-semibold tracking-[-0.05em] tabular-nums sm:text-6xl">
+                <FitText>
+                  <Price ngn={primaryBalance ? primaryBalance.balance : 0} />
+                </FitText>
               </p>
               <div className="flex gap-2">
                 <Button asChild>
@@ -164,10 +170,10 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 lg:grid-cols-1">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-1">
           <StatCard label="Orders" value={orders.length.toLocaleString()} icon={<HugeiconsIcon icon={ShoppingBag01Icon} />} />
           <StatCard label="Completed" value={completed.toLocaleString()} icon={<HugeiconsIcon icon={CheckmarkCircle02Icon} />} />
-          <StatCard label="Spent" value={<Price ngn={spent} />} icon={<HugeiconsIcon icon={Coins01Icon} />} />
+          <StatCard label="Spent" value={<Price ngn={spent} />} icon={<HugeiconsIcon icon={Coins01Icon} />} className="col-span-2 sm:col-span-1" />
         </div>
       </div>
 

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useCurrency } from "@/components/currency-provider";
 import { formatMoney } from "@/lib/currency";
 import { cn } from "@/lib/utils";
+import type { ManualFunding } from "@/lib/manual-funding";
 
 type PaymentProvider = "korapay" | "flutterwave" | "plisio" | "manual";
 
@@ -60,7 +61,7 @@ const METHOD_COPY: Record<PaymentProvider, [string, string]> = {
   manual: ["Manual transfer", "Pay into our account, send the receipt"],
 };
 
-export function DepositForm() {
+export function DepositForm({ manualFunding }: { manualFunding: ManualFunding }) {
   const router = useRouter();
   const { currency, convert } = useCurrency();
   const [amount, setAmount] = useState("");
@@ -275,9 +276,9 @@ export function DepositForm() {
         <div className="flex flex-col">
           <dl className="grid gap-2 sm:grid-cols-3">
             {[
-              ["Account name", "Rogue Socials Marketplace"],
-              ["Account number", "4005379809"],
-              ["Bank", "Moniepoint MFB"],
+              ["Account name", manualFunding.accountName],
+              ["Account number", manualFunding.accountNumber],
+              ["Bank", manualFunding.bank],
             ].map(([term, value]) => (
               <div key={term} className="rounded-2xl bg-white/[0.03] px-4 py-3.5">
                 <dt className="text-xs text-muted-foreground">{term}</dt>
@@ -300,7 +301,7 @@ export function DepositForm() {
           <div>
             <Button asChild size="lg" className="w-full">
               <a
-                href="https://t.me/rogue4l"
+                href={manualFunding.proofUrl}
                 target="_blank"
                 rel="noopener noreferrer">
                 I have paid — send receipt
