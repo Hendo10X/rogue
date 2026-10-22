@@ -39,6 +39,9 @@ export const metadata: Metadata = {
   publisher: SITE_NAME,
   category: "shopping",
   alternates: { canonical: "/" },
+  verification: {
+    google: "7C322fM2KOGTfvPjxiXt8WnFRdJKRWE5v-0z6v3rXIA",
+  },
   robots: {
     index: true,
     follow: true,
