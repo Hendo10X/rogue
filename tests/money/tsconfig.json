@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/db/drizzle": [
+        "./test-db.ts"
+      ],
+      "@/*": [
+        "../../*"
+      ]
+    }
+  }
+}

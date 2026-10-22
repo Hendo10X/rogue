@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "crypto";
+import { isUserSuspended } from "@/lib/suspension";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/drizzle";
 import { apiKey } from "@/db/schema";
@@ -62,6 +63,8 @@ export async function authenticateApiRequest(
     .limit(1);
 
   if (!row || !row.active) return null;
+  // Suspended accounts lose API access along with the website.
+  if (await isUserSuspended(row.userId)) return null;
 
   // Best-effort last-used timestamp; never block the request on it.
   db.update(apiKey)

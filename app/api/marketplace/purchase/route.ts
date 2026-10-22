@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isUserSuspended, SUSPENDED_MESSAGE } from "@/lib/suspension";
 import { claimManualLogItems } from "@/lib/manual-logs";
 import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
@@ -21,7 +22,8 @@ import {
   logTransaction,
 } from "@/lib/wallet";
 import { getUSDtoNGNRate } from "@/lib/currency";
-import { getMarketplacePricing, computeMarketplacePriceNgn } from "@/lib/pricing";
+import { getMarketplacePricing } from "@/lib/pricing";
+import { getLogProfits, priceListingNgn } from "@/lib/log-profit";
 import { purchaseFromSupplier } from "@/lib/suppliers/adapter";
 import {
   alertSupplierInsufficientBalance,
@@ -37,6 +39,9 @@ export async function POST(req: NextRequest) {
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (await isUserSuspended(session.user.id)) {
+    return NextResponse.json({ error: SUSPENDED_MESSAGE }, { status: 403 });
   }
 
   let body: { listingSlug: string; quantity: number; coupon?: string };
@@ -97,16 +102,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const [pricing, rate] = await Promise.all([
+  const [pricing, rate, profits] = await Promise.all([
     getMarketplacePricing(),
     getUSDtoNGNRate(),
+    getLogProfits(),
   ]);
 
-  // Charge the same price customers see: manual logs use their admin-set NGN
-  // price, supplier logs use the tiered model.
-  const unitPriceNgn = isManual
-    ? Math.round(parseFloat(list.price))
-    : computeMarketplacePriceNgn(parseFloat(list.supplierPrice), rate, pricing);
+  // Charge exactly the price customers see (same rule as the store).
+  const unitPriceNgn = priceListingNgn(list, rate, pricing, profits);
   const totalAmount = (unitPriceNgn * quantity).toFixed(2);
 
   const walletRow = await getOrCreateWallet(session.user.id, "NGN");

@@ -1,7 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ListingCard } from "./listing-card";
+import { ListingCard, ListingRow } from "./listing-card";
+import { ViewToggle, useViewMode } from "@/components/ui/view-toggle";
 import { ListingDetailModal } from "./listing-detail-modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -133,6 +134,7 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
   const [modalOpen, setModalOpen] = useState(false);
   const debouncedSearch = useDebounce(searchInput, 300);
   const searchRef = useRef<HTMLInputElement>(null);
+  const [view, setView] = useViewMode("marketplace", "grid");
 
   // "/" jumps to search from anywhere on the page, as in the admin tables.
   useEffect(() => {
@@ -264,11 +266,12 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
         )}
       </div>
 
-      <div className="flex h-4 items-center justify-between px-1">
-        <span className="eyebrow text-muted-foreground">
+      <div className="flex items-center justify-between gap-3 pl-1">
+        <span className="flex items-center gap-2 text-[0.8125rem] text-muted-foreground">
           {pagination ? `Page ${page} of ${Math.max(1, pagination.totalPages)}` : "Listings"}
+          {isFetching && !isLoading && <Spinner className="size-3.5" />}
         </span>
-        {isFetching && !isLoading && <Spinner className="size-3.5 text-muted-foreground" />}
+        <ViewToggle id="marketplace" value={view} onChange={setView} size="sm" />
       </div>
 
       <div className="relative">
@@ -298,7 +301,13 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
                   : "transition-opacity duration-300"
               }
             >
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <div
+                className={
+                  view === "grid"
+                    ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                    : "surface flex flex-col gap-0.5 rounded-2xl p-1.5"
+                }
+              >
                 {items.map((item: any) => {
                   const listing: ListingItem = {
                     id: String(item.id),
@@ -312,8 +321,9 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
                     categoryName: item.categoryName,
                     supplierName: String(item.supplierName),
                   };
+                  const Item = view === "grid" ? ListingCard : ListingRow;
                   return (
-                    <ListingCard
+                    <Item
                       key={listing.id}
                       {...listing}
                       icon={getPlatformIcon(listing.platform)}

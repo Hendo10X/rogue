@@ -555,6 +555,20 @@ export const adminEmail = pgTable("admin_email", {
 });
 
 /**
+ * Suspended accounts. A separate table (not a column on `user`, which
+ * better-auth reads on every sign-in) so a missing migration can never break
+ * login — the check simply treats nobody as suspended.
+ */
+export const userSuspension = pgTable("user_suspension", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  reason: text("reason"),
+  suspendedBy: text("suspended_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/**
  * Pre-loaded logs for a manual listing, one credential line per row. A
  * purchase claims rows atomically (available → sold), so each log is handed
  * out exactly once and the listing's stock follows the unsold count.
@@ -647,4 +661,5 @@ export const schema = {
   referral,
   adminEmail,
   manualLogItem,
+  userSuspension,
 };

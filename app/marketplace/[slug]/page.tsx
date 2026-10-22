@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import { redirectIfSuspended } from "@/lib/suspension";
 import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
@@ -32,6 +33,7 @@ export default async function ListingPage({
   if (!session?.user) {
     redirect("/login");
   }
+  await redirectIfSuspended(session.user.id);
 
   const [listing, walletBalance] = await Promise.all([
     getListing(slug),

@@ -45,7 +45,7 @@ export async function getMarketplacePricing(): Promise<MarketplacePricing> {
 }
 
 /** Round to a clean figure so prices look intentional rather than random. */
-function roundClean(ngn: number): number {
+export function roundClean(ngn: number): number {
   if (ngn <= 0) return 0;
   if (ngn < 1000) return Math.round(ngn / 50) * 50;
   return Math.round(ngn / 100) * 100;

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isUserSuspended, SUSPENDED_MESSAGE } from "@/lib/suspension";
 import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
 import { db } from "@/db/drizzle";
 import { boostingOrder, transaction, wallet, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { getMarkupNaira } from "@/lib/admin-auth";
+import { getBoostingPricer } from "@/lib/boosting/profit";
 import { getOrCreateWallet, debitWallet, creditWallet, logTransaction } from "@/lib/wallet";
 import * as boosting from "@/lib/boosting/provider";
 import { getHiddenServiceIds } from "@/lib/boosting/hidden";
@@ -16,6 +17,9 @@ export async function POST(req: NextRequest) {
 
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (await isUserSuspended(session.user.id)) {
+    return NextResponse.json({ error: SUSPENDED_MESSAGE }, { status: 403 });
   }
 
   let body: { serviceId: number; link: string; quantity: number };
@@ -54,10 +58,11 @@ export async function POST(req: NextRequest) {
   const max = parseInt(service.max, 10) || 10000;
   const qty = Math.max(min, Math.min(max, quantity));
 
-  const markupNaira = await getMarkupNaira("boosting");
+  // Same price the storefront showed: supplier rate + per-service profit or global markup.
+  const pricer = await getBoostingPricer();
 
   // The supplier returns rates already in NGN — no USD conversion needed
-  const rateNgnPer1000 = Number(((parseFloat(service.rate) || 0) + markupNaira).toFixed(2));
+  const rateNgnPer1000 = pricer.sellRate(service.service, service.rate);
   const totalAmountNgn = Number((rateNgnPer1000 * (qty / 1000)).toFixed(2));
 
   const walletRow = await getOrCreateWallet(session.user.id, "NGN");

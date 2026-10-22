@@ -36,6 +36,21 @@ interface Announcement {
   type: "banner" | "modal";
   message: string;
   id: string;
+  /** Optional call to action, e.g. "Fund wallet" → /wallet/deposit. */
+  linkLabel?: string;
+  linkHref?: string;
+}
+
+type CTA = { label: string; href: string } | null;
+
+function ctaOf(a: Announcement): CTA {
+  const href = a.linkHref?.trim();
+  if (!href) return null;
+  return { href, label: a.linkLabel?.trim() || "Learn more" };
+}
+
+function isExternal(href: string) {
+  return /^https?:\/\//i.test(href);
 }
 
 export function AnnouncementBanner({
@@ -47,11 +62,13 @@ export function AnnouncementBanner({
 
   if (!announcement?.active || !announcement.message?.trim()) return null;
 
+  const cta = ctaOf(announcement);
   return announcement.type === "banner" ? (
-    open ? <AnnouncementMarquee message={announcement.message} onDismiss={() => setOpen(false)} /> : null
+    open ? <AnnouncementMarquee message={announcement.message} cta={cta} onDismiss={() => setOpen(false)} /> : null
   ) : (
     <AnnouncementModal
       message={announcement.message}
+      cta={cta}
       open={open}
       onDismiss={() => setOpen(false)}
     />
@@ -60,9 +77,11 @@ export function AnnouncementBanner({
 
 function AnnouncementMarquee({
   message,
+  cta,
   onDismiss,
 }: {
   message: string;
+  cta: CTA;
   onDismiss: () => void;
 }) {
   // One repetition of the message. The duplicated half is decorative, so its
@@ -71,6 +90,16 @@ function AnnouncementMarquee({
     <span className="flex items-center gap-2.5 px-6 text-[0.8125rem] font-medium whitespace-nowrap text-white">
       <HugeiconsIcon icon={Megaphone01Icon} strokeWidth={1.75} className="size-3.5 shrink-0" />
       {parseLinks(message.replace(/\s+/g, " "), !muted)}
+      {cta && (
+        <a
+          href={cta.href}
+          tabIndex={muted ? -1 : undefined}
+          {...(isExternal(cta.href) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+          className="rounded-full bg-black/20 px-2.5 py-0.5 underline-offset-2 hover:bg-black/30"
+        >
+          {cta.label} →
+        </a>
+      )}
     </span>
   );
 
@@ -109,10 +138,12 @@ function AnnouncementMarquee({
 
 function AnnouncementModal({
   message,
+  cta,
   open,
   onDismiss,
 }: {
   message: string;
+  cta: CTA;
   open: boolean;
   onDismiss: () => void;
 }) {
@@ -174,9 +205,20 @@ function AnnouncementModal({
               {parseLinks(message)}
             </p>
 
-            <div className="p-4 pt-0">
-              <Button size="lg" className="w-full" onClick={onDismiss}>
-                Understood
+            <div className="flex flex-col gap-2 p-4 pt-0">
+              {cta && (
+                <Button asChild size="lg" className="w-full">
+                  <a
+                    href={cta.href}
+                    onClick={onDismiss}
+                    {...(isExternal(cta.href) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  >
+                    {cta.label}
+                  </a>
+                </Button>
+              )}
+              <Button size="lg" variant={cta ? "ghost" : "default"} className="w-full" onClick={onDismiss}>
+                {cta ? "Dismiss" : "Understood"}
               </Button>
             </div>
           </motion.div>

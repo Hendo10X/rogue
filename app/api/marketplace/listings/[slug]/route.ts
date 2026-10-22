@@ -3,7 +3,8 @@ import { db } from "@/db/drizzle";
 import { listing, supplier } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getUSDtoNGNRate } from "@/lib/currency";
-import { getMarketplacePricing, computeMarketplacePriceNgn } from "@/lib/pricing";
+import { getMarketplacePricing } from "@/lib/pricing";
+import { getLogProfits, priceListingNgn } from "@/lib/log-profit";
 
 export async function GET(
   _req: NextRequest,
@@ -36,15 +37,13 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const [pricing, rate] = await Promise.all([
+  const [pricing, rate, profits] = await Promise.all([
     getMarketplacePricing(),
     getUSDtoNGNRate(),
+    getLogProfits(),
   ]);
 
-  const isManual = !!(row.metadata && (row.metadata as any).manual === true);
-  const finalPrice = isManual
-    ? Math.round(parseFloat(row.price))
-    : computeMarketplacePriceNgn(parseFloat(row.supplierPrice), rate, pricing);
+  const finalPrice = priceListingNgn(row, rate, pricing, profits);
 
   return NextResponse.json({
     ...row,

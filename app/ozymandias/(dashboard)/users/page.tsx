@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -34,6 +35,7 @@ interface UserRow {
   createdAt: string;
   balance: string;
   ipAddress: string;
+  suspended?: boolean;
 }
 
 function CopyText({ text, label }: { text: string; label?: string }) {
@@ -110,6 +112,28 @@ export default function AdminUsersPage() {
   const [adjustmentType, setAdjustmentType] = useState<"credit" | "debit">("credit");
   const [adjustPin, setAdjustPin] = useState("");
   const [deletingUser, setDeletingUser] = useState<UserRow | null>(null);
+  const [suspendingId, setSuspendingId] = useState<string | null>(null);
+
+  async function toggleSuspend(u: UserRow) {
+    const next = !u.suspended;
+    if (next && !window.confirm(`Suspend ${u.name}? They won't be able to buy, deposit or use the API until you unsuspend them.`)) return;
+    setSuspendingId(u.id);
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ suspended: next }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error ?? "Could not update user");
+      setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, suspended: next } : x)));
+      toast.success(next ? `${u.name} suspended.` : `${u.name} unsuspended.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update user");
+    } finally {
+      setSuspendingId(null);
+    }
+  }
   const [deletePin, setDeletePin] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -334,7 +358,7 @@ export default function AdminUsersPage() {
               <TableHead>IP Address</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead className="text-right">Balance (NGN)</TableHead>
-              <TableHead className="w-25"></TableHead>
+              <TableHead className="w-60"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -348,7 +372,10 @@ export default function AdminUsersPage() {
               filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
-                    <div className="font-medium">{user.name}</div>
+                    <div className="flex items-center gap-2 font-medium">
+                      {user.name}
+                      {user.suspended && <Badge variant="destructive">Suspended</Badge>}
+                    </div>
                     <div className="text-sm text-muted-foreground">{user.email}</div>
                   </TableCell>
                   <TableCell className="text-sm">
@@ -375,6 +402,15 @@ export default function AdminUsersPage() {
                       }}
                     >
                       Adjust
+                    </Button>
+                    <Button
+                      variant={user.suspended ? "secondary" : "ghost"}
+                      size="sm"
+                      className="ml-2"
+                      disabled={suspendingId === user.id}
+                      onClick={() => void toggleSuspend(user)}
+                    >
+                      {user.suspended ? "Unsuspend" : "Suspend"}
                     </Button>
                     <Button
                       variant="ghost"
@@ -406,7 +442,10 @@ export default function AdminUsersPage() {
             <div key={user.id} className="space-y-3 surface rounded-2xl p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-medium">{user.name}</p>
+                  <p className="flex items-center gap-2 font-medium">
+                    {user.name}
+                    {user.suspended && <Badge variant="destructive">Suspended</Badge>}
+                  </p>
                   <p className="text-sm text-muted-foreground">{user.email}</p>
                 </div>
                 <p className="text-sm font-semibold">
@@ -442,6 +481,14 @@ export default function AdminUsersPage() {
                   }}
                 >
                   Adjust
+                </Button>
+                <Button
+                  variant={user.suspended ? "secondary" : "ghost"}
+                  size="sm"
+                  disabled={suspendingId === user.id}
+                  onClick={() => void toggleSuspend(user)}
+                >
+                  {user.suspended ? "Unsuspend" : "Suspend"}
                 </Button>
                 <Button
                   variant="ghost"

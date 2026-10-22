@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { FitText } from "@/components/ui/fit-text";
 
 /**
  * Every dashboard and admin page opens the same way: the title, a quiet
@@ -78,11 +79,12 @@ export function StatCard({
       </div>
       <span
         className={cn(
-          "text-2xl font-semibold tracking-[-0.035em] tabular-nums",
+          "text-2xl leading-tight font-semibold tracking-[-0.035em] tabular-nums",
           tone === "danger" && "text-destructive"
         )}
       >
-        {value}
+        {/* Amounts stay on one line and shrink to fit narrow tiles. */}
+        <FitText minScale={0.5}>{value}</FitText>
       </span>
       {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
     </div>

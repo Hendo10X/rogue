@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { redirectIfSuspended } from "@/lib/suspension";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { auth } from "@/utils/auth";
@@ -20,6 +21,7 @@ export default async function DepositSuccessPage() {
   if (!session?.user) {
     redirect("/login");
   }
+  await redirectIfSuspended(session.user.id);
 
   await getOrCreateWallet(session.user.id, "NGN");
   const balance = await getWalletBalance(session.user.id);
