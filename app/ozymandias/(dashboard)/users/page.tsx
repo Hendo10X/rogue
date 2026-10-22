@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatAmount } from "@/lib/currency";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -388,7 +389,7 @@ export default function AdminUsersPage() {
                     {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    ₦{parseFloat(user.balance).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₦{formatAmount(user.balance)}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
@@ -449,7 +450,7 @@ export default function AdminUsersPage() {
                   <p className="text-sm text-muted-foreground">{user.email}</p>
                 </div>
                 <p className="text-sm font-semibold">
-                  ₦{parseFloat(user.balance).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₦{formatAmount(user.balance)}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -553,7 +554,7 @@ export default function AdminUsersPage() {
             <AlertDialogTitle>Adjust Wallet Balance</AlertDialogTitle>
             <AlertDialogDescription>
               Modify the NGN balance for <strong>{adjustingUser?.name}</strong>.
-              Current balance: ₦{parseFloat(adjustingUser?.balance || "0").toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              Current balance: ₦{formatAmount(adjustingUser?.balance || "0")}
             </AlertDialogDescription>
           </AlertDialogHeader>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatAmount } from "@/lib/currency";
 import {
   Table,
   TableBody,
@@ -226,7 +227,7 @@ export default function AdminOrdersPage() {
                     <StatusBadge status={o.status} />
                   </TableCell>
                   <TableCell>
-                    {o.amount} {o.currency}
+                    {formatAmount(o.amount)} {o.currency}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">
                     {new Date(o.createdAt).toLocaleString()}
@@ -278,7 +279,7 @@ export default function AdminOrdersPage() {
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Amount</p>
-                  <p className="font-medium">{o.amount} {o.currency}</p>
+                  <p className="font-medium">{formatAmount(o.amount)} {o.currency}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-xs">Date &amp; Time</p>

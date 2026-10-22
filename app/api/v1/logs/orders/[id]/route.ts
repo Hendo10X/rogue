@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { toApiAmount } from "@/lib/currency";
 import { db } from "@/db/drizzle";
 import { order, listing, accountDelivery } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -53,7 +54,7 @@ export async function GET(
       title: row.title,
       platform: row.platform,
       quantity: row.quantity,
-      charge: row.amount,
+      charge: toApiAmount(row.amount),
       currency: row.currency,
       status: row.status,
       delivery_status: delivery?.deliveryStatus ?? "pending",

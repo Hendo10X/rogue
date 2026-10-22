@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { toApiAmount } from "@/lib/currency";
 import { authenticateApiRequest, ApiErrors } from "@/lib/api-auth";
 import { getWalletBalance } from "@/lib/wallet";
 
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     data: {
-      balance: wallet?.balance ?? "0",
+      balance: toApiAmount(wallet?.balance),
       currency: wallet?.currency ?? "NGN",
     },
   });

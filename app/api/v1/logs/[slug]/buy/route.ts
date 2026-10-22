@@ -15,7 +15,7 @@ import {
   applyApiMarkup,
   ApiErrors,
 } from "@/lib/api-auth";
-import { getUSDtoNGNRate } from "@/lib/currency";
+import { formatAmount, getUSDtoNGNRate } from "@/lib/currency";
 import {
   getOrCreateWallet,
   debitWallet,
@@ -104,7 +104,7 @@ export async function POST(
   const walletRow = await getOrCreateWallet(auth.userId, "NGN");
   if (parseFloat(walletRow.balance) + 0.01 < parseFloat(totalAmount)) {
     return ApiErrors.badRequest(
-      `Insufficient balance (NGN ${walletRow.balance} < NGN ${totalAmount}). Fund your wallet first.`,
+      `Insufficient balance (NGN ${formatAmount(walletRow.balance)} < NGN ${formatAmount(totalAmount)}). Fund your wallet first.`,
     );
   }
 
