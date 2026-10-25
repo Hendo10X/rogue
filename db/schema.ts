@@ -703,3 +703,36 @@ export const tutorial = pgTable("tutorial", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+/** Dedicated IPv4 proxies bought through Tools → Proxies (supplier: proxy-seller). */
+export const proxyOrder = pgTable(
+  "proxy_order",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    walletId: text("wallet_id"),
+    providerOrderId: text("provider_order_id"),
+    country: text("country").notNull(),
+    period: text("period").notNull(),
+    quantity: integer("quantity").notNull(),
+    amount: numeric("amount", { precision: 18, scale: 2 }).notNull(),
+    costUsd: numeric("cost_usd", { precision: 18, scale: 2 }),
+    // processing | active | failed
+    status: text("status").default("processing").notNull(),
+    proxies: jsonb("proxies").$type<ProxyCredential[]>(),
+    expiresAt: timestamp("expires_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [index("proxy_order_user_idx").on(table.userId)],
+);
+
+export type ProxyCredential = {
+  ip: string;
+  portHttp: number | null;
+  portSocks: number | null;
+  login: string;
+  password: string;
+};

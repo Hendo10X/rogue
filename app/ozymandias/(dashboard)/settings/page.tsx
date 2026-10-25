@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { AdminEmailsManager } from "@/components/admin/admin-emails-manager";
 import { ManualFundingForm } from "@/components/admin/manual-funding-form";
+import { ProxySettings } from "@/components/admin/proxy-settings";
 import {
   Select,
   SelectContent,
@@ -166,6 +167,7 @@ export default function AdminSettingsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <AdminEmailsManager />
         <ManualFundingForm />
+        <ProxySettings />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
