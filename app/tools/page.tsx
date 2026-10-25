@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowRight01Icon, FileSearchIcon, SquareLock02Icon } from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon, FileSearchIcon, Globe02Icon, SquareLock02Icon } from "@hugeicons/core-free-icons";
 import { CustomerPage } from "@/components/dashboard/customer-page";
 import { PageHeader } from "@/components/page-header";
 
@@ -12,6 +12,12 @@ const TOOLS = [
     title: "2FA codes",
     body: "Paste a 2FA key from your log and get the login code. Free, and it never leaves your device.",
     icon: SquareLock02Icon,
+  },
+  {
+    href: "/tools/proxies",
+    title: "Proxies",
+    body: "Private IPv4 proxies by country, paid from your wallet and delivered in minutes.",
+    icon: Globe02Icon,
   },
   {
     href: "/tools/request-log",
