@@ -5,6 +5,7 @@ import { listing } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { getMarkupNaira, verifyAdminSession } from "@/lib/admin-auth";
 import { getUSDtoNGNRate } from "@/lib/currency";
+import { removeInactiveManualListings } from "@/lib/manual-listing-removal";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export async function PATCH(
 
   let body: {
     title?: string;
+    description?: string | null;
     platform?: string;
     categoryName?: string | null;
     priceNgn?: number;
@@ -63,6 +65,9 @@ export async function PATCH(
 
   if (body.title !== undefined) {
     updates.title = body.title.trim();
+  }
+  if (body.description !== undefined) {
+    updates.description = body.description?.trim() || null;
   }
   if (body.platform !== undefined) {
     updates.platform = body.platform.trim();
@@ -105,7 +110,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
   const admin = await requireAdmin();
@@ -116,6 +121,15 @@ export async function DELETE(
   const { id } = await context.params;
   if (!id) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  }
+
+  // ?permanent=1 on an inactive log removes it for good (see removeInactiveManualListings).
+  if (req.nextUrl.searchParams.get("permanent") === "1") {
+    const result = await removeInactiveManualListings([id]);
+    if (result.skippedActive) {
+      return NextResponse.json({ error: "Deactivate this log before deleting it." }, { status: 409 });
+    }
+    return NextResponse.json({ ok: true, ...result });
   }
 
   // Soft-delete: mark as inactive so existing orders remain valid

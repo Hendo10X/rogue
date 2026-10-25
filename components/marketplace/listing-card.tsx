@@ -17,6 +17,8 @@ interface ListingCardProps {
   categoryName: string | null;
   supplierName: string;
   icon?: React.ReactNode;
+  /** Small label on the card, e.g. "Featured" or "Best seller". */
+  badge?: string;
   onViewClick: () => void;
 }
 
@@ -29,6 +31,7 @@ export function ListingCard({
   platform,
   categoryName,
   icon,
+  badge,
   onViewClick,
 }: ListingCardProps) {
   const hasDescription = description?.trim();
@@ -53,6 +56,11 @@ export function ListingCard({
           <p className="truncate text-xs font-medium text-foreground/80 capitalize">{platform.toLowerCase()}</p>
           {categoryName && <p className="truncate text-xs text-muted-foreground">{categoryName}</p>}
         </div>
+        {badge && (
+          <span className="ml-auto shrink-0 rounded-full bg-primary/15 px-2.5 py-1 text-[0.6875rem] font-medium text-primary">
+            {badge}
+          </span>
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-1.5">
         <h3 className="line-clamp-2 text-[0.9375rem] leading-snug font-medium tracking-[-0.015em]">{title}</h3>

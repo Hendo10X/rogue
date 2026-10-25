@@ -663,3 +663,43 @@ export const schema = {
   manualLogItem,
   userSuspension,
 };
+
+/**
+ * Customer requests for logs the store doesn't stock (Tools → Request a log).
+ * Admins work through them on Ozymandias → Requests and can leave a reply.
+ */
+export const logRequest = pgTable(
+  "log_request",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    platform: text("platform").notNull(),
+    details: text("details").notNull(),
+    quantity: integer("quantity").default(1).notNull(),
+    budgetNgn: numeric("budget_ngn", { precision: 18, scale: 2 }),
+    // open | sourcing | fulfilled | declined
+    status: text("status").default("open").notNull(),
+    adminNote: text("admin_note"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("log_request_user_idx").on(table.userId),
+    index("log_request_status_idx").on(table.status),
+  ],
+);
+
+/** Help articles with an optional video link, shown on /tutorials. */
+export const tutorial = pgTable("tutorial", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  topic: text("topic").default("General").notNull(),
+  body: text("body").default("").notNull(),
+  videoUrl: text("video_url"),
+  published: boolean("published").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

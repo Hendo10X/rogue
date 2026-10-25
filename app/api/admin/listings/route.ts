@@ -45,10 +45,12 @@ export async function GET(req: NextRequest) {
         currency: listing.currency,
         stock: listing.stock,
         status: listing.status,
+        description: listing.description,
         metadata: listing.metadata,
       })
       .from(listing)
-      .where(sql`${listing.metadata} ->> 'manual' = 'true'`),
+      // Archived logs (deleted but kept for order history) stay out of the list.
+      .where(sql`${listing.metadata} ->> 'manual' = 'true' AND coalesce(${listing.metadata} ->> 'archived', 'false') <> 'true'`),
   ]);
 
   const categories = categoriesRows

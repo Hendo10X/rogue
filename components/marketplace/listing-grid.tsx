@@ -173,6 +173,17 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
     },
   });
 
+  const { data: popular } = useQuery({
+    queryKey: ["listings-popular"],
+    queryFn: async () => {
+      const res = await fetch("/api/marketplace/popular");
+      if (!res.ok) return [];
+      return ((await res.json()).items ?? []) as Array<ListingItem & { featured: boolean }>;
+    },
+    staleTime: 60_000,
+  });
+  const showPopular = !debouncedSearch && !primaryPlatform && page === 1 && (popular?.length ?? 0) > 0;
+
   const platforms: string[] = data?.platforms ?? [];
   const items = data?.items ?? [];
   const pagination = data?.pagination;
@@ -182,6 +193,25 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Featured picks and best sellers, above everything else. */}
+      {showPopular && (
+        <section className="flex flex-col gap-3">
+          <h2 className="pl-1 text-[0.9375rem] font-medium tracking-[-0.015em]">Popular right now</h2>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {popular!.map((item) => (
+              <ListingCard
+                key={item.id}
+                {...item}
+                stock={Number(item.stock)}
+                badge={item.featured ? "Featured" : "Best seller"}
+                icon={getPlatformIcon(item.platform)}
+                onViewClick={() => openListingModal(item)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Toolbar — search, platform, sub-category. */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <label className="relative flex flex-1 items-center">
