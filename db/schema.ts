@@ -682,6 +682,8 @@ export const logRequest = pgTable(
     // open | sourcing | fulfilled | declined
     status: text("status").default("open").notNull(),
     adminNote: text("admin_note"),
+    // Set when an admin answers; cleared when the customer opens their requests.
+    customerUnread: boolean("customer_unread").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

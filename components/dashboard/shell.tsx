@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "motion/react";
+import { useQuery } from "@tanstack/react-query";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   AccountSetting01Icon,
@@ -22,6 +23,10 @@ import {
   Wallet01Icon,
   Wrench01Icon,
   BookOpen01Icon,
+  ArrowDown01Icon,
+  FileSearchIcon,
+  Globe02Icon,
+  SquareLock02Icon,
   Information,
 } from "@hugeicons/core-free-icons";
 
@@ -50,16 +55,44 @@ import {
 
 type Icon = typeof PackageIcon;
 
-const ITEMS: { href: string; label: string; icon: Icon }[] = [
+type NavItem = { href: string; label: string; icon: Icon; dot?: "requests"; children?: NavItem[] };
+
+const ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Overview", icon: DashboardSquare01Icon },
   { href: "/marketplace", label: "Marketplace", icon: PackageIcon },
   { href: "/boosting", label: "Boosting", icon: Rocket01Icon },
+  { href: "/tools/proxies", label: "Proxies", icon: Globe02Icon },
   { href: "/orders", label: "Orders", icon: ShoppingBag01Icon },
   { href: "/wallet/deposit", label: "Wallet", icon: Wallet01Icon },
-  { href: "/tools", label: "Tools", icon: Wrench01Icon },
-  { href: "/tutorials", label: "Tutorials", icon: BookOpen01Icon },
-  { href: "/settings", label: "Settings", icon: AccountSetting01Icon },
+  {
+    href: "/tools",
+    label: "Tools",
+    icon: Wrench01Icon,
+    children: [
+      { href: "/tools/2fa", label: "2FA codes", icon: SquareLock02Icon },
+      { href: "/tools/request-log", label: "Request a log", icon: FileSearchIcon, dot: "requests" },
+      { href: "/tutorials", label: "Tutorials", icon: BookOpen01Icon },
+    ],
+  },
 ];
+
+/** Unread replies to the customer's log requests (the red dot). */
+function useRequestReplies() {
+  const { data } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      const res = await fetch("/api/notifications");
+      return res.ok ? ((await res.json()) as { requestReplies: number }) : { requestReplies: 0 };
+    },
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+  return data?.requestReplies ?? 0;
+}
+
+function Dot() {
+  return <span aria-label="New reply" className="relative ml-auto size-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_0_3px_rgb(239_68_68/0.18)]" />;
+}
 
 const EXTRAS: { href: string; label: string }[] = [
   { href: "/docs/api", label: "API docs" },
@@ -109,45 +142,51 @@ function NavList({
 }) {
   const isActive = useIsActive();
   const [hover, setHover] = React.useState<string | null>(null);
+  const [toolsOpen, setToolsOpen] = React.useState(false);
+  const replies = useRequestReplies();
+  const rowProps = { isActive, hover, setHover, layoutKey, onNavigate };
 
   return (
     <div className="flex flex-col gap-6">
       <nav className="flex flex-col gap-0.5" onMouseLeave={() => setHover(null)}>
         {ITEMS.map((item) => {
-          const active = isActive(item.href);
+          if (!item.children) return <NavRow key={item.href} item={item} {...rowProps} />;
+          const childActive = item.children.some((c) => isActive(c.href)) || isActive(item.href);
+          const open = toolsOpen || childActive;
+          const dot = item.children.some((c) => c.dot === "requests") && replies > 0;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              onMouseEnter={() => setHover(item.href)}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "relative flex h-9 items-center gap-3 rounded-xl px-3 text-[0.8125rem] font-medium transition-colors duration-200",
-                active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {active && (
-                <motion.span
-                  layoutId={`${layoutKey}-active`}
-                  className="absolute inset-0 rounded-xl bg-white/[0.07] shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]"
-                  transition={{ type: "spring", stiffness: 500, damping: 40 }}
+            <div key={item.href} className="flex flex-col gap-0.5">
+              <button
+                type="button"
+                onClick={() => setToolsOpen((v) => !v)}
+                onMouseEnter={() => setHover(item.href)}
+                aria-expanded={open}
+                className="relative flex h-9 items-center gap-3 rounded-xl px-3 text-left text-[0.8125rem] font-medium text-muted-foreground transition-colors duration-200 hover:text-foreground"
+              >
+                {hover === item.href && (
+                  <motion.span
+                    layoutId={`${layoutKey}-hover`}
+                    className="absolute inset-0 rounded-xl bg-white/[0.035]"
+                    transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                  />
+                )}
+                <HugeiconsIcon icon={item.icon} strokeWidth={1.75} className="relative size-[18px] shrink-0" />
+                <span className="relative">{item.label}</span>
+                {dot && !open ? <Dot /> : null}
+                <HugeiconsIcon
+                  icon={ArrowDown01Icon}
+                  strokeWidth={2}
+                  className={cn("relative size-3.5 shrink-0 transition-transform duration-200", dot && !open ? "ml-2" : "ml-auto", open && "rotate-180")}
                 />
+              </button>
+              {open && (
+                <div className="ml-[1.375rem] flex flex-col gap-0.5 pl-2">
+                  {item.children.map((child) => (
+                    <NavRow key={child.href} item={child} {...rowProps} small showDot={child.dot === "requests" && replies > 0} />
+                  ))}
+                </div>
               )}
-              {hover === item.href && !active && (
-                <motion.span
-                  layoutId={`${layoutKey}-hover`}
-                  className="absolute inset-0 rounded-xl bg-white/[0.035]"
-                  transition={{ type: "spring", stiffness: 500, damping: 40 }}
-                />
-              )}
-              <HugeiconsIcon
-                icon={item.icon}
-                strokeWidth={1.75}
-                className={cn("relative size-[18px] shrink-0 transition-colors", active && "text-[#ff9a4a]")}
-              />
-              <span className="relative">{item.label}</span>
-            </Link>
+            </div>
           );
         })}
       </nav>
@@ -191,6 +230,63 @@ function NavList({
         })}
       </div>
     </div>
+  );
+}
+
+function NavRow({
+  item,
+  isActive,
+  hover,
+  setHover,
+  layoutKey,
+  onNavigate,
+  small,
+  showDot,
+}: {
+  item: NavItem;
+  isActive: (href: string) => boolean;
+  hover: string | null;
+  setHover: (href: string | null) => void;
+  layoutKey: string;
+  onNavigate?: () => void;
+  small?: boolean;
+  showDot?: boolean;
+}) {
+  const active = isActive(item.href);
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      onMouseEnter={() => setHover(item.href)}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "relative flex items-center gap-3 rounded-xl px-3 text-[0.8125rem] font-medium transition-colors duration-200",
+        small ? "h-8" : "h-9",
+        active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+      )}
+    >
+      {active && (
+        <motion.span
+          layoutId={`${layoutKey}-active`}
+          className="absolute inset-0 rounded-xl bg-white/[0.07] shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]"
+          transition={{ type: "spring", stiffness: 500, damping: 40 }}
+        />
+      )}
+      {hover === item.href && !active && (
+        <motion.span
+          layoutId={`${layoutKey}-hover`}
+          className="absolute inset-0 rounded-xl bg-white/[0.035]"
+          transition={{ type: "spring", stiffness: 500, damping: 40 }}
+        />
+      )}
+      <HugeiconsIcon
+        icon={item.icon}
+        strokeWidth={1.75}
+        className={cn("relative shrink-0 transition-colors", small ? "size-4" : "size-[18px]", active && "text-[#ff9a4a]")}
+      />
+      <span className="relative">{item.label}</span>
+      {showDot && <Dot />}
+    </Link>
   );
 }
 

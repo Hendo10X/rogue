@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ListingCard, ListingRow } from "./listing-card";
 import { ViewToggle, useViewMode } from "@/components/ui/view-toggle";
 import { ListingDetailModal } from "./listing-detail-modal";
+import { Price } from "@/components/currency-provider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -195,18 +196,31 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
     <div className="flex flex-col gap-4">
       {/* Featured picks and best sellers, above everything else. */}
       {showPopular && (
-        <section className="flex flex-col gap-3">
-          <h2 className="pl-1 text-[0.9375rem] font-medium tracking-[-0.015em]">Popular right now</h2>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        // Compact tiles: six fit in two short rows, so the full catalog starts
+        // right below instead of a screen further down.
+        <section className="flex flex-col gap-2">
+          <h2 className="pl-1 text-[0.8125rem] font-medium text-muted-foreground">Popular right now</h2>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {popular!.map((item) => (
-              <ListingCard
+              <button
                 key={item.id}
-                {...item}
-                stock={Number(item.stock)}
-                badge={item.featured ? "Featured" : "Best seller"}
-                icon={getPlatformIcon(item.platform)}
-                onViewClick={() => openListingModal(item)}
-              />
+                type="button"
+                onClick={() => openListingModal(item)}
+                className="surface flex h-14 items-center gap-3 rounded-xl px-3 text-left transition-transform hover:-translate-y-0.5"
+              >
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] [&>*]:size-4">
+                  {getPlatformIcon(item.platform)}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[0.8125rem] font-medium">{item.title}</span>
+                  <span className="block truncate text-[0.6875rem] text-muted-foreground">
+                    {item.featured ? "Featured" : "Best seller"} · {Math.round(Number(item.stock))} in stock
+                  </span>
+                </span>
+                <span className="shrink-0 text-[0.8125rem] font-semibold tabular-nums">
+                  <Price ngn={item.price} />
+                </span>
+              </button>
             ))}
           </div>
         </section>

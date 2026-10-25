@@ -6,6 +6,7 @@ import { auth } from "@/utils/auth";
 import { db } from "@/db/drizzle";
 import { logRequest } from "@/db/schema";
 import { isUserSuspended, SUSPENDED_MESSAGE } from "@/lib/suspension";
+import { escapeHtml, sendTelegramMessage } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
@@ -28,11 +29,27 @@ export async function GET() {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const rows = await db
-    .select()
+    .select({
+      id: logRequest.id,
+      platform: logRequest.platform,
+      details: logRequest.details,
+      quantity: logRequest.quantity,
+      budgetNgn: logRequest.budgetNgn,
+      status: logRequest.status,
+      adminNote: logRequest.adminNote,
+      createdAt: logRequest.createdAt,
+    })
     .from(logRequest)
     .where(eq(logRequest.userId, user.id))
     .orderBy(desc(logRequest.createdAt))
     .limit(50);
+  // Opening the page reads every reply, which clears the red dot. (Fails
+  // quietly until migration 0011 adds the column.)
+  await db
+    .update(logRequest)
+    .set({ customerUnread: false })
+    .where(and(eq(logRequest.userId, user.id), eq(logRequest.customerUnread, true)))
+    .catch(() => {});
   return NextResponse.json({ requests: rows });
 }
 
@@ -67,5 +84,14 @@ export async function POST(req: NextRequest) {
     quantity,
     budgetNgn: budgetNgn ? String(budgetNgn) : null,
   });
+  void sendTelegramMessage(
+    [
+      "📝 <b>New log request</b>",
+      `<b>From:</b> ${escapeHtml(user.email)}`,
+      `<b>Platform:</b> ${escapeHtml(platform)} × ${quantity}${budgetNgn ? ` · up to ₦${budgetNgn}` : ""}`,
+      escapeHtml(details),
+      "Answer it on Ozymandias → Requests.",
+    ].join("\n"),
+  ).catch(() => {});
   return NextResponse.json({ ok: true, id });
 }
