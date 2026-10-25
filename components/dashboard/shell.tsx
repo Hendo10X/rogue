@@ -20,6 +20,8 @@ import {
   ShoppingBag01Icon,
   UnfoldMoreIcon,
   Wallet01Icon,
+  Wrench01Icon,
+  BookOpen01Icon,
   Information,
 } from "@hugeicons/core-free-icons";
 
@@ -54,6 +56,8 @@ const ITEMS: { href: string; label: string; icon: Icon }[] = [
   { href: "/boosting", label: "Boosting", icon: Rocket01Icon },
   { href: "/orders", label: "Orders", icon: ShoppingBag01Icon },
   { href: "/wallet/deposit", label: "Wallet", icon: Wallet01Icon },
+  { href: "/tools", label: "Tools", icon: Wrench01Icon },
+  { href: "/tutorials", label: "Tutorials", icon: BookOpen01Icon },
   { href: "/settings", label: "Settings", icon: AccountSetting01Icon },
 ];
 

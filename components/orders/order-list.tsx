@@ -1,5 +1,6 @@
 "use client";
 
+import { mentions2fa } from "@/lib/totp";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import { Segmented } from "@/components/ui/segmented";
@@ -92,6 +93,15 @@ function CredentialsBlock({ credentials }: { credentials: string[] }) {
       <pre className="max-h-48 overflow-y-auto px-3 py-2.5 font-mono text-[0.6875rem] leading-relaxed break-all whitespace-pre-wrap">
         {text}
       </pre>
+      {mentions2fa(text) && (
+        <a
+          href="/tools/2fa"
+          className="flex items-center justify-between gap-2 rounded-b-xl bg-primary/10 px-3 py-2 text-xs text-primary hover:bg-primary/15"
+        >
+          This log uses 2FA. Get the login code in Tools → 2FA codes
+          <span aria-hidden>→</span>
+        </a>
+      )}
     </div>
   );
 }
