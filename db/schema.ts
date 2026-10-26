@@ -716,6 +716,8 @@ export const proxyOrder = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
     walletId: text("wallet_id"),
     providerOrderId: text("provider_order_id"),
+    // ipv4 | isp | ipv6 | mobile
+    proxyType: text("proxy_type").default("ipv4").notNull(),
     country: text("country").notNull(),
     period: text("period").notNull(),
     quantity: integer("quantity").notNull(),

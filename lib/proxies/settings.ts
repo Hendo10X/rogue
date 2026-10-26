@@ -1,7 +1,7 @@
 import { getSetting, setSetting } from "@/lib/admin-auth";
 import { getUSDtoNGNRate } from "@/lib/currency";
 import { roundClean } from "@/lib/pricing";
-import { fetchCatalog, proxyProviderConfigured, type ProxyOption } from "./provider";
+import { fetchCatalog, proxyProviderConfigured, type ProxyCatalog, type ProxyType } from "./provider";
 
 const ENABLED_KEY = "proxies_enabled";
 const MARKUP_KEY = "proxies_markup_percent";
@@ -33,11 +33,12 @@ export async function priceNgn(costUsd: number): Promise<number> {
   return roundClean(costUsd * rate * (1 + markupPercent / 100));
 }
 
-// The catalog changes rarely; cache it per server instance for an hour.
-let catalog: { at: number; value: { countries: ProxyOption[]; periods: ProxyOption[] } } | null = null;
-export async function getCatalog() {
-  if (catalog && Date.now() - catalog.at < 60 * 60 * 1000) return catalog.value;
-  const value = await fetchCatalog();
-  catalog = { at: Date.now(), value };
+// The catalog changes rarely; cache it per type and server instance for an hour.
+const catalogs = new Map<ProxyType, { at: number; value: ProxyCatalog }>();
+export async function getCatalog(type: ProxyType): Promise<ProxyCatalog> {
+  const hit = catalogs.get(type);
+  if (hit && Date.now() - hit.at < 60 * 60 * 1000) return hit.value;
+  const value = await fetchCatalog(type);
+  catalogs.set(type, { at: Date.now(), value });
   return value;
 }

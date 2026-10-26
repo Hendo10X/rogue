@@ -4,6 +4,7 @@ import { db } from "@/db/drizzle";
 import { proxyOrder, user } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-route";
 import { fetchOrderProxies, fetchOrderRaw } from "@/lib/proxies/provider";
+import { asType } from "@/lib/proxies/orders";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export async function GET() {
         quantity: proxyOrder.quantity,
         amount: proxyOrder.amount,
         status: proxyOrder.status,
+        proxyType: proxyOrder.proxyType,
         createdAt: proxyOrder.createdAt,
         userEmail: user.email,
       })
@@ -42,7 +44,10 @@ export async function POST(req: NextRequest) {
   const [row] = await db.select().from(proxyOrder).where(eq(proxyOrder.id, body.id)).limit(1);
   if (!row?.providerOrderId) return NextResponse.json({ error: "Order not found" }, { status: 404 });
   try {
-    const [raw, parsed] = await Promise.all([fetchOrderRaw(row.providerOrderId), fetchOrderProxies(row.providerOrderId)]);
+    const [raw, parsed] = await Promise.all([
+      fetchOrderRaw(row.providerOrderId, asType(row.proxyType)),
+      fetchOrderProxies(row.providerOrderId, asType(row.proxyType)),
+    ]);
     if (parsed.proxies.length > 0 && row.status !== "active") {
       await db
         .update(proxyOrder)
