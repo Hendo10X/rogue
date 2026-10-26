@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AdminEmailsManager } from "@/components/admin/admin-emails-manager";
 import { ManualFundingForm } from "@/components/admin/manual-funding-form";
 import { ProxySettings } from "@/components/admin/proxy-settings";
+import { ProxyOrders } from "@/components/admin/proxy-orders";
 import {
   Select,
   SelectContent,
@@ -168,6 +169,7 @@ export default function AdminSettingsPage() {
         <AdminEmailsManager />
         <ManualFundingForm />
         <ProxySettings />
+        <ProxyOrders />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
