@@ -20,7 +20,6 @@ import {
   ShieldKeyIcon,
   ShoppingBag01Icon,
   UnfoldMoreIcon,
-  Wallet01Icon,
   Wrench01Icon,
   BookOpen01Icon,
   ArrowDown01Icon,
@@ -63,14 +62,13 @@ const ITEMS: NavItem[] = [
   { href: "/marketplace", label: "Marketplace", icon: PackageIcon },
   { href: "/boosting", label: "Boosting", icon: Rocket01Icon },
   { href: "/tools/proxies", label: "Proxies", icon: Globe02Icon },
+  { href: "/tools/otp", label: "OTP numbers", icon: SmartPhone01Icon },
   { href: "/orders", label: "Orders", icon: ShoppingBag01Icon },
-  { href: "/wallet/deposit", label: "Wallet", icon: Wallet01Icon },
   {
     href: "/tools",
     label: "Tools",
     icon: Wrench01Icon,
     children: [
-      { href: "/tools/otp", label: "OTP numbers", icon: SmartPhone01Icon },
       { href: "/tools/2fa", label: "2FA codes", icon: SquareLock02Icon },
       { href: "/tools/request-log", label: "Request a log", icon: FileSearchIcon, dot: "requests" },
       { href: "/tutorials", label: "Tutorials", icon: BookOpen01Icon },
