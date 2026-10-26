@@ -91,21 +91,43 @@ export async function placeOrder(country: string, period: string, quantity: numb
   return { orderId: String(orderId), costUsd: usd(data?.total) };
 }
 
-/** Credentials for one supplier order, once it's ready (empty while processing). */
+/** Proxy rows anywhere in a proxy/list answer: `items`, a bare array, or nested per order. */
+function proxyRows(data: unknown): Record<string, unknown>[] {
+  const out: Record<string, unknown>[] = [];
+  const walk = (v: unknown, depth: number) => {
+    if (depth > 4 || v == null) return;
+    if (Array.isArray(v)) return v.forEach((x) => walk(x, depth + 1));
+    if (typeof v !== "object") return;
+    const o = v as Record<string, unknown>;
+    if (typeof o.ip === "string" && o.ip) out.push(o);
+    else Object.values(o).forEach((x) => walk(x, depth + 1));
+  };
+  walk(data, 0);
+  return out;
+}
+
+/**
+ * Credentials for one supplier order, once it's ready (empty while processing).
+ * The `orderId` filter is applied by proxy-seller, which accepts any of its
+ * order ids (ObjectId, numeric id, order number), so rows are not re-filtered
+ * here: their `order_id` is the ObjectId and may not match the id we saved.
+ */
 export async function fetchOrderProxies(orderId: string): Promise<{ proxies: ProxyCredential[]; expiresAt: Date | null }> {
   const data = await call<unknown>("GET", `proxy/list/${SECTION}`, undefined, { orderId });
-  const raw = (data as { items?: unknown[] })?.items ?? (Array.isArray(data) ? data : []);
-  const rows = (raw as Record<string, unknown>[]).filter((r) => !r.order_id || String(r.order_id) === orderId);
+  const rows = proxyRows(data);
+  if (rows.length === 0) {
+    // Shape only (no credentials) so a stuck order can be diagnosed from the logs.
+    const keys = data && typeof data === "object" ? Object.keys(data as object).join(",") : typeof data;
+    console.log(`[Proxies] no proxies yet for order ${orderId} (response keys: ${keys})`);
+  }
   const num = (v: unknown) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : null);
-  const proxies = rows
-    .filter((r) => r.ip)
-    .map((r) => ({
-      ip: String(r.ip),
-      portHttp: num(r.port_http),
-      portSocks: num(r.port_socks),
-      login: String(r.login ?? ""),
-      password: String(r.password ?? ""),
-    }));
+  const proxies = rows.map((r) => ({
+    ip: String(r.ip),
+    portHttp: num(r.port_http ?? r.port),
+    portSocks: num(r.port_socks),
+    login: String(r.login ?? ""),
+    password: String(r.password ?? ""),
+  }));
   const end = rows[0]?.date_end ? new Date(String(rows[0].date_end)) : null;
   return { proxies, expiresAt: end && !Number.isNaN(end.getTime()) ? end : null };
 }
@@ -114,4 +136,9 @@ export async function fetchOrderProxies(orderId: string): Promise<{ proxies: Pro
 export async function fetchProviderBalance(): Promise<number | null> {
   const data = await call<{ summ?: unknown }>("GET", "balance/get");
   return usd(data?.summ) ?? (Number(data?.summ) === 0 ? 0 : null);
+}
+
+/** The raw proxy/list answer for one order, for the admin diagnostics view. */
+export async function fetchOrderRaw(orderId: string): Promise<unknown> {
+  return call<unknown>("GET", `proxy/list/${SECTION}`, undefined, { orderId });
 }

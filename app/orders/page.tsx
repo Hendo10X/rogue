@@ -5,6 +5,7 @@ import { auth } from "@/utils/auth";
 import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
 import { db } from "@/db/drizzle";
 import { order, listing, supplier, accountDelivery, boostingOrder } from "@/db/schema";
+import { getProxyOrders, toOrderListItem } from "@/lib/proxies/orders";
 import { eq, desc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,7 @@ import { PageHeader } from "@/components/page-header";
 import { OrderList } from "@/components/orders/order-list";
 
 async function getOrders(userId: string) {
-  const [marketplaceOrders, boostOrders] = await Promise.all([
+  const [marketplaceOrders, boostOrders, proxyOrders] = await Promise.all([
     db
       .select({
         id: order.id,
@@ -53,6 +54,7 @@ async function getOrders(userId: string) {
       .where(eq(boostingOrder.userId, userId))
       .orderBy(desc(boostingOrder.createdAt))
       .limit(100),
+    getProxyOrders(userId),
   ]);
 
   const mapped = [
@@ -86,6 +88,7 @@ async function getOrders(userId: string) {
       deliveryStatus: o.status === "completed" ? "delivered" : "pending",
       credentials: [] as string[],
     })),
+    ...proxyOrders.map(toOrderListItem),
   ];
 
   mapped.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

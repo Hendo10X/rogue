@@ -5,6 +5,7 @@ import { db } from "@/db/drizzle";
 import { order, listing, supplier, accountDelivery, boostingOrder } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { getOrderStatus } from "@/lib/boosting/provider";
+import { getProxyOrders, toOrderListItem } from "@/lib/proxies/orders";
 
 export const dynamic = "force-dynamic";
 
@@ -174,6 +175,7 @@ export async function GET() {
     })),
   ];
 
+  mapped.push(...(await getProxyOrders(session.user.id)).map(toOrderListItem));
   mapped.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return NextResponse.json(mapped);
