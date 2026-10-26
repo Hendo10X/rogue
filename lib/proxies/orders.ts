@@ -1,7 +1,13 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/drizzle";
 import { proxyOrder } from "@/db/schema";
-import { fetchOrderProxies } from "./provider";
+import { fetchOrderProxies, isProxyType, type ProxyType } from "./provider";
+
+export const PROXY_TYPE_LABEL: Record<ProxyType, string> = { ipv4: "IPv4", isp: "ISP", ipv6: "IPv6", mobile: "Mobile" };
+
+export function asType(v: unknown): ProxyType {
+  return isProxyType(v) ? v : "ipv4";
+}
 
 export type ProxyOrderRow = typeof proxyOrder.$inferSelect;
 
@@ -22,7 +28,7 @@ export async function getProxyOrders(userId: string): Promise<ProxyOrderRow[]> {
       .filter((o) => o.status === "processing" && o.providerOrderId)
       .map(async (o) => {
         try {
-          const { proxies, expiresAt } = await fetchOrderProxies(o.providerOrderId!);
+          const { proxies, expiresAt } = await fetchOrderProxies(o.providerOrderId!, asType(o.proxyType));
           if (proxies.length === 0) return;
           await db.update(proxyOrder).set({ status: "active", proxies, expiresAt, updatedAt: new Date() }).where(eq(proxyOrder.id, o.id));
           Object.assign(o, { status: "active", proxies, expiresAt });
@@ -48,7 +54,7 @@ export function toOrderListItem(o: ProxyOrderRow) {
     currency: "NGN",
     quantity: o.quantity,
     createdAt: o.createdAt,
-    title: `${o.quantity} × IPv4 proxy · ${o.country} · ${o.period}`,
+    title: `${o.quantity} × ${PROXY_TYPE_LABEL[asType(o.proxyType)]} proxy · ${o.country} · ${o.period}`,
     platform: "Proxies",
     slug: "",
     supplierName: "Proxies",

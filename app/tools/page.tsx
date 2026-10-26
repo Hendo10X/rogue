@@ -16,7 +16,7 @@ const TOOLS = [
   {
     href: "/tools/proxies",
     title: "Proxies",
-    body: "Private IPv4 proxies by country, paid from your wallet and delivered in minutes.",
+    body: "ISP, IPv4, mobile and IPv6 proxies by country, paid from your wallet and delivered in minutes.",
     icon: Globe02Icon,
   },
   {

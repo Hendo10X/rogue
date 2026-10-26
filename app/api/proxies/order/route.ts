@@ -6,12 +6,13 @@ import { proxyOrder } from "@/db/schema";
 import { isUserSuspended, SUSPENDED_MESSAGE } from "@/lib/suspension";
 import { creditWallet, debitWallet, getOrCreateWallet, logTransaction } from "@/lib/wallet";
 import { formatAmount } from "@/lib/currency";
-import { MAX_PROXIES_PER_ORDER, priceNgn, proxiesOnSale } from "@/lib/proxies/settings";
+import { priceNgn, proxiesOnSale } from "@/lib/proxies/settings";
+import { parseProxySpec } from "@/lib/proxies/spec";
 import { placeOrder, quoteUsd } from "@/lib/proxies/provider";
 
 export const dynamic = "force-dynamic";
 
-// POST { country, period, quantity } — re-prices on the server, charges the
+// POST { type, country, period, quantity, … } — re-prices on the server, charges the
 // wallet, then orders from the supplier. Any failure after the charge refunds it.
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -19,17 +20,13 @@ export async function POST(req: NextRequest) {
   if (await isUserSuspended(session.user.id)) return NextResponse.json({ error: SUSPENDED_MESSAGE }, { status: 403 });
   if (!(await proxiesOnSale())) return NextResponse.json({ error: "Proxies aren't available right now." }, { status: 503 });
 
-  const body = (await req.json().catch(() => null)) as { country?: unknown; period?: unknown; quantity?: unknown } | null;
-  const quantity = Number(body?.quantity);
-  const country = typeof body?.country === "string" ? body.country : "";
-  const period = typeof body?.period === "string" ? body.period : "";
-  if (!country || !period || !Number.isInteger(quantity) || quantity < 1 || quantity > MAX_PROXIES_PER_ORDER) {
-    return NextResponse.json({ error: "Pick a country, a period and a quantity." }, { status: 400 });
-  }
+  const spec = parseProxySpec(await req.json().catch(() => null));
+  if (!spec) return NextResponse.json({ error: "Pick every option first." }, { status: 400 });
+  const { country, period, quantity } = spec;
 
   let amount: number;
   try {
-    amount = await priceNgn(await quoteUsd(country, period, quantity));
+    amount = await priceNgn(await quoteUsd(spec));
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Couldn't get a price" }, { status: 502 });
   }
@@ -59,7 +56,7 @@ export async function POST(req: NextRequest) {
 
   let placed: { orderId: string; costUsd: number | null };
   try {
-    placed = await placeOrder(country, period, quantity);
+    placed = await placeOrder(spec);
   } catch (err) {
     console.error("[Proxies] supplier order failed", err);
     await refund("proxy_order_supplier_failed");
@@ -76,6 +73,7 @@ export async function POST(req: NextRequest) {
       userId: session.user.id,
       walletId: wallet.id,
       providerOrderId: placed.orderId,
+      proxyType: spec.type,
       country,
       period,
       quantity,
@@ -96,7 +94,7 @@ export async function POST(req: NextRequest) {
     amount: `-${total}`,
     currency: "NGN",
     externalReference: placed.orderId,
-    metadata: { kind: "proxy", proxyOrderId: id, country, period, quantity },
+    metadata: { kind: "proxy", proxyType: spec.type, proxyOrderId: id, country, period, quantity },
   }).catch((err) => console.error("[Proxies] transaction log failed", err));
 
   return NextResponse.json({ ok: true, id });
