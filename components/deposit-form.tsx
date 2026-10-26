@@ -1,5 +1,7 @@
 "use client";
 
+import { plainError } from "@/lib/plain-error";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -100,7 +102,7 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
     const num = parseFloat(amount);
     const isNaira = provider === "korapay" || provider === "flutterwave";
     if (!Number.isFinite(num) || num < 1) {
-      toast.error(isNaira ? "Enter a valid amount (min 1 NGN)" : "Enter a valid amount (min $1)");
+      toast.error(isNaira ? "Enter an amount of at least ₦1." : "Enter an amount of at least $1.");
       return;
     }
     setLoading(true);
@@ -116,13 +118,13 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error ?? "Failed to create deposit");
+        toast.error(plainError(data.error, "We couldn't start your payment. Please try again."));
         return;
       }
 
       if (data.provider === "korapay") {
         if (!window.Korapay) {
-          toast.error("Payment gateway loading... Please try again.");
+          toast.error("The payment window is still loading. Wait a second and try again.");
           return;
         }
         window.Korapay.initialize({
@@ -133,14 +135,14 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
           customer: data.customer,
           notification_url: data.notificationUrl,
           onSuccess: () => {
-            toast.success("Payment successful! Confirming deposit...");
+            toast.success("Payment successful. Adding it to your wallet…");
             setTimeout(() => {
               router.refresh();
               router.push("/wallet/deposit/success");
             }, 3000);
           },
           onFailed: () => {
-            toast.error("Payment failed. Please try again.");
+            toast.error("Your payment didn't go through. You haven't been charged — please try again.");
             setLoading(false);
           },
           onClose: () => {
@@ -153,7 +155,7 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
 
       if (data.provider === "flutterwave") {
         if (!window.FlutterwaveCheckout) {
-          toast.error("Payment gateway loading... Please try again.");
+          toast.error("The payment window is still loading. Wait a second and try again.");
           setLoading(false);
           return;
         }
@@ -170,7 +172,7 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
           },
           callback: async (response) => {
             if (response.status === "successful") {
-              toast.success("Payment received! Crediting your wallet...");
+              toast.success("Payment received. Adding it to your wallet…");
               try {
                 const verifyRes = await fetch("/api/wallet/deposit/flutterwave-verify", {
                   method: "POST",
@@ -182,19 +184,19 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
                 });
                 const verifyData = await verifyRes.json();
                 if (verifyRes.ok) {
-                  toast.success("Wallet credited successfully!");
+                  toast.success("Done! The money is in your wallet.");
                   router.refresh();
                   router.push("/wallet/deposit/success");
                 } else {
-                  toast.error(verifyData.error ?? "Payment received but crediting failed. Contact support.");
+                  toast.error(plainError(verifyData.error, "We got your payment but couldn't add it to your wallet yet. Contact support and we'll sort it out."));
                   setLoading(false);
                 }
               } catch {
-                toast.error("Payment received but couldn't confirm. Contact support if balance isn't updated.");
+                toast.error("We got your payment but couldn't confirm it yet. If your balance doesn't update in a few minutes, contact support.");
                 setLoading(false);
               }
             } else {
-              toast.error("Payment was not completed. Please try again.");
+              toast.error("The payment wasn't finished. Please try again.");
               setLoading(false);
             }
           },
@@ -206,10 +208,10 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
       }
 
       setInvoiceUrl(data.invoiceUrl);
-      toast.success("Payment link created. Redirecting...");
+      toast.success("Taking you to the payment page…");
       window.location.href = data.invoiceUrl;
     } catch {
-      toast.error("Failed to create deposit");
+      toast.error("We couldn't start your payment. Please try again.");
     } finally {
       setLoading(false);
     }

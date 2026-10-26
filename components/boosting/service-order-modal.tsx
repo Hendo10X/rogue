@@ -36,19 +36,19 @@ function friendlyError(msg?: string): string {
   if (!msg) return "Order failed. Your wallet has been refunded.";
   const m = msg.toLowerCase();
   if (m.includes("503") || m.includes("service unavailable") || m.includes("temporarily"))
-    return "The service is temporarily unavailable. Please try again in a few minutes.";
+    return "This service is busy right now. Please try again in a few minutes.";
   if (m.includes("insufficient balance") || m.includes("not enough balance"))
     return "This service is currently unavailable. Please try again later or contact support.";
   if (m.includes("invalid link") || m.includes("incorrect link") || m.includes("wrong link"))
-    return "The link you entered is invalid. Please check and try again.";
+    return "That link doesn't look right. Copy it again from the app and paste it here.";
   if (m.includes("invalid service") || m.includes("service not found"))
-    return "This service is no longer available. Please choose a different one.";
+    return "This service isn't available any more. Please pick another one.";
   if (m.includes("unauthorized") || m.includes("invalid key"))
-    return "Service configuration error. Please contact support.";
+    return "This service isn't working right now. Please contact support.";
   if (m.includes("insufficient") || m.includes("balance"))
-    return "Insufficient wallet balance. Please fund your wallet and try again.";
+    return "You don't have enough money in your wallet for this. Add funds and try again.";
   if (m.includes("timeout") || m.includes("timed out"))
-    return "The request timed out. Please try again.";
+    return "That took too long. Check Orders, then try again if it isn't there.";
   // Strip supplier / "API error" prefixes before showing
   return msg.replace(/^(socially\.ng:|reallysimplesocial:|reallysimplesocial api error\s*\d*:?\s*|api error\s*\d*:?\s*)/i, "").trim() || "Order failed. Please try again.";
 }
@@ -87,11 +87,11 @@ export function ServiceOrderModal({
   async function handleOrder() {
     if (!service) return;
     if (!link.trim()) {
-      toast.error("Enter the link");
+      toast.error("Paste the link to the post or profile you want to boost.");
       return;
     }
     if (!canAfford) {
-      toast.error("Insufficient balance. Fund your wallet first.");
+      toast.error("You don't have enough money in your wallet for this. Add funds and try again.");
       return;
     }
     setLoading(true);
@@ -114,7 +114,7 @@ export function ServiceOrderModal({
         // Non-JSON response (e.g. HTML error page)
       }
       if (res.ok) {
-        toast.success("Order placed! Check your orders.");
+        toast.success("Order placed. You can follow it in Orders.");
         onOpenChange(false);
         setLink("");
         setQuantity("");
@@ -125,7 +125,7 @@ export function ServiceOrderModal({
       }
       toast.error(friendlyError(data.error));
     } catch {
-      toast.warning("Network issue. Check your orders — it may have gone through.");
+      toast.warning("We lost connection. Check Orders before trying again — your order may already be there.");
       onSuccess?.();
       void queryClient.invalidateQueries({ queryKey: ["orders"] });
     } finally {

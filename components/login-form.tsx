@@ -1,4 +1,6 @@
 "use client";
+
+import { plainError } from "@/lib/plain-error";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -55,16 +57,16 @@ export function LoginForm({
       });
       
       if (result.error) {
-        toast.error(result.error.message || "Invalid email or password");
+        toast.error(plainError(result.error.message, "That email or password is wrong. Please try again."));
         setLoading(false);
         return;
       }
       
-      toast.success("Logged in successfully");
+      toast.success("Welcome back!");
       router.push("/dashboard");
       router.refresh();
     } catch (error: any) {
-      toast.error(error?.message || "Failed to login");
+      toast.error(plainError(error?.message, "We couldn't log you in. Please try again."));
     } finally {
       setLoading(false);
     }

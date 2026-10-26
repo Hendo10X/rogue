@@ -488,8 +488,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: refunded
-          ? `Automatic delivery failed, so your wallet has been refunded in full. (${errMsg})`
-          : `Automatic delivery failed. (${errMsg}) Our team has been notified and will sort your order out.`,
+          ? "We couldn't deliver this log, so your money has been put back in your wallet."
+          : "We couldn't deliver this log automatically. Our team has been told and will send it to you soon.",
         orderId,
         status: refunded ? "failed" : "manual_review",
         refunded,

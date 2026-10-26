@@ -1,5 +1,7 @@
 "use client";
 
+import { plainError } from "@/lib/plain-error";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -168,7 +170,7 @@ export function ProxyShop() {
         if (!res.ok) throw new Error(data.error);
         setPrice(data.priceNgn);
       } catch (e) {
-        toast.error(e instanceof Error && e.message ? e.message : "Couldn't get a price");
+        toast.error(plainError(e, "We couldn't get a price right now. Try again in a moment."));
       } finally {
         setQuoting(false);
       }
@@ -186,11 +188,11 @@ export function ProxyShop() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success("Order placed. Your proxies will appear below in a minute.");
+      toast.success("Bought! Your proxies will show up below in a minute or two.");
       void queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
       await load();
     } catch (e) {
-      toast.error(e instanceof Error && e.message ? e.message : "Order failed");
+      toast.error(plainError(e, "That order didn't go through. Please try again."));
     } finally {
       setBuying(false);
     }
@@ -199,9 +201,9 @@ export function ProxyShop() {
   async function copy(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      toast.success("Copied");
+      toast.success("Proxies copied.");
     } catch {
-      toast.error("Couldn't copy");
+      toast.error("We couldn't copy that. Select the text and copy it yourself.");
     }
   }
 

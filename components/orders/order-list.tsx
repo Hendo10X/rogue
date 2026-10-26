@@ -77,7 +77,7 @@ function CredentialsBlock({ credentials }: { credentials: string[] }) {
   const copy = async () => {
     await navigator.clipboard.writeText(text);
     setCopied(true);
-    toast.success("Credentials copied");
+    toast.success("Login details copied.");
     setTimeout(() => setCopied(false), 2000);
   };
 

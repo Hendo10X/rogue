@@ -1,5 +1,7 @@
 "use client";
 
+import { plainError } from "@/lib/plain-error";
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +38,7 @@ export function ApiKeysManager() {
       .then((d) => {
         if (Array.isArray(d.keys)) setKeys(d.keys);
       })
-      .catch(() => toast.error("Failed to load API keys"))
+      .catch(() => toast.error("We couldn't load your API keys. Refresh the page to try again."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -64,7 +66,7 @@ export function ApiKeysManager() {
       ]);
       setName("");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to create key");
+      toast.error(plainError(e, "We couldn't create a key. Please try again."));
     } finally {
       setCreating(false);
     }
@@ -78,9 +80,9 @@ export function ApiKeysManager() {
       const res = await fetch(`/api/account/api-keys/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to revoke");
       setKeys((prev) => prev.filter((k) => k.id !== id));
-      toast.success("Key revoked");
+      toast.success("Key deleted. It can't be used any more.");
     } catch {
-      toast.error("Failed to revoke key");
+      toast.error("We couldn't delete that key. Please try again.");
     }
   }
 
@@ -113,7 +115,7 @@ export function ApiKeysManager() {
                 variant="outline"
                 onClick={() => {
                   navigator.clipboard.writeText(newKey);
-                  toast.success("Copied");
+                  toast.success("Key copied.");
                 }}
               >
                 Copy

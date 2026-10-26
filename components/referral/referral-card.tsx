@@ -36,7 +36,7 @@ export function ReferralCard({ data, className }: { data: ReferralCardData; clas
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
-      toast.success("Referral link copied");
+      toast.success("Your invite link is copied.");
       window.setTimeout(() => setCopied(false), 1600);
     } catch {
       toast.error("Couldn't copy — long-press the link to copy it.");

@@ -1,5 +1,7 @@
 "use client";
 
+import { plainError } from "@/lib/plain-error";
+
 import { useCallback, useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -67,11 +69,11 @@ export function LogRequestForm() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Couldn't send your request");
-      toast.success("Request sent. We'll update it here.");
+      toast.success("Request sent. We'll reply on this page, and you'll see a red dot when we do.");
       setForm(EMPTY);
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't send your request");
+      toast.error(plainError(err, "We couldn't send your request. Please try again."));
     } finally {
       setSending(false);
     }

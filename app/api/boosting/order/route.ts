@@ -158,9 +158,9 @@ export async function POST(req: NextRequest) {
     } catch (refundErr) {
       console.error("[Boosting] Refund failed after internal error:", refundErr);
     }
-    const msg = e instanceof Error ? e.message : "Failed to create order";
+    console.error("[Boosting] Saving order failed:", e);
     return NextResponse.json(
-      { error: `Order was sent to supplier but we couldn’t save it. Your wallet has been refunded. (${msg})` },
+      { error: "Something went wrong saving your order. Your money has been put back in your wallet." },
       { status: 500 },
     );
   }

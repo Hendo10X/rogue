@@ -1,5 +1,7 @@
 "use client";
 
+import { plainError } from "@/lib/plain-error";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/utils/auth-client";
@@ -56,21 +58,21 @@ export function SettingsForm({ user }: SettingsFormProps) {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
-      toast.error("Name cannot be empty");
+      toast.error("Please enter your name.");
       return;
     }
     if (trimmed === user.name) {
-      toast.info("No changes to save");
+      toast.info("Nothing has changed yet.");
       return;
     }
 
     setSavingProfile(true);
     try {
       await authClient.updateUser({ name: trimmed });
-      toast.success("Profile updated");
+      toast.success("Your profile is saved.");
       router.refresh();
     } catch {
-      toast.error("Failed to update profile");
+      toast.error("We couldn't save your profile. Please try again.");
     } finally {
       setSavingProfile(false);
     }
@@ -79,15 +81,15 @@ export function SettingsForm({ user }: SettingsFormProps) {
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     if (!currentPassword || !newPassword) {
-      toast.error("Please fill in all password fields");
+      toast.error("Please fill in all three password boxes.");
       return;
     }
     if (newPassword.length < 8) {
-      toast.error("New password must be at least 8 characters");
+      toast.error("Your new password needs at least 8 characters.");
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match");
+      toast.error("The two new passwords don't match.");
       return;
     }
 
@@ -99,13 +101,13 @@ export function SettingsForm({ user }: SettingsFormProps) {
         revokeOtherSessions: false,
       });
       if (error) throw new Error(error.message ?? "Failed to change password");
-      toast.success("Password changed successfully");
+      toast.success("Your password has been changed.");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to change password"
+        plainError(err, "We couldn't change your password. Please try again.")
       );
     } finally {
       setSavingPassword(false);
@@ -305,8 +307,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
               size="sm"
               className="shrink-0"
               onClick={() =>
-                toast.error(
-                  "Please contact support at support@roguesocials.com to delete your account."
+                toast.info(
+                  "To delete your account, message our support team at support@roguesocials.com."
                 )
               }
             >

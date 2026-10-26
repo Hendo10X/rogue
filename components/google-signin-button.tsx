@@ -1,5 +1,7 @@
 "use client";
 
+import { plainError } from "@/lib/plain-error";
+
 import { useState } from "react";
 import { authClient } from "@/utils/auth-client";
 import { Button } from "@/components/ui/button";
@@ -49,7 +51,7 @@ export function GoogleSignInButton({
       // On success the browser is redirected to Google, so we don't reset state.
     } catch (error) {
       const msg =
-        error instanceof Error ? error.message : "Google sign-in failed";
+        plainError(error, "Google sign-in didn't work. Please try again.");
       toast.error(msg);
       setLoading(false);
     }
