@@ -76,14 +76,15 @@ export async function POST(req: NextRequest) {
 
   const { platform, details, quantity, budgetNgn } = parsed.data;
   const id = crypto.randomUUID();
-  await db.insert(logRequest).values({
-    id,
-    userId: user.id,
-    platform,
-    details,
-    quantity,
-    budgetNgn: budgetNgn ? String(budgetNgn) : null,
-  });
+  const budget = budgetNgn ? String(budgetNgn) : null;
+  try {
+    await db.insert(logRequest).values({ id, userId: user.id, platform, details, quantity, budgetNgn: budget });
+  } catch {
+    // Before migration 0011 the insert names a column that doesn't exist yet; write without it.
+    await db.execute(sql`
+      INSERT INTO "log_request" ("id", "user_id", "platform", "details", "quantity", "budget_ngn")
+      VALUES (${id}, ${user.id}, ${platform}, ${details}, ${quantity}, ${budget})`);
+  }
   void sendTelegramMessage(
     [
       "📝 <b>New log request</b>",
