@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
-import { getApps, otpOnSale, otpPriceNgn } from "@/lib/otp/settings";
+import { getApps, getOtpPricer, otpOnSale } from "@/lib/otp/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +13,10 @@ export async function GET(req: NextRequest) {
   const country = req.nextUrl.searchParams.get("country")?.trim();
   if (!country) return NextResponse.json({ error: "Pick a country first." }, { status: 400 });
   try {
-    const apps = await getApps(country);
-    const priced = await Promise.all(apps.map(async (a) => ({ name: a.name, priceNgn: await otpPriceNgn(a.priceUsd) })));
-    return NextResponse.json({ apps: priced });
-  } catch {
+    const [apps, price] = await Promise.all([getApps(country), getOtpPricer()]);
+    return NextResponse.json({ apps: apps.map((a) => ({ name: a.name, priceNgn: price(a.priceUsd) })) });
+  } catch (err) {
+    console.error("[OTP] apps failed", country, err);
     return NextResponse.json({ error: "We couldn't load the apps for this country. Please try again." }, { status: 502 });
   }
 }

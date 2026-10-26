@@ -42,7 +42,14 @@ export async function fetchCountries(): Promise<OtpCountry[]> {
 
 /** Apps for a country with their USD price. Names are what get_number expects. */
 export async function fetchApps(country: string): Promise<OtpApp[]> {
-  const data = await call<{ full_name?: unknown; price?: unknown }[]>("get_apps", { country });
+  let data: { full_name?: unknown; price?: unknown }[];
+  try {
+    data = await call<{ full_name?: unknown; price?: unknown }[]>("get_apps", { country });
+  } catch (err) {
+    // A country with nothing in stock is "no apps", not a failure.
+    if (err instanceof OtpProviderError && /no (app|service|data|number)|not (found|available)|empty/i.test(err.message)) return [];
+    throw err;
+  }
   const seen = new Set<string>();
   const apps: OtpApp[] = [];
   for (const a of Array.isArray(data) ? data : []) {

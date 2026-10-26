@@ -24,10 +24,17 @@ export async function otpOnSale(): Promise<boolean> {
   return otpProviderConfigured() && (await getOtpSettings()).enabled;
 }
 
-/** Customer price in ₦ for a USD cost, rounded up to the next ₦10. */
-export async function otpPriceNgn(costUsd: number): Promise<number> {
+/**
+ * Prices USD costs in ₦ (rounded up to the next ₦10). Reads the markup and
+ * rate once, so a list of thousands of apps costs two lookups, not thousands.
+ */
+export async function getOtpPricer(): Promise<(costUsd: number) => number> {
   const [{ markupPercent }, rate] = await Promise.all([getOtpSettings(), getUSDtoNGNRate()]);
-  return Math.ceil((costUsd * rate * (1 + markupPercent / 100)) / 10) * 10;
+  return (costUsd) => Math.ceil((costUsd * rate * (1 + markupPercent / 100)) / 10) * 10;
+}
+
+export async function otpPriceNgn(costUsd: number): Promise<number> {
+  return (await getOtpPricer())(costUsd);
 }
 
 // Lists change rarely and the API allows 120 calls a minute: cache them.
