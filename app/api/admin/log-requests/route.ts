@@ -44,7 +44,11 @@ export async function PATCH(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as { id?: unknown; status?: unknown; adminNote?: unknown } | null;
   if (typeof body?.id !== "string") return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  const updates: { status?: string; adminNote?: string | null; updatedAt: Date } = { updatedAt: new Date() };
+  // Any answer lights the red dot on the customer's Tools menu.
+  const updates: { status?: string; adminNote?: string | null; customerUnread: boolean; updatedAt: Date } = {
+    customerUnread: true,
+    updatedAt: new Date(),
+  };
   if (body.status !== undefined) {
     if (!STATUSES.includes(body.status as (typeof STATUSES)[number])) {
       return NextResponse.json({ error: "Unknown status" }, { status: 400 });
@@ -54,6 +58,13 @@ export async function PATCH(req: NextRequest) {
   if (body.adminNote !== undefined) {
     updates.adminNote = typeof body.adminNote === "string" && body.adminNote.trim() ? body.adminNote.trim().slice(0, 1000) : null;
   }
-  await db.update(logRequest).set(updates).where(eq(logRequest.id, body.id));
+  try {
+    await db.update(logRequest).set(updates).where(eq(logRequest.id, body.id));
+  } catch {
+    // Before migration 0011 there is no unread column: save the answer without the dot.
+    const { customerUnread, ...rest } = updates;
+    void customerUnread;
+    await db.update(logRequest).set(rest).where(eq(logRequest.id, body.id));
+  }
   return NextResponse.json({ ok: true });
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { formatAmount } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
@@ -37,11 +38,14 @@ export function LogRequestForm() {
   const [form, setForm] = useState(EMPTY);
   const [sending, setSending] = useState(false);
   const [requests, setRequests] = useState<Request[]>([]);
+  const queryClient = useQueryClient();
 
   const load = useCallback(async () => {
     const res = await fetch("/api/log-requests");
     if (res.ok) setRequests((await res.json()).requests ?? []);
-  }, []);
+    // Loading them marks replies read: clear the sidebar dot.
+    void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+  }, [queryClient]);
 
   useEffect(() => {
     void load();

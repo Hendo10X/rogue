@@ -10,6 +10,8 @@ import {
   CodeIcon,
   Coins01Icon,
   PackageIcon,
+  BookOpen01Icon,
+  Globe02Icon,
   Rocket01Icon,
   ShoppingBag01Icon,
   Wallet01Icon,
@@ -178,9 +180,11 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <QuickTile href="/marketplace" icon={PackageIcon} label="Buy accounts" hint="Aged & fresh" />
         <QuickTile href="/boosting" icon={Rocket01Icon} label="Boost a profile" hint="From ₦180 / 1k" />
+        <QuickTile href="/tools/proxies" icon={Globe02Icon} label="Proxies" hint="Private IPv4" />
+        <QuickTile href="/tutorials" icon={BookOpen01Icon} label="Tutorials" hint="Guides & videos" />
         <QuickTile href="/wallet/deposit" icon={Wallet01Icon} label="Fund wallet" hint="Card, bank, crypto" />
         <QuickTile href="/settings" icon={CodeIcon} label="API key" hint="For resellers" />
       </div>

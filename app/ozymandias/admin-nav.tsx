@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
@@ -115,10 +115,40 @@ function AccountMenu({ username }: { username: string }) {
  * row. A soft pill follows the hovered tab and a gradient underline marks the
  * current one; both glide rather than jump.
  */
+/** Unanswered log requests, for the red dot on Requests. Rechecked every minute. */
+function useOpenRequests() {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      fetch("/api/admin/notifications")
+        .then((r) => r.json())
+        .then((d: { openRequests?: number }) => alive && setCount(d.openRequests ?? 0))
+        .catch(() => {});
+    void load();
+    const id = window.setInterval(load, 60_000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, []);
+  return count;
+}
+
+function RequestDot({ href, count }: { href: string; count: number }) {
+  if (!href.endsWith("/requests") || count === 0) return null;
+  return (
+    <span className="relative ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[0.625rem] font-semibold text-white tabular-nums">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 export function AdminNav({ username }: { username: string }) {
   const isActive = useIsActive();
   const [open, setOpen] = useState(false);
   const [hover, setHover] = useState<string | null>(null);
+  const openRequests = useOpenRequests();
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
@@ -150,6 +180,7 @@ export function AdminNav({ username }: { username: string }) {
                     )}
                   >
                     {link.label}
+                    <RequestDot href={link.href} count={openRequests} />
                   </Link>
                 );
               })}
@@ -189,6 +220,7 @@ export function AdminNav({ username }: { username: string }) {
                 />
               )}
               <span className="relative">{link.label}</span>
+              <RequestDot href={link.href} count={openRequests} />
               {active && (
                 <motion.span
                   layoutId="admin-active"
