@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     console.error("[Proxies] supplier order failed", err);
     await refund("proxy_order_supplier_failed");
     return NextResponse.json(
-      { error: "The proxy supplier couldn't fill this order right now. You haven't been charged." },
+      { error: "We couldn't get these proxies right now. You haven't been charged — please try again in a few minutes." },
       { status: 502 },
     );
   }

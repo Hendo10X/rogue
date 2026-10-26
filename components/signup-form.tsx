@@ -1,4 +1,6 @@
 "use client";
+
+import { plainError } from "@/lib/plain-error";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -97,15 +99,15 @@ export function SignupForm({
       });
 
       if (result.error) {
-        toast.error(result.error.message || "Failed to sign up");
+        toast.error(plainError(result.error.message, "We couldn't create your account. Please try again."));
         setLoading(false);
         return;
       }
 
-      toast.success("Signed up successfully");
+      toast.success("Your account is ready. Log in to continue.");
       router.push("/login");
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : "Failed to sign up";
+      const msg = plainError(error, "We couldn't create your account. Please try again.");
       toast.error(msg);
     } finally {
       setLoading(false);

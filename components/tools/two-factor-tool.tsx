@@ -53,9 +53,9 @@ export function TwoFactorTool() {
   async function copy(code: string) {
     try {
       await navigator.clipboard.writeText(code);
-      toast.success("Code copied");
+      toast.success("Code copied.");
     } catch {
-      toast.error("Couldn't copy — select the code instead");
+      toast.error("We couldn't copy that. Select the code and copy it yourself.");
     }
   }
 

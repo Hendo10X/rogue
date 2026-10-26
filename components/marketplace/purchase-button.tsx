@@ -1,5 +1,7 @@
 "use client";
 
+import { plainError } from "@/lib/plain-error";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -56,19 +58,19 @@ export function PurchaseButton({
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error ?? "Purchase failed");
+        toast.error(plainError(data.error, "That purchase didn't go through. Please try again."));
         return;
       }
       if (data.status === "completed") {
-        toast.success("Purchase successful! Credentials delivered — check your orders.");
+        toast.success("Done! Your login details are waiting in Orders.");
       } else {
-        toast.info(data.message ?? "Order placed — under review. Check your orders for updates.");
+        toast.info(data.message ?? "Order placed. We're getting it ready — you'll find it in Orders.");
       }
       setOpen(false);
       router.refresh();
       router.push("/orders");
     } catch {
-      toast.error("Purchase failed");
+      toast.error("That purchase didn't go through. Please try again.");
     } finally {
       setLoading(false);
     }
