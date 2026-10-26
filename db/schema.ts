@@ -740,3 +740,28 @@ export type ProxyCredential = {
   login: string;
   password: string;
 };
+
+/** One-time SMS numbers bought through Tools → OTP numbers (supplier: otpking). */
+export const otpOrder = pgTable(
+  "otp_order",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    walletId: text("wallet_id"),
+    providerNumberId: text("provider_number_id"),
+    country: text("country").notNull(),
+    app: text("app").notNull(),
+    number: text("number"),
+    amount: numeric("amount", { precision: 18, scale: 2 }).notNull(),
+    costUsd: numeric("cost_usd", { precision: 18, scale: 4 }),
+    // waiting | received | cancelled
+    status: text("status").default("waiting").notNull(),
+    code: text("code"),
+    sms: text("sms"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [index("otp_order_user_idx").on(table.userId)],
+);

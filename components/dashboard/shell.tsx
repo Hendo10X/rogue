@@ -27,6 +27,7 @@ import {
   FileSearchIcon,
   Globe02Icon,
   SquareLock02Icon,
+  SmartPhone01Icon,
   Information,
 } from "@hugeicons/core-free-icons";
 
@@ -69,6 +70,7 @@ const ITEMS: NavItem[] = [
     label: "Tools",
     icon: Wrench01Icon,
     children: [
+      { href: "/tools/otp", label: "OTP numbers", icon: SmartPhone01Icon },
       { href: "/tools/2fa", label: "2FA codes", icon: SquareLock02Icon },
       { href: "/tools/request-log", label: "Request a log", icon: FileSearchIcon, dot: "requests" },
       { href: "/tutorials", label: "Tutorials", icon: BookOpen01Icon },
