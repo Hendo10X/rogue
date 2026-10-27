@@ -45,6 +45,8 @@ export function OtpShop() {
   const [search, setSearch] = useState("");
   const [buying, setBuying] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  // Bumped after a failed purchase so the list reloads without the empty app.
+  const [appsVersion, setAppsVersion] = useState(0);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/otp");
@@ -64,8 +66,11 @@ export function OtpShop() {
   }, [waiting, load]);
 
   useEffect(() => {
-    setApps(null);
     setSearch("");
+  }, [country]);
+
+  useEffect(() => {
+    setApps(null);
     if (!country) return;
     let alive = true;
     fetch(`/api/otp/apps?country=${encodeURIComponent(country)}`)
@@ -81,7 +86,7 @@ export function OtpShop() {
     return () => {
       alive = false;
     };
-  }, [country]);
+  }, [country, appsVersion]);
 
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -108,6 +113,7 @@ export function OtpShop() {
       await load();
     } catch (e) {
       toast.error(plainError(e, "We couldn't get a number. Please try again."));
+      setAppsVersion((v) => v + 1);
     } finally {
       setBuying(null);
     }

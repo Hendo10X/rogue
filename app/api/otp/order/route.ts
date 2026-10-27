@@ -8,6 +8,7 @@ import { creditWallet, debitWallet, getOrCreateWallet, logTransaction } from "@/
 import { formatAmount } from "@/lib/currency";
 import { getApps, otpOnSale, otpPriceNgn } from "@/lib/otp/settings";
 import { buyNumber, cancelNumber } from "@/lib/otp/provider";
+import { looksOutOfStock, markInStock, markOutOfStock } from "@/lib/otp/stock";
 
 export const dynamic = "force-dynamic";
 
@@ -63,11 +64,17 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[OTP] buying number failed", err);
     await refund("otp_buy_failed");
+    // Hide this app for this country for a while so others don't hit the same empty stock.
+    if (looksOutOfStock(err instanceof Error ? err.message : String(err))) {
+      await markOutOfStock(country, appName).catch(() => {});
+    }
     return NextResponse.json(
-      { error: "No numbers are available for this app and country right now. You haven't been charged — try another country." },
+      { error: "This one just ran out of numbers. You haven't been charged — we've hidden it for now, so pick another app or country." },
       { status: 502 },
     );
   }
+
+  void markInStock(country, appName).catch(() => {});
 
   const id = crypto.randomUUID();
   try {
