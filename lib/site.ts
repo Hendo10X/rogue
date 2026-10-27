@@ -1,7 +1,9 @@
 // Canonical site config used across metadata, sitemap, robots and structured data.
-export const SITE_URL = (
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://roguesocials.com"
-).replace(/\/$/, "");
+// The bare domain redirects to www, so Google must be given the www address:
+// a canonical URL that redirects is dropped from the index ("Page with redirect").
+export const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.roguesocials.com")
+  .replace(/\/$/, "")
+  .replace(/^https?:\/\/roguesocials\.com$/i, "https://www.roguesocials.com");
 
 export const SITE_NAME = "Rogue Socials";
 

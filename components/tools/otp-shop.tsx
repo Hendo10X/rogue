@@ -107,6 +107,11 @@ export function OtpShop() {
         body: JSON.stringify({ country, app: app.name }),
       });
       const data = await res.json();
+      if (data.soldOut) {
+        // Out of numbers: it just drops off the list, no error message.
+        setApps((list) => list?.filter((a) => a.name !== app.name) ?? list);
+        return;
+      }
       if (!res.ok) throw new Error(data.error);
       toast.success(`Your number is ${data.number}. Use it in ${app.name} — the code will show below.`);
       void queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
