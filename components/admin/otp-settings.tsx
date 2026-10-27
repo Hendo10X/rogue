@@ -14,6 +14,7 @@ type Data = {
   configured: boolean;
   balanceUsd: number | null;
   providerError: string | null;
+  hiddenApps?: number;
 };
 
 /** Turn OTP number sales on or off, set the markup, and see the otpking balance. */
@@ -51,6 +52,14 @@ export function OtpSettings() {
     }
   }
 
+  async function showHidden() {
+    if (!window.confirm("Show every hidden app again? Ones that are still sold out will hide again after one failed try.")) return;
+    const res = await fetch("/api/admin/otp", { method: "DELETE" });
+    if (!res.ok) return toast.error("Failed to show hidden apps");
+    setData((d) => (d ? { ...d, hiddenApps: 0 } : d));
+    toast.success("All hidden apps are showing again");
+  }
+
   if (!data) return null;
   return (
     <section className="surface flex flex-col gap-4 rounded-2xl p-5">
@@ -74,6 +83,18 @@ export function OtpSettings() {
             Save
           </Button>
         </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          {data.hiddenApps
+            ? `${data.hiddenApps} sold-out app${data.hiddenApps === 1 ? "" : "s"} hidden from customers.`
+            : "No apps hidden. Apps that turn out to be sold out are hidden here until you show them again."}
+        </p>
+        {!!data.hiddenApps && (
+          <Button size="sm" variant="outline" onClick={showHidden}>
+            Show them again
+          </Button>
+        )}
       </div>
     </section>
   );

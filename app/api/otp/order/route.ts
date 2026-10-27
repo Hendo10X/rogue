@@ -8,7 +8,7 @@ import { creditWallet, debitWallet, getOrCreateWallet, logTransaction } from "@/
 import { formatAmount } from "@/lib/currency";
 import { getApps, otpOnSale, otpPriceNgn } from "@/lib/otp/settings";
 import { buyNumber, cancelNumber } from "@/lib/otp/provider";
-import { looksOutOfStock, markInStock, markOutOfStock } from "@/lib/otp/stock";
+import { looksOutOfStock, markOutOfStock } from "@/lib/otp/stock";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +76,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  void markInStock(country, appName).catch(() => {});
 
   const id = crypto.randomUUID();
   try {
