@@ -64,12 +64,14 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[OTP] buying number failed", err);
     await refund("otp_buy_failed");
-    // Hide this app for this country for a while so others don't hit the same empty stock.
+    // Sold out: hide it for this country so it simply drops off the list
+    // (the page removes it quietly, without an error).
     if (looksOutOfStock(err instanceof Error ? err.message : String(err))) {
       await markOutOfStock(country, appName).catch(() => {});
+      return NextResponse.json({ soldOut: true, error: "Not available right now." }, { status: 409 });
     }
     return NextResponse.json(
-      { error: "This one just ran out of numbers. You haven't been charged — we've hidden it for now, so pick another app or country." },
+      { error: "We couldn't get a number right now. You haven't been charged — please try again in a few minutes." },
       { status: 502 },
     );
   }
