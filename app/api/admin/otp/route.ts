@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-route";
 import { getOtpSettings, setOtpSettings } from "@/lib/otp/settings";
 import { fetchOtpBalance, otpProviderConfigured } from "@/lib/otp/provider";
+import { clearOutOfStock, hiddenCount } from "@/lib/otp/stock";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,20 @@ export async function GET() {
       providerError = err instanceof Error ? err.message : "Couldn't reach otpking";
     }
   }
-  return NextResponse.json({ ...(await getOtpSettings()), configured, balanceUsd, providerError });
+  return NextResponse.json({
+    ...(await getOtpSettings()),
+    configured,
+    balanceUsd,
+    providerError,
+    hiddenApps: await hiddenCount(),
+  });
+}
+
+// DELETE — show every sold-out app again.
+export async function DELETE() {
+  if (!(await requireAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  await clearOutOfStock();
+  return NextResponse.json({ ok: true, hiddenApps: 0 });
 }
 
 // PUT { enabled?, markupPercent? }
