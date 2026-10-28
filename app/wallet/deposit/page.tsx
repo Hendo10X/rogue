@@ -1,3 +1,4 @@
+import { sweepPendingFlutterwave } from "@/lib/flutterwave";
 import { redirect } from "next/navigation";
 import { redirectIfSuspended } from "@/lib/suspension";
 import { headers } from "next/headers";
@@ -23,6 +24,8 @@ export default async function DepositPage() {
   await redirectIfSuspended(session.user.id);
 
   await claimReferralFromRequest(session.user);
+  // Credits any Flutterwave payment the webhook missed, before the balance is read.
+  await sweepPendingFlutterwave(session.user.id).catch(() => 0);
   await getOrCreateWallet(session.user.id, "NGN");
   const balance = await getWalletBalance(session.user.id);
   const walletBalance = Array.isArray(balance) ? balance : [balance];

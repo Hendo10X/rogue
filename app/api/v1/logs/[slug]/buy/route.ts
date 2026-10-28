@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { alertApiOrder } from "@/lib/api-order-alert";
 import { db } from "@/db/drizzle";
 import {
   listing,
@@ -206,6 +207,17 @@ export async function POST(
     } catch {
       /* non-critical */
     }
+
+    await alertApiOrder({
+      userId: auth.userId,
+      keyId: auth.keyId,
+      kind: "log",
+      product: list.title ?? slug,
+      quantity,
+      amountNgn: totalAmount,
+      status: "completed",
+      orderId,
+    });
 
     return NextResponse.json({
       data: {

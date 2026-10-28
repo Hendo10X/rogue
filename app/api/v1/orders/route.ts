@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { alertApiOrder } from "@/lib/api-order-alert";
 import { formatAmount, toApiAmount } from "@/lib/currency";
 import { db } from "@/db/drizzle";
 import { boostingOrder } from "@/db/schema";
@@ -184,6 +185,17 @@ export async function POST(req: NextRequest) {
   } catch {
     /* non-critical */
   }
+
+  await alertApiOrder({
+    userId: auth.userId,
+    keyId: auth.keyId,
+    kind: "boosting",
+    product: service.name,
+    quantity: qty,
+    amountNgn: totalAmountNgn.toFixed(2),
+    status: "processing",
+    orderId,
+  });
 
   return NextResponse.json({
     data: {
