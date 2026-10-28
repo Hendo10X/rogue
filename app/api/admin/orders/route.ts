@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import { cookies } from "next/headers";
 import { db } from "@/db/drizzle";
-import { order, listing, supplier, user, boostingOrder } from "@/db/schema";
+import { order, listing, supplier, user, boostingOrder, proxyOrder, otpOrder } from "@/db/schema";
+import { appLabel } from "@/lib/otp/labels";
 import { eq, desc } from "drizzle-orm";
 import { verifyAdminSession } from "@/lib/admin-auth";
 
@@ -79,9 +80,62 @@ export async function GET() {
     ...o,
     type: "marketplace" as const,
   }));
+  // Proxies and OTP numbers, shaped like boosting rows (title in serviceName).
+  // Each is skipped if its table isn't migrated yet.
+  const [proxyRows, otpRows] = await Promise.all([
+    db
+      .select({
+        id: proxyOrder.id,
+        userEmail: user.email,
+        status: proxyOrder.status,
+        amount: proxyOrder.amount,
+        quantity: proxyOrder.quantity,
+        createdAt: proxyOrder.createdAt,
+        country: proxyOrder.country,
+        period: proxyOrder.period,
+        proxyType: proxyOrder.proxyType,
+      })
+      .from(proxyOrder)
+      .innerJoin(user, eq(proxyOrder.userId, user.id))
+      .orderBy(desc(proxyOrder.createdAt))
+      .limit(200)
+      .catch(() => []),
+    db
+      .select({
+        id: otpOrder.id,
+        userEmail: user.email,
+        status: otpOrder.status,
+        amount: otpOrder.amount,
+        createdAt: otpOrder.createdAt,
+        country: otpOrder.country,
+        app: otpOrder.app,
+        number: otpOrder.number,
+      })
+      .from(otpOrder)
+      .innerJoin(user, eq(otpOrder.userId, user.id))
+      .orderBy(desc(otpOrder.createdAt))
+      .limit(200)
+      .catch(() => []),
+  ]);
+  const proxyOrders = proxyRows.map((o: (typeof proxyRows)[number]) => ({
+    ...o,
+    type: "proxy" as const,
+    currency: "NGN",
+    serviceName: `${o.quantity} × ${String(o.proxyType ?? "ipv4").toUpperCase()} proxy · ${o.country} · ${o.period}`,
+  }));
+  const otpOrders = otpRows.map((o: (typeof otpRows)[number]) => ({
+    ...o,
+    type: "otp" as const,
+    currency: "NGN",
+    quantity: 1,
+    serviceName: `OTP · ${appLabel(o.app)} · ${appLabel(o.country)}${o.number ? ` · ${o.number}` : ""}`,
+  }));
+
   const allOrders = [
     ...marketplaceOrders.map((o: any) => ({ ...o, userEmail: o.userEmail })),
     ...boostingWithEmail,
+    ...proxyOrders,
+    ...otpOrders,
   ].sort(
     (a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
