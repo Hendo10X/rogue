@@ -1,9 +1,9 @@
 import { getSetting, setSetting } from "@/lib/admin-auth";
 
 /**
- * otpking doesn't report stock: the only sign an app is empty is a failed
- * get_number. A failed purchase hides that app for that country and it stays
- * hidden until an admin shows it again (Settings → OTP numbers).
+ * Backup for stock: 5sim lists only apps with numbers, but one can still sell
+ * out between listing and buying. A purchase that finds none hides that app for
+ * that country until an admin shows it again (Settings → OTP numbers).
  */
 const KEY = "otp_out_of_stock";
 
@@ -47,8 +47,11 @@ export async function clearOutOfStock() {
   await setSetting(KEY, "{}");
 }
 
-/** A get_number failure that means "nothing to sell", not a problem on our side (e.g. our balance). */
+/**
+ * A buy failure that means "nothing to sell" (5sim says "no free phones"), as
+ * opposed to our balance, key, rate limit or a passing outage, which must
+ * never hide an app.
+ */
 export function looksOutOfStock(message: string): boolean {
-  if (/balance|credit|insufficient|fund|api ?key|inactive|unauthori|limit|too many/i.test(message)) return false;
-  return true;
+  return /no free phones|no (numbers|phones) available|out of stock/i.test(message);
 }

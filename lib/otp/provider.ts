@@ -1,116 +1,113 @@
 /**
- * otpking API (https://api.otpking.net/api.php). Every call is a GET with
- * `do=<action>&key=<key>`; answers are `{ status: { code, message }, data }`
- * and code "1000" means success. Prices are in USD.
- * Shapes of get_number / get_sms weren't documented, so they're read
- * defensively and the raw answer is logged (without the key) when unexpected.
+ * 5sim.net API v1 (https://5sim.net/v1). Lists are public ("guest"); buying
+ * and checking need `Authorization: Bearer <FIVESIM_API_KEY>`. Prices are in
+ * USD. Product lists carry a stock count (Qty), so empty apps are never offered.
+ * Errors come back as short plain-text bodies such as "no free phones".
  */
-const BASE = "https://api.otpking.net/api.php";
-const SUCCESS = "1000";
+import { appLabel } from "./labels";
+
+const BASE = "https://5sim.net/v1";
+/** Let 5sim pick whichever operator has a number. */
+const OPERATOR = "any";
 
 export class OtpProviderError extends Error {}
 
 export function otpProviderConfigured(): boolean {
-  return !!process.env.OTPKING_API_KEY?.trim();
+  return !!process.env.FIVESIM_API_KEY?.trim();
 }
 
-async function call<T>(action: string, params: Record<string, string> = {}): Promise<T> {
-  const key = process.env.OTPKING_API_KEY?.trim();
-  if (!key) throw new OtpProviderError("OTP numbers aren't configured");
-  const qs = new URLSearchParams({ do: action, ...params, key });
+async function call<T>(path: string, { auth = true, params }: { auth?: boolean; params?: Record<string, string> } = {}): Promise<T> {
+  const key = process.env.FIVESIM_API_KEY?.trim();
+  if (auth && !key) throw new OtpProviderError("OTP numbers aren't configured");
+  const qs = params ? `?${new URLSearchParams(params)}` : "";
   let res: Response;
   try {
-    res = await fetch(`${BASE}?${qs}`, { cache: "no-store", signal: AbortSignal.timeout(25_000) });
+    res = await fetch(`${BASE}/${path}${qs}`, {
+      headers: { Accept: "application/json", ...(auth ? { Authorization: `Bearer ${key}` } : {}) },
+      cache: "no-store",
+      signal: AbortSignal.timeout(25_000),
+    });
   } catch (err) {
-    // Never echo the URL: it contains the key.
     throw new OtpProviderError(`OTP supplier unreachable (${err instanceof Error ? err.name : "network"})`);
   }
-  const json = (await res.json().catch(() => null)) as { status?: { code?: unknown; message?: unknown }; data?: T } | null;
-  if (String(json?.status?.code) === SUCCESS) return json!.data as T;
-  throw new OtpProviderError(String(json?.status?.message || `OTP supplier error (HTTP ${res.status})`));
+  const text = await res.text();
+  let json: unknown = null;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    // 5sim answers errors as plain text.
+  }
+  if (!res.ok || json === null) throw new OtpProviderError(text.trim().slice(0, 200) || `OTP supplier error (HTTP ${res.status})`);
+  return json as T;
 }
 
 export type OtpCountry = { id: string; name: string };
-export type OtpApp = { name: string; priceUsd: number };
+export type OtpApp = { name: string; label: string; priceUsd: number; stock: number };
 
+/** Countries by 5sim slug (e.g. "usa") with their English name. */
 export async function fetchCountries(): Promise<OtpCountry[]> {
-  const data = await call<{ id?: unknown; full_name?: unknown }[]>("get_countries");
-  return (Array.isArray(data) ? data : [])
-    .map((c) => ({ id: String(c.id ?? ""), name: String(c.full_name ?? "") }))
-    .filter((c) => c.name);
+  const data = await call<Record<string, { text_en?: string }>>("guest/countries", { auth: false });
+  return Object.entries(data ?? {})
+    .map(([id, c]) => ({ id, name: c?.text_en?.trim() || id }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Apps for a country with their USD price. Names are what get_number expects. */
+/** Apps with numbers in stock for one country (any operator), cheapest price in USD. */
 export async function fetchApps(country: string): Promise<OtpApp[]> {
-  let data: { full_name?: unknown; price?: unknown }[];
-  try {
-    data = await call<{ full_name?: unknown; price?: unknown }[]>("get_apps", { country });
-  } catch (err) {
-    // A country with nothing in stock is "no apps", not a failure.
-    if (err instanceof OtpProviderError && /no (app|service|data|number)|not (found|available)|empty/i.test(err.message)) return [];
-    throw err;
-  }
-  const seen = new Set<string>();
-  const apps: OtpApp[] = [];
-  for (const a of Array.isArray(data) ? data : []) {
-    const name = String(a.full_name ?? "").trim();
-    const priceUsd = Number(a.price);
-    if (!name || !Number.isFinite(priceUsd) || priceUsd <= 0 || seen.has(name)) continue;
-    seen.add(name);
-    apps.push({ name, priceUsd: Math.round(priceUsd * 10_000) / 10_000 });
-  }
-  return apps.sort((a, b) => a.name.localeCompare(b.name));
+  const data = await call<Record<string, { Category?: string; Qty?: number; Price?: number }>>(
+    `guest/products/${encodeURIComponent(country)}/${OPERATOR}`,
+    { auth: false },
+  );
+  return Object.entries(data ?? {})
+    .filter(([, p]) => p?.Category === "activation" && Number(p.Qty) > 0 && Number(p.Price) > 0)
+    .map(([name, p]) => ({ name, label: appLabel(name), priceUsd: Number(p.Price), stock: Number(p.Qty) }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 }
 
 export async function fetchOtpBalance(): Promise<number | null> {
-  const data = await call<{ credits?: unknown }>("check_balance");
-  const n = Number(data?.credits);
+  const data = await call<{ balance?: unknown }>("user/profile");
+  const n = Number(data?.balance);
   return Number.isFinite(n) ? n : null;
 }
 
-/** First non-empty value among `keys` at the top level or one level down. */
-function pick(data: unknown, keys: string[]): string | null {
-  const layers = [data, ...(data && typeof data === "object" ? Object.values(data as object) : [])];
-  for (const layer of layers) {
-    if (!layer || typeof layer !== "object" || Array.isArray(layer)) continue;
-    for (const k of keys) {
-      const v = (layer as Record<string, unknown>)[k];
-      if (v != null && String(v).trim() !== "") return String(v).trim();
-    }
-  }
-  return null;
-}
-
-/** Buys a number (charges the Rogue otpking balance). */
-export async function buyNumber(country: string, app: string) {
-  const data = await call<unknown>("get_number", { country, app });
-  const numberId = pick(data, ["id", "number_id", "activation_id", "order_id"]);
-  const number = pick(data, ["number", "phone", "phone_number", "msisdn"]);
-  if (!numberId || !number) {
-    console.error("[OTP] unexpected get_number answer", JSON.stringify(data).slice(0, 500));
+/**
+ * Buys a number (charges the Rogue 5sim balance). `maxPriceUsd` stops 5sim
+ * from picking a dearer operator than the price the customer was charged.
+ */
+export async function buyNumber(country: string, app: string, maxPriceUsd?: number) {
+  const data = await call<{ id?: unknown; phone?: unknown; price?: unknown }>(
+    `user/buy/activation/${encodeURIComponent(country)}/${OPERATOR}/${encodeURIComponent(app)}`,
+    maxPriceUsd ? { params: { maxPrice: String(maxPriceUsd) } } : {},
+  );
+  if (!data?.id || !data?.phone) {
+    console.error("[OTP] unexpected 5sim buy answer", JSON.stringify(data).slice(0, 300));
     throw new OtpProviderError("OTP supplier returned no number");
   }
-  return { numberId, number };
+  return { numberId: String(data.id), number: String(data.phone), priceUsd: Number(data.price) || null };
 }
 
-/**
- * The SMS for a bought number, or null while still waiting. otpking answers a
- * non-success code while nothing has arrived, so errors read as "not yet".
- */
-export async function readSms(country: string, app: string, number: string): Promise<{ code: string | null; sms: string } | null> {
-  let data: unknown;
-  try {
-    data = await call<unknown>("get_sms", { country, app, number });
-  } catch {
-    return null;
-  }
-  const sms = pick(data, ["sms", "message", "text", "full_sms", "msg"]) ?? (typeof data === "string" ? data.trim() : null);
-  const code = pick(data, ["code", "otp", "sms_code"]) ?? sms?.match(/\b\d{4,8}\b/)?.[0] ?? null;
-  if (!sms && !code) return null;
-  return { code, sms: sms ?? code ?? "" };
+export type OtpCheck = {
+  /** PENDING | RECEIVED | FINISHED | CANCELED | TIMEOUT | BANNED */
+  status: string;
+  code: string | null;
+  sms: string | null;
+};
+
+/** The current state of a bought number, with its latest SMS if any. */
+export async function checkNumber(numberId: string): Promise<OtpCheck> {
+  const data = await call<{ status?: string; sms?: { text?: string; code?: string }[] }>(`user/check/${encodeURIComponent(numberId)}`);
+  const last = Array.isArray(data?.sms) && data.sms.length ? data.sms[data.sms.length - 1] : null;
+  const text = last?.text?.trim() || null;
+  const code = last?.code?.trim() || text?.match(/\b\d{4,8}\b/)?.[0] || null;
+  return { status: String(data?.status ?? "PENDING").toUpperCase(), code, sms: text };
 }
 
-/** Cancels a number that hasn't received an SMS. Throws if otpking refuses. */
+/** Cancels a number that hasn't received an SMS (5sim refunds our balance). */
 export async function cancelNumber(numberId: string): Promise<void> {
-  await call<unknown>("cancel_number", { number_id: numberId });
+  await call<unknown>(`user/cancel/${encodeURIComponent(numberId)}`);
+}
+
+/** Closes a number once its code has arrived. Best effort: 5sim closes it on its own later. */
+export async function finishNumber(numberId: string): Promise<void> {
+  await call<unknown>(`user/finish/${encodeURIComponent(numberId)}`).catch(() => {});
 }

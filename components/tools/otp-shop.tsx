@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { formatAmount } from "@/lib/currency";
 import { plainError } from "@/lib/plain-error";
+import { appLabel } from "@/lib/otp/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EmptyState, SectionLabel } from "@/components/page-header";
 
 type Country = { id: string; name: string };
-type App = { name: string; priceNgn: number };
+type App = { name: string; label?: string; priceNgn: number };
 type Order = {
   id: string;
   country: string;
@@ -90,12 +91,12 @@ export function OtpShop() {
 
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const list = (apps ?? []).filter((a) => !q || a.name.toLowerCase().includes(q));
+    const list = (apps ?? []).filter((a) => !q || (a.label ?? a.name).toLowerCase().includes(q) || a.name.toLowerCase().includes(q));
     const rank = (a: App) => {
       const i = POPULAR.findIndex((p) => p.toLowerCase() === a.name.toLowerCase());
       return i === -1 ? POPULAR.length : i;
     };
-    return list.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name)).slice(0, q ? 60 : 24);
+    return list.sort((a, b) => rank(a) - rank(b) || (a.label ?? a.name).localeCompare(b.label ?? b.name)).slice(0, q ? 60 : 24);
   }, [apps, search]);
 
   async function buy(app: App) {
@@ -113,7 +114,7 @@ export function OtpShop() {
         return;
       }
       if (!res.ok) throw new Error(data.error);
-      toast.success(`Your number is ${data.number}. Use it in ${app.name} — the code will show below.`);
+      toast.success(`Your number is ${data.number}. Use it in ${app.label ?? app.name} — the code will show below.`);
       void queryClient.invalidateQueries({ queryKey: ["wallet-balance"] });
       await load();
     } catch (e) {
@@ -210,7 +211,7 @@ export function OtpShop() {
                   onClick={() => buy(a)}
                   className="flex h-12 items-center justify-between gap-3 rounded-xl bg-white/[0.04] px-4 text-left text-sm transition-colors hover:bg-white/[0.08] disabled:opacity-60"
                 >
-                  <span className="truncate font-medium">{a.name}</span>
+                  <span className="truncate font-medium">{a.label ?? a.name}</span>
                   <span className="shrink-0 tabular-nums text-muted-foreground">
                     {buying === a.name ? "Getting number…" : `₦${formatAmount(a.priceNgn)}`}
                   </span>
@@ -231,7 +232,7 @@ export function OtpShop() {
             <div key={o.id} className={cn("surface flex flex-col gap-3 rounded-2xl p-4", o.status === "cancelled" && "opacity-70")}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-medium">
-                  {o.app} · {o.country} · ₦{formatAmount(o.amount)}
+                  {appLabel(o.app)} · {appLabel(o.country)} · ₦{formatAmount(o.amount)}
                 </p>
                 <Badge variant={o.status === "received" ? "default" : "secondary"}>{STATUS[o.status] ?? o.status}</Badge>
               </div>

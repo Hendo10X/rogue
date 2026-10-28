@@ -2,26 +2,39 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db/drizzle";
 import { otpOrder } from "@/db/schema";
 import { creditWallet, logTransaction } from "@/lib/wallet";
-import { cancelNumber, readSms } from "./provider";
+import { cancelNumber, checkNumber, finishNumber } from "./provider";
 
 export type OtpOrderRow = typeof otpOrder.$inferSelect;
 
 /** How long a number waits for its SMS before we cancel and refund it. */
 export const OTP_WAIT_MINUTES = 20;
 
+/** 5sim states where the number is closed without a code (5sim refunds us). */
+const CLOSED_WITHOUT_CODE = new Set(["CANCELED", "TIMEOUT", "BANNED"]);
+
 /**
- * Cancels a waiting number with otpking and refunds the wallet. The status
+ * Cancels a waiting number with 5sim and refunds the wallet. The status
  * flips from "waiting" in the same statement that claims the row, so a
- * double click or two tabs can never refund twice. Returns false when
- * otpking refuses (e.g. too early) or the order isn't waiting any more.
+ * double click or two tabs can never refund twice. Returns false when 5sim
+ * refuses (e.g. too early, or a code already arrived) or the order isn't
+ * waiting any more. `alreadyClosed` skips the cancel call when 5sim has
+ * closed the number itself.
  */
-export async function cancelAndRefund(row: OtpOrderRow, reason: string): Promise<{ ok: boolean; message?: string }> {
+export async function cancelAndRefund(
+  row: OtpOrderRow,
+  reason: string,
+  alreadyClosed = false,
+): Promise<{ ok: boolean; message?: string }> {
   if (row.status !== "waiting") return { ok: false, message: "This number has already finished." };
-  if (row.providerNumberId) {
+  if (row.providerNumberId && !alreadyClosed) {
     try {
       await cancelNumber(row.providerNumberId);
     } catch (err) {
-      return { ok: false, message: err instanceof Error ? err.message : "Couldn't cancel this number yet." };
+      // It may have closed on 5sim's side in the meantime; only then refund.
+      const state = await checkNumber(row.providerNumberId).catch(() => null);
+      if (!state || !CLOSED_WITHOUT_CODE.has(state.status)) {
+        return { ok: false, message: err instanceof Error ? err.message : "Couldn't cancel this number yet." };
+      }
     }
   }
   const [claimed] = await db
@@ -49,16 +62,21 @@ export async function cancelAndRefund(row: OtpOrderRow, reason: string): Promise
   return { ok: true };
 }
 
-/** Asks otpking for the SMS of one waiting order; saves it when it arrives. */
+/** Asks 5sim about one waiting order; saves the code when it arrives. */
 async function refresh(row: OtpOrderRow) {
-  if (row.status !== "waiting" || !row.number) return;
-  const got = await readSms(row.country, row.app, row.number);
-  if (got) {
+  if (row.status !== "waiting" || !row.providerNumberId) return;
+  const got = await checkNumber(row.providerNumberId);
+  if (got.sms || got.code) {
     await db
       .update(otpOrder)
       .set({ status: "received", code: got.code, sms: got.sms, updatedAt: new Date() })
       .where(and(eq(otpOrder.id, row.id), eq(otpOrder.status, "waiting")));
     Object.assign(row, { status: "received", code: got.code, sms: got.sms });
+    void finishNumber(row.providerNumberId);
+    return;
+  }
+  if (CLOSED_WITHOUT_CODE.has(got.status)) {
+    await cancelAndRefund(row, `otp_${got.status.toLowerCase()}`, true);
     return;
   }
   const ageMinutes = (Date.now() - new Date(row.createdAt).getTime()) / 60_000;

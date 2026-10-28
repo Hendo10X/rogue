@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
   try {
     const [apps, price, hidden] = await Promise.all([getApps(country), getOtpPricer(), outOfStockApps(country)]);
     return NextResponse.json({
-      apps: apps.filter((a) => !hidden.has(a.name)).map((a) => ({ name: a.name, priceNgn: price(a.priceUsd) })),
+      apps: apps
+        .filter((a) => !hidden.has(a.name))
+        .map((a) => ({ name: a.name, label: a.label, priceNgn: price(a.priceUsd) })),
     });
   } catch (err) {
     console.error("[OTP] apps failed", country, err);
