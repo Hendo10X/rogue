@@ -182,7 +182,7 @@ export function OtpShop() {
                 </SelectTrigger>
                 <SelectContent>
                   {state.countries.map((c) => (
-                    <SelectItem key={c.id || c.name} value={c.name}>
+                    <SelectItem key={c.id} value={c.id}>
                       {c.name}
                     </SelectItem>
                   ))}
