@@ -1,3 +1,4 @@
+import { sweepPendingFlutterwave } from "@/lib/flutterwave";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/utils/auth";
@@ -12,6 +13,8 @@ export async function CustomerPage({ children, wide }: { children: React.ReactNo
   if (!session?.user) redirect("/login");
   await redirectIfSuspended(session.user.id);
 
+  // Credits any Flutterwave payment the webhook missed, before the balance is read.
+  await sweepPendingFlutterwave(session.user.id).catch(() => 0);
   await getOrCreateWallet(session.user.id, "NGN");
   const balance = await getWalletBalance(session.user.id);
   const walletBalance = Array.isArray(balance) ? balance : [balance];

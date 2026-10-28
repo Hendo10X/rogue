@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { redirectIfSuspended } from "@/lib/suspension";
+import { sweepPendingFlutterwave } from "@/lib/flutterwave";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -100,6 +101,8 @@ export default async function DashboardPage() {
     redirect("/login");
   }
   await redirectIfSuspended(session.user.id);
+  // Credits any Flutterwave payment the webhook missed, before the balance is read.
+  await sweepPendingFlutterwave(session.user.id).catch(() => 0);
 
   await claimReferralFromRequest(session.user);
 
