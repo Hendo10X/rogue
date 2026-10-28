@@ -17,7 +17,7 @@ type Data = {
   hiddenApps?: number;
 };
 
-/** Turn OTP number sales on or off, set the markup, and see the otpking balance. */
+/** Turn OTP number sales on or off, set the markup, and see the 5sim balance. */
 export function OtpSettings() {
   const [data, setData] = useState<Data | null>(null);
   const [markup, setMarkup] = useState("");
@@ -63,13 +63,13 @@ export function OtpSettings() {
   if (!data) return null;
   return (
     <section className="surface flex flex-col gap-4 rounded-2xl p-5">
-      <SectionLabel>OTP numbers (otpking)</SectionLabel>
+      <SectionLabel>OTP numbers (5sim)</SectionLabel>
       <p className="text-sm text-muted-foreground">
         {!data.configured
-          ? "OTPKING_API_KEY isn't set in Vercel, so OTP numbers can't be sold."
+          ? "FIVESIM_API_KEY isn't set in Vercel, so OTP numbers can't be sold."
           : data.providerError
-            ? `otpking error: ${data.providerError}`
-            : `otpking balance: $${(data.balanceUsd ?? 0).toFixed(2)}. Numbers are paid from this balance, so keep it topped up.`}
+            ? `5sim error: ${data.providerError}`
+            : `5sim balance: $${(data.balanceUsd ?? 0).toFixed(2)}. Numbers are paid from this balance, so keep it topped up.`}
       </p>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <label className="flex items-center gap-2 text-sm">

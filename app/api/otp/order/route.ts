@@ -12,7 +12,7 @@ import { looksOutOfStock, markOutOfStock } from "@/lib/otp/stock";
 
 export const dynamic = "force-dynamic";
 
-// POST { country, app } — prices on the server from otpking's current list,
+// POST { country, app } — prices on the server from 5sim's current list,
 // charges the wallet, then buys the number. Any failure after the charge refunds it.
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -58,9 +58,9 @@ export async function POST(req: NextRequest) {
     }
   };
 
-  let bought: { numberId: string; number: string };
+  let bought: { numberId: string; number: string; priceUsd: number | null };
   try {
-    bought = await buyNumber(country, appName);
+    bought = await buyNumber(country, appName, costUsd);
   } catch (err) {
     console.error("[OTP] buying number failed", err);
     await refund("otp_buy_failed");

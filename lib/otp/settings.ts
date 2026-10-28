@@ -37,7 +37,7 @@ export async function otpPriceNgn(costUsd: number): Promise<number> {
   return (await getOtpPricer())(costUsd);
 }
 
-// Lists change rarely and the API allows 120 calls a minute: cache them.
+// Countries change rarely: cache them for hours.
 let countries: { at: number; value: OtpCountry[] } | null = null;
 const apps = new Map<string, { at: number; value: OtpApp[] }>();
 
@@ -47,10 +47,10 @@ export async function getCountries(): Promise<OtpCountry[]> {
   return countries.value;
 }
 
-/** Prices move, so app lists are only cached for 10 minutes. */
+/** Stock and prices move, so app lists are only cached for 2 minutes. */
 export async function getApps(country: string): Promise<OtpApp[]> {
   const hit = apps.get(country);
-  if (hit && Date.now() - hit.at < 10 * 60 * 1000) return hit.value;
+  if (hit && Date.now() - hit.at < 2 * 60 * 1000) return hit.value;
   const value = await fetchApps(country);
   apps.set(country, { at: Date.now(), value });
   return value;

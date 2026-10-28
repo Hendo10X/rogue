@@ -15,7 +15,7 @@ export async function GET() {
     try {
       balanceUsd = await fetchOtpBalance();
     } catch (err) {
-      providerError = err instanceof Error ? err.message : "Couldn't reach otpking";
+      providerError = err instanceof Error ? err.message : "Couldn't reach 5sim";
     }
   }
   return NextResponse.json({
