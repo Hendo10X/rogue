@@ -1,5 +1,5 @@
 import { db } from "@/db/drizzle";
-import { admin, adminSession, adminSettings, user, deposit, order, boostingOrder } from "@/db/schema";
+import { admin, adminSession, adminSettings, user, deposit, order, boostingOrder, transaction, proxyOrder, otpOrder } from "@/db/schema";
 import { eq, sql, gte, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { isAdminEmail } from "@/lib/admin-emails";
@@ -130,12 +130,33 @@ export async function getAdminStats() {
     db.select({ count: sql<number>`count(*)::int` }).from(user).where(gte(user.createdAt, monthAgo)),
   ]);
 
-  // Revenue = sum of completed deposits
-  const [weekRevenue, monthRevenue, totalRevenue] = await Promise.all([
-    db.select({ sum: sql<string>`coalesce(sum(amount::numeric), 0)::text` }).from(deposit).where(and(eq(deposit.status, "completed"), gte(deposit.createdAt, weekAgo))),
-    db.select({ sum: sql<string>`coalesce(sum(amount::numeric), 0)::text` }).from(deposit).where(and(eq(deposit.status, "completed"), gte(deposit.createdAt, monthAgo))),
-    db.select({ sum: sql<string>`coalesce(sum(amount::numeric), 0)::text` }).from(deposit).where(eq(deposit.status, "completed")),
+  // Revenue = completed deposits + manual funding. Manual funding is the admin
+  // credit/debit on Users (a wallet "adjustment"); it's counted net, so a debit
+  // that corrects a mistaken credit cancels it out.
+  const depositSum = (since?: Date) =>
+    db
+      .select({ sum: sql<string>`coalesce(sum(amount::numeric), 0)::text` })
+      .from(deposit)
+      .where(since ? and(eq(deposit.status, "completed"), gte(deposit.createdAt, since)) : eq(deposit.status, "completed"));
+  const manualSum = (since?: Date) => {
+    const manual = and(eq(transaction.type, "adjustment"), sql`${transaction.metadata} ->> 'adminAdjustment' = 'true'`);
+    return db
+      .select({ sum: sql<string>`coalesce(sum(amount::numeric), 0)::text` })
+      .from(transaction)
+      .where(since ? and(manual, gte(transaction.createdAt, since)) : manual);
+  };
+  const [weekDeposits, monthDeposits, totalDeposits, weekManual, monthManual, totalManual] = await Promise.all([
+    depositSum(weekAgo),
+    depositSum(monthAgo),
+    depositSum(),
+    manualSum(weekAgo),
+    manualSum(monthAgo),
+    manualSum(),
   ]);
+  const add = (a?: { sum: string }, b?: { sum: string }) => String((parseFloat(a?.sum ?? "0") || 0) + (parseFloat(b?.sum ?? "0") || 0));
+  const weekRevenue = [{ sum: add(weekDeposits[0], weekManual[0]) }];
+  const monthRevenue = [{ sum: add(monthDeposits[0], monthManual[0]) }];
+  const totalRevenue = [{ sum: add(totalDeposits[0], totalManual[0]) }];
 
   // Order counts
   const [weekOrders, monthOrders] = await Promise.all([
@@ -146,6 +167,14 @@ export async function getAdminStats() {
     db.select({ count: sql<number>`count(*)::int` }).from(boostingOrder).where(gte(boostingOrder.createdAt, weekAgo)),
     db.select({ count: sql<number>`count(*)::int` }).from(boostingOrder).where(gte(boostingOrder.createdAt, monthAgo)),
   ]);
+  // Proxy and OTP sales count as orders too (0 if their tables aren't migrated).
+  const none = [{ count: 0 }];
+  const [weekProxy, monthProxy, weekOtp, monthOtp] = await Promise.all([
+    db.select({ count: sql<number>`count(*)::int` }).from(proxyOrder).where(gte(proxyOrder.createdAt, weekAgo)).catch(() => none),
+    db.select({ count: sql<number>`count(*)::int` }).from(proxyOrder).where(gte(proxyOrder.createdAt, monthAgo)).catch(() => none),
+    db.select({ count: sql<number>`count(*)::int` }).from(otpOrder).where(gte(otpOrder.createdAt, weekAgo)).catch(() => none),
+    db.select({ count: sql<number>`count(*)::int` }).from(otpOrder).where(gte(otpOrder.createdAt, monthAgo)).catch(() => none),
+  ]);
 
   return {
     userCount: totalUsers[0]?.count ?? 0,
@@ -154,8 +183,10 @@ export async function getAdminStats() {
     revenueWeek: weekRevenue[0]?.sum ?? "0",
     revenueMonth: monthRevenue[0]?.sum ?? "0",
     revenueTotal: totalRevenue[0]?.sum ?? "0",
-    ordersWeek: (weekOrders[0]?.count ?? 0) + (weekBoostOrders[0]?.count ?? 0),
-    ordersMonth: (monthOrders[0]?.count ?? 0) + (monthBoostOrders[0]?.count ?? 0),
+    ordersWeek:
+      (weekOrders[0]?.count ?? 0) + (weekBoostOrders[0]?.count ?? 0) + (weekProxy[0]?.count ?? 0) + (weekOtp[0]?.count ?? 0),
+    ordersMonth:
+      (monthOrders[0]?.count ?? 0) + (monthBoostOrders[0]?.count ?? 0) + (monthProxy[0]?.count ?? 0) + (monthOtp[0]?.count ?? 0),
   };
 }
 

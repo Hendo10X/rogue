@@ -65,7 +65,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "queue" | "marketplace" | "boosting">("all");
+  const [filter, setFilter] = useState<"all" | "queue" | "marketplace" | "boosting" | "proxy" | "otp">("all");
   const [query, setQuery] = useState("");
   
   // Fulfillment Modal State
@@ -133,6 +133,8 @@ export default function AdminOrdersPage() {
     if (filter === "queue" && !(o.status === "manual_review" && o.type === "marketplace")) return false;
     if (filter === "marketplace" && o.type !== "marketplace") return false;
     if (filter === "boosting" && o.type !== "boosting") return false;
+    if (filter === "proxy" && o.type !== "proxy") return false;
+    if (filter === "otp" && o.type !== "otp") return false;
     if (!q) return true;
     return [o.id, o.userEmail, o.title, o.serviceName, o.link, o.status]
       .filter(Boolean)
@@ -143,6 +145,8 @@ export default function AdminOrdersPage() {
     { id: "queue" as const, label: "Needs action", count: queue.length },
     { id: "marketplace" as const, label: "Marketplace", count: orders.filter((o) => o.type === "marketplace").length },
     { id: "boosting" as const, label: "Boosting", count: orders.filter((o) => o.type === "boosting").length },
+    { id: "proxy" as const, label: "Proxies", count: orders.filter((o) => o.type === "proxy").length },
+    { id: "otp" as const, label: "OTP", count: orders.filter((o) => o.type === "otp").length },
   ];
 
   return (

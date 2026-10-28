@@ -3,6 +3,7 @@ import { db } from "@/db/drizzle";
 import { otpOrder } from "@/db/schema";
 import { creditWallet, logTransaction } from "@/lib/wallet";
 import { cancelNumber, checkNumber, finishNumber } from "./provider";
+import { appLabel } from "./labels";
 
 export type OtpOrderRow = typeof otpOrder.$inferSelect;
 
@@ -99,4 +100,23 @@ export async function getOtpOrders(userId: string): Promise<OtpOrderRow[]> {
     ),
   );
   return rows;
+}
+
+/** An OTP number in the shape the Orders page lists. */
+export function toOtpOrderListItem(o: OtpOrderRow) {
+  return {
+    id: o.id,
+    type: "otp" as const,
+    status: o.status === "received" ? "completed" : o.status === "waiting" ? "processing" : o.status,
+    amount: o.amount,
+    currency: "NGN",
+    quantity: 1,
+    createdAt: o.createdAt,
+    title: `OTP number · ${appLabel(o.app)} · ${appLabel(o.country)}`,
+    platform: "OTP numbers",
+    slug: "",
+    supplierName: "OTP numbers",
+    deliveryStatus: o.status === "received" ? "delivered" : "pending",
+    credentials: [o.number ? `Number: ${o.number}` : null, o.code ? `Code: ${o.code}` : null].filter((x): x is string => !!x),
+  };
 }

@@ -24,6 +24,7 @@ import {
   PackageIcon,
   Rocket01Icon,
   Globe02Icon,
+  SmartPhone01Icon,
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import Link from "next/link";
@@ -33,7 +34,7 @@ import { cn } from "@/lib/utils";
 
 interface Order {
   id: string;
-  type?: "marketplace" | "boosting" | "proxy";
+  type?: "marketplace" | "boosting" | "proxy" | "otp";
   status: string;
   amount: string;
   currency: string;
@@ -169,18 +170,19 @@ async function fetchOrders() {
   return res.json();
 }
 
-type Filter = "all" | "marketplace" | "boosting" | "proxy";
+type Filter = "all" | "marketplace" | "boosting" | "proxy" | "otp";
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "marketplace", label: "Accounts" },
   { id: "boosting", label: "Boosting" },
   { id: "proxy", label: "Proxies" },
+  { id: "otp", label: "OTP" },
 ];
 
 /** Orders without a type are marketplace orders (older rows). */
 function kindOf(o: { type?: string }): Filter {
-  return o.type === "boosting" || o.type === "proxy" ? o.type : "marketplace";
+  return o.type === "boosting" || o.type === "proxy" || o.type === "otp" ? o.type : "marketplace";
 }
 
 export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
@@ -232,6 +234,7 @@ export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
     marketplace: orders.filter((o: Order) => kindOf(o) === "marketplace").length,
     boosting: orders.filter((o: Order) => kindOf(o) === "boosting").length,
     proxy: orders.filter((o: Order) => kindOf(o) === "proxy").length,
+    otp: orders.filter((o: Order) => kindOf(o) === "otp").length,
   };
   const visible = orders.filter((o: Order) => filter === "all" || kindOf(o) === filter);
 
@@ -271,7 +274,7 @@ export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
                     className="group flex w-full items-center gap-4 rounded-xl px-3 py-3 text-left transition-colors hover:bg-white/[0.045]"
                   >
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-muted-foreground transition-colors group-hover:text-[#ff9a4a]">
-                      <HugeiconsIcon icon={o.type === "boosting" ? Rocket01Icon : o.type === "proxy" ? Globe02Icon : PackageIcon} strokeWidth={1.75} className="size-[18px]" />
+                      <HugeiconsIcon icon={o.type === "boosting" ? Rocket01Icon : o.type === "proxy" ? Globe02Icon : o.type === "otp" ? SmartPhone01Icon : PackageIcon} strokeWidth={1.75} className="size-[18px]" />
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="line-clamp-1 text-[0.8125rem] font-medium">{o.title}</p>
