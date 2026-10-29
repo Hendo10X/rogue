@@ -47,6 +47,11 @@ export async function getCountries(): Promise<OtpCountry[]> {
   return countries.value;
 }
 
+/** Drops a country's cached list, e.g. after an app sells out. */
+export function forgetApps(country: string) {
+  apps.delete(country);
+}
+
 /** Stock and prices move, so app lists are only cached for 2 minutes. */
 export async function getApps(country: string): Promise<OtpApp[]> {
   const hit = apps.get(country);
