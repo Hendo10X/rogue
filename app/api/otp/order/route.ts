@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   let costUsd: number;
   try {
     if (!(await getApps(country)).some((a) => a.name === appName)) return soldOut();
-    // Fresh check right before charging: the list can be up to 2 minutes old.
+    // Fresh check right before charging: the list on screen may be a few seconds old.
     const live = await fetchAppLive(country, appName);
     if (!live) return soldOut();
     costUsd = live.priceUsd;

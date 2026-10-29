@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -74,18 +74,35 @@ export function OtpShop() {
     setSearch("");
   }, [country]);
 
+  // A new country shows the spinner; background refreshes don't.
   useEffect(() => {
     setApps(null);
+  }, [country]);
+
+  // Reload the list every 30 seconds so apps that sell out drop off by themselves.
+  useEffect(() => {
+    if (!country) return;
+    const id = window.setInterval(() => setAppsVersion((v) => v + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, [country]);
+
+  const loadedFor = useRef("");
+  useEffect(() => {
     if (!country) return;
     let alive = true;
+    const background = loadedFor.current === country;
     fetch(`/api/otp/apps?country=${encodeURIComponent(country)}`)
       .then(async (r) => {
         const data = await r.json();
         if (!r.ok) throw new Error(data.error);
-        if (alive) setApps(data.apps ?? []);
+        if (!alive) return;
+        setApps(data.apps ?? []);
+        loadedFor.current = country;
       })
       .catch((e) => {
-        if (alive) setApps([]);
+        // A failed background refresh keeps the list already on screen.
+        if (!alive || background) return;
+        setApps([]);
         toast.error(plainError(e, "We couldn't load the apps for this country. Please try again."));
       });
     return () => {
@@ -119,9 +136,8 @@ export function OtpShop() {
       });
       const data = await res.json();
       if (data.soldOut) {
-        // Sold out since the list loaded: drop it and say so, so the tap isn't ignored.
+        // Sold out in the last few seconds: it just drops off the list.
         setApps((list) => list?.filter((a) => a.name !== app.name) ?? list);
-        toast.info(`${app.label ?? app.name} just sold out here. You haven't been charged. Try another country.`);
         return;
       }
       if (!res.ok) throw new Error(data.error);
