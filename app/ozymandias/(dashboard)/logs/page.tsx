@@ -10,6 +10,7 @@ import {
   Cancel01Icon,
   Loading03Icon,
   Search01Icon,
+  StarIcon,
   ViewIcon,
   ViewOffSlashIcon,
 } from "@hugeicons/core-free-icons";
@@ -140,6 +141,8 @@ export default function AdminLogsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkProfit, setBulkProfit] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [featured, setFeatured] = useState<string[]>([]);
+  const [maxFeatured, setMaxFeatured] = useState(2);
 
   const [q, setQ] = useState("");
   const [query, setQuery] = useState("");
@@ -182,6 +185,33 @@ export default function AdminLogsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    fetch("/api/admin/featured")
+      .then((r) => r.json())
+      .then((d) => {
+        setFeatured(d.ids ?? []);
+        setMaxFeatured(d.max ?? 2);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function toggleFeatured(id: string) {
+    const next = featured.includes(id) ? featured.filter((x) => x !== id) : [...featured, id];
+    if (next.length > maxFeatured) return toast.error(`You can feature up to ${maxFeatured} logs. Unstar one first.`);
+    try {
+      const res = await fetch("/api/admin/featured", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Update failed");
+      setFeatured(data.ids ?? next);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update featured logs");
+    }
+  }
 
   // A new page or filter starts with nothing selected.
   useEffect(() => setSelected(new Set()), [page, query, platform, filter]);
@@ -262,7 +292,7 @@ export default function AdminLogsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Logs"
-        description="Hide logs from the store, and set a fixed profit on any supplier log. Logs without their own profit use the tiered pricing from Settings; manual logs keep the price you set for them."
+        description="Hide logs from the store, star up to 2 logs to pin them in Popular on the marketplace, and set a fixed profit on any supplier log. Logs without their own profit use the tiered pricing from Settings; manual logs keep the price you set for them."
       />
 
       <div className="flex flex-col gap-3">
@@ -386,7 +416,7 @@ export default function AdminLogsPage() {
         <div className="surface rounded-2xl px-6 py-14 text-center text-sm text-muted-foreground">No logs match these filters.</div>
       ) : (
         <div className={cn("surface overflow-hidden rounded-2xl p-1.5 transition-opacity", loading && "opacity-60")}>
-          <div className="hidden grid-cols-[2rem_minmax(0,1fr)_6rem_9rem_6.5rem_4rem_4.5rem] items-center gap-3 px-3 py-2 text-xs font-medium text-muted-foreground md:grid">
+          <div className="hidden grid-cols-[2rem_minmax(0,1fr)_6rem_9rem_6.5rem_4rem_6rem] items-center gap-3 px-3 py-2 text-xs font-medium text-muted-foreground md:grid">
             <Checkbox
               checked={allOnPage ? true : someOnPage ? "indeterminate" : false}
               onCheckedChange={toggleAll}
@@ -406,7 +436,7 @@ export default function AdminLogsPage() {
                 <li
                   key={r.id}
                   className={cn(
-                    "grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-xl px-3 py-3 transition-colors md:grid-cols-[2rem_minmax(0,1fr)_6rem_9rem_6.5rem_4rem_4.5rem]",
+                    "grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-xl px-3 py-3 transition-colors md:grid-cols-[2rem_minmax(0,1fr)_6rem_9rem_6.5rem_4rem_6rem]",
                     on ? "bg-[#ff7a1a]/[0.07]" : "hover:bg-white/[0.03]",
                     r.hidden && "opacity-60"
                   )}
@@ -431,7 +461,19 @@ export default function AdminLogsPage() {
                     {naira(parseFloat(r.price) || 0)}
                   </span>
                   <span className="text-right text-[0.8125rem] tabular-nums max-md:hidden">{r.stock.toLocaleString()}</span>
-                  <div className="flex justify-end max-md:col-start-3 max-md:row-start-2">
+                  <div className="flex items-center justify-end gap-2 max-md:col-start-3 max-md:row-start-2">
+                    <button
+                      type="button"
+                      aria-label={featured.includes(r.id) ? "Remove from Popular" : "Show in Popular"}
+                      title={featured.includes(r.id) ? "In Popular — click to remove" : "Show in Popular on the marketplace"}
+                      onClick={() => void toggleFeatured(r.id)}
+                      className={cn(
+                        "flex size-7 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]",
+                        featured.includes(r.id) ? "text-amber-400" : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <HugeiconsIcon icon={StarIcon} strokeWidth={1.75} className={cn("size-4", featured.includes(r.id) && "fill-current")} />
+                    </button>
                     <Switch
                       checked={!r.hidden}
                       onCheckedChange={(v) => void toggleOne(r, v)}

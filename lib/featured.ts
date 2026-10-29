@@ -6,8 +6,8 @@ import { getUSDtoNGNRate } from "@/lib/currency";
 import { getMarketplacePricing } from "@/lib/pricing";
 import { getLogProfits, priceListingNgn } from "@/lib/log-profit";
 
-/** Logs an admin pins to the top of the marketplace. */
-export const MAX_FEATURED = 3;
+/** Logs an admin pins to the top of the marketplace (any log, manual or supplier). */
+export const MAX_FEATURED = 2;
 /** Featured + best sellers shown together. */
 export const POPULAR_SLOTS = 6;
 const KEY = "featured_listings";
