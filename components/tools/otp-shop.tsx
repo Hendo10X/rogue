@@ -14,7 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowDown01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { EmptyState, SectionLabel } from "@/components/page-header";
 
 type Country = { id: string; name: string };
@@ -44,6 +46,8 @@ export function OtpShop() {
   const [country, setCountry] = useState("");
   const [apps, setApps] = useState<App[] | null>(null);
   const [search, setSearch] = useState("");
+  const [countryOpen, setCountryOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState("");
   const [buying, setBuying] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
   // Bumped after a failed purchase so the list reloads without the empty app.
@@ -98,6 +102,12 @@ export function OtpShop() {
     };
     return list.sort((a, b) => rank(a) - rank(b) || (a.label ?? a.name).localeCompare(b.label ?? b.name)).slice(0, q ? 60 : 24);
   }, [apps, search]);
+
+  const countryName = state?.countries.find((c) => c.id === country)?.name;
+  const countriesShown = useMemo(() => {
+    const q = countrySearch.trim().toLowerCase();
+    return (state?.countries ?? []).filter((c) => !q || c.name.toLowerCase().includes(q));
+  }, [state, countrySearch]);
 
   async function buy(app: App) {
     setBuying(app.name);
@@ -176,18 +186,56 @@ export function OtpShop() {
           <div className="grid gap-3 sm:grid-cols-2">
             <Field>
               <FieldLabel>Country</FieldLabel>
-              <Select value={country} onValueChange={setCountry}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a country" />
-                </SelectTrigger>
-                <SelectContent>
-                  {state.countries.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover
+                open={countryOpen}
+                onOpenChange={(open) => {
+                  setCountryOpen(open);
+                  if (!open) setCountrySearch("");
+                }}
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex h-9 w-full items-center justify-between gap-2 rounded-xl bg-white/[0.04] px-3.5 text-left text-sm shadow-[inset_0_0_0_1px_rgb(255_255_255/0.07)] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30 dark:hover:bg-input/50",
+                      !countryName && "text-muted-foreground",
+                    )}
+                  >
+                    <span className="truncate">{countryName ?? "Choose a country"}</span>
+                    <HugeiconsIcon icon={ArrowDown01Icon} size={16} className="shrink-0 opacity-50" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-(--radix-popover-trigger-width) rounded-xl p-1.5">
+                  <Input
+                    autoFocus
+                    placeholder="Search countries"
+                    value={countrySearch}
+                    onChange={(e) => setCountrySearch(e.target.value)}
+                    className="mb-1.5"
+                  />
+                  <div className="max-h-[min(18rem,var(--radix-popover-content-available-height))] overflow-y-auto">
+                    {countriesShown.length === 0 ? (
+                      <p className="px-3 py-2 text-sm text-muted-foreground">No country matches that.</p>
+                    ) : (
+                      countriesShown.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setCountry(c.id);
+                            setCountryOpen(false);
+                            setCountrySearch("");
+                          }}
+                          className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-white/[0.06]"
+                        >
+                          <span className="truncate">{c.name}</span>
+                          {c.id === country && <HugeiconsIcon icon={Tick02Icon} size={14} className="shrink-0 text-primary" />}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </Field>
             <Field>
               <FieldLabel>App</FieldLabel>
@@ -262,7 +310,12 @@ export function OtpShop() {
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs text-muted-foreground">Bought {formatDistanceToNow(new Date(o.createdAt), { addSuffix: true })}</p>
                 {o.status === "waiting" && (
-                  <Button size="sm" variant="ghost" disabled={cancelling === o.id} onClick={() => cancel(o)}>
+                  <Button
+                    size="sm"
+                    disabled={cancelling === o.id}
+                    onClick={() => cancel(o)}
+                    className="bg-red-600 text-white shadow-[0_0_18px_rgb(239_68_68/0.45)] hover:bg-red-500"
+                  >
                     {cancelling === o.id ? "Cancelling…" : "Cancel & refund"}
                   </Button>
                 )}
