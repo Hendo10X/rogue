@@ -6,13 +6,13 @@ import { otpOrder } from "@/db/schema";
 import { isUserSuspended, SUSPENDED_MESSAGE } from "@/lib/suspension";
 import { creditWallet, debitWallet, getOrCreateWallet, logTransaction } from "@/lib/wallet";
 import { formatAmount } from "@/lib/currency";
-import { getApps, otpOnSale, otpPriceNgn } from "@/lib/otp/settings";
-import { buyNumber, cancelNumber } from "@/lib/otp/provider";
+import { forgetApps, getApps, otpOnSale, otpPriceNgn } from "@/lib/otp/settings";
+import { buyNumber, cancelNumber, fetchAppLive } from "@/lib/otp/provider";
 import { looksOutOfStock, markOutOfStock } from "@/lib/otp/stock";
 
 export const dynamic = "force-dynamic";
 
-// POST { country, app } — prices on the server from 5sim's current list,
+// POST { country, app } — checks 5sim's live stock and price for this app,
 // charges the wallet, then buys the number. Any failure after the charge refunds it.
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -25,11 +25,21 @@ export async function POST(req: NextRequest) {
   const appName = typeof body?.app === "string" ? body.app.trim() : "";
   if (!country || !appName) return NextResponse.json({ error: "Pick a country and an app." }, { status: 400 });
 
+  // `hide` only when 5sim refused a number it listed as in stock; a plain
+  // zero count clears itself when 5sim restocks, so it isn't hidden for good.
+  const soldOut = async (hide = false) => {
+    if (hide) await markOutOfStock(country, appName).catch(() => {});
+    forgetApps(country);
+    return NextResponse.json({ soldOut: true, error: "This app just sold out for this country." }, { status: 409 });
+  };
+
   let costUsd: number;
   try {
-    const app = (await getApps(country)).find((a) => a.name === appName);
-    if (!app) return NextResponse.json({ error: "That app isn't available for this country any more." }, { status: 400 });
-    costUsd = app.priceUsd;
+    if (!(await getApps(country)).some((a) => a.name === appName)) return soldOut();
+    // Fresh check right before charging: the list can be up to 2 minutes old.
+    const live = await fetchAppLive(country, appName);
+    if (!live) return soldOut();
+    costUsd = live.priceUsd;
   } catch {
     return NextResponse.json({ error: "We couldn't get a price right now. Please try again." }, { status: 502 });
   }
@@ -64,12 +74,8 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[OTP] buying number failed", err);
     await refund("otp_buy_failed");
-    // Sold out: hide it for this country so it simply drops off the list
-    // (the page removes it quietly, without an error).
-    if (looksOutOfStock(err instanceof Error ? err.message : String(err))) {
-      await markOutOfStock(country, appName).catch(() => {});
-      return NextResponse.json({ soldOut: true, error: "Not available right now." }, { status: 409 });
-    }
+    // 5sim listed it but had no number to give: hide it for this country.
+    if (looksOutOfStock(err instanceof Error ? err.message : String(err))) return soldOut(true);
     return NextResponse.json(
       { error: "We couldn't get a number right now. You haven't been charged — please try again in a few minutes." },
       { status: 502 },

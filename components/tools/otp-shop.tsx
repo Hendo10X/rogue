@@ -119,8 +119,9 @@ export function OtpShop() {
       });
       const data = await res.json();
       if (data.soldOut) {
-        // Out of numbers: it just drops off the list, no error message.
+        // Sold out since the list loaded: drop it and say so, so the tap isn't ignored.
         setApps((list) => list?.filter((a) => a.name !== app.name) ?? list);
+        toast.info(`${app.label ?? app.name} just sold out here. You haven't been charged. Try another country.`);
         return;
       }
       if (!res.ok) throw new Error(data.error);

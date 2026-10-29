@@ -52,16 +52,50 @@ export async function fetchCountries(): Promise<OtpCountry[]> {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Apps with numbers in stock for one country (any operator), cheapest price in USD. */
+type OperatorPrices = Record<string, { cost?: number; count?: number }>;
+
+/**
+ * The cheapest operator that actually has numbers. 5sim's product summary
+ * pairs the cheapest price of ANY operator with the stock of all of them, so
+ * an app could show $0.97 while only a $3.50 operator had numbers, and every
+ * purchase capped at $0.97 failed. Pricing from in-stock operators avoids that.
+ */
+function inStock(ops: OperatorPrices | undefined): { priceUsd: number; stock: number } | null {
+  let priceUsd = Infinity;
+  let stock = 0;
+  for (const o of Object.values(ops ?? {})) {
+    const cost = Number(o?.cost);
+    const count = Number(o?.count);
+    if (!(count > 0) || !(cost > 0)) continue;
+    stock += count;
+    priceUsd = Math.min(priceUsd, cost);
+  }
+  return stock > 0 ? { priceUsd, stock } : null;
+}
+
+/** Apps with numbers in stock for one country, priced at the cheapest in-stock operator (USD). */
 export async function fetchApps(country: string): Promise<OtpApp[]> {
-  const data = await call<Record<string, { Category?: string; Qty?: number; Price?: number }>>(
-    `guest/products/${encodeURIComponent(country)}/${OPERATOR}`,
-    { auth: false },
-  );
-  return Object.entries(data ?? {})
-    .filter(([, p]) => p?.Category === "activation" && Number(p.Qty) > 0 && Number(p.Price) > 0)
-    .map(([name, p]) => ({ name, label: appLabel(name), priceUsd: Number(p.Price), stock: Number(p.Qty) }))
+  const [products, prices] = await Promise.all([
+    call<Record<string, { Category?: string }>>(`guest/products/${encodeURIComponent(country)}/${OPERATOR}`, { auth: false }),
+    call<Record<string, Record<string, OperatorPrices>>>("guest/prices", { auth: false, params: { country } }),
+  ]);
+  const byApp = prices?.[country] ?? {};
+  return Object.entries(products ?? {})
+    .filter(([, p]) => p?.Category === "activation")
+    .flatMap(([name]) => {
+      const s = inStock(byApp[name]);
+      return s ? [{ name, label: appLabel(name), ...s }] : [];
+    })
     .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** Live (uncached) stock and price for one app in one country, or null when sold out. */
+export async function fetchAppLive(country: string, app: string): Promise<{ priceUsd: number; stock: number } | null> {
+  const data = await call<Record<string, Record<string, OperatorPrices>>>("guest/prices", {
+    auth: false,
+    params: { country, product: app },
+  });
+  return inStock(data?.[country]?.[app]);
 }
 
 export async function fetchOtpBalance(): Promise<number | null> {
