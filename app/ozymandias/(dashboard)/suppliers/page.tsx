@@ -22,6 +22,9 @@ interface SupplierRow {
   low?: boolean;
 }
 
+// Rows that only show a balance: no listings to hide, nothing to remove.
+const BALANCE_ONLY = new Set(["boosting", "proxy-seller", "5sim"]);
+
 function fetchSuppliers() {
   return fetch("/api/admin/suppliers")
     .then((r) => r.json())
@@ -314,7 +317,7 @@ export default function AdminSuppliersPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {s.slug === "boosting" ? null : (
+                    {BALANCE_ONLY.has(s.slug) ? null : (
                       <div className="flex justify-end gap-1">
                         <Button
                           variant="ghost"
@@ -393,7 +396,7 @@ export default function AdminSuppliersPage() {
                   </p>
                 </div>
               </div>
-              {s.slug !== "boosting" && (
+              {!BALANCE_ONLY.has(s.slug) && (
                 <div className="flex flex-col gap-2">
                   <Button
                     variant="outline"
