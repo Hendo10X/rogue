@@ -9,7 +9,7 @@ export async function GET() {
   return NextResponse.json({ ids: await getFeaturedIds(), max: MAX_FEATURED });
 }
 
-// PUT { ids: string[] } — replaces the featured list (first 3 kept).
+// PUT { ids: string[] } — replaces the featured list (first 2 kept).
 export async function PUT(req: NextRequest) {
   if (!(await requireAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = (await req.json().catch(() => null)) as { ids?: unknown } | null;
