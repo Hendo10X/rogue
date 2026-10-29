@@ -7,6 +7,8 @@ import { db } from "@/db/drizzle";
 import { supplier } from "@/db/schema";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { getBalance as getBoostingBalance, ACTIVE_SUPPLIER_NAME } from "@/lib/boosting/provider";
+import { fetchProviderBalance, proxyProviderConfigured } from "@/lib/proxies/provider";
+import { fetchOtpBalance, otpProviderConfigured } from "@/lib/otp/provider";
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -73,13 +75,16 @@ export async function GET() {
   const suppliers = await db.select().from(supplier).orderBy(supplier.name);
 
   // Fetch balances in parallel
-  const [boostingBalance, svcBalance, acctShopBalance] = await Promise.all([
+  const [boostingBalance, svcBalance, acctShopBalance, proxyBalance, otpBalance] = await Promise.all([
     (async () => {
       if (!process.env.REALLYSIMPLESOCIAL_API_KEY?.trim()) return null;
       try { return await getBoostingBalance(); } catch { return { balance: "N/A", currency: "NGN" }; }
     })(),
     getShopViaCloneBalance(),
     getAcctShopBalance(),
+    // undefined = not set up (no row shown); null = set up but unreachable.
+    proxyProviderConfigured() ? fetchProviderBalance().catch(() => null) : undefined,
+    otpProviderConfigured() ? fetchOtpBalance().catch(() => null) : undefined,
   ]);
 
   const rows = suppliers.map((s: any) => {
@@ -106,6 +111,15 @@ export async function GET() {
       balance: `${formatAmount(boostingBalance.balance)} ${boostingBalance.currency}`,
       low: Number.isFinite(ngn) && ngn < 5000,
     });
+  }
+
+  // Proxies and OTP numbers are paid from prepaid USD balances too.
+  for (const [id, name, num] of [
+    ["proxy-seller", "Proxy-seller (Proxies)", proxyBalance],
+    ["5sim", "5sim (OTP numbers)", otpBalance],
+  ] as const) {
+    if (num === undefined) continue;
+    rows.push({ id, name, slug: id, status: "active", balance: usd(num), low: num != null && num < LOW_USD_THRESHOLD });
   }
 
   return NextResponse.json(rows);
