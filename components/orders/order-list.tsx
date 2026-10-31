@@ -194,7 +194,11 @@ export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
     queryKey: ["orders"],
     queryFn: fetchOrders,
     initialData: initialOrders,
-    refetchInterval: 10000,
+    // Only keep checking while something is still on its way.
+    refetchInterval: (query) =>
+      (query.state.data as Order[] | undefined)?.some((o) => ["pending", "processing", "manual_review"].includes(o.status))
+        ? 20_000
+        : false,
   });
 
   function openOrderView(o: Order) {

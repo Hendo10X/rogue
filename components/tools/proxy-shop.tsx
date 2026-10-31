@@ -116,7 +116,9 @@ export function ProxyShop() {
   const processing = state?.orders.some((o) => o.status === "processing");
   useEffect(() => {
     if (!processing) return;
-    const id = window.setInterval(load, 15_000);
+    const id = window.setInterval(() => {
+      if (!document.hidden) void load();
+    }, 20_000);
     return () => window.clearInterval(id);
   }, [processing, load]);
 

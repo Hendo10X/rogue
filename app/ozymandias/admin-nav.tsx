@@ -126,7 +126,9 @@ function useOpenRequests() {
         .then((d: { openRequests?: number }) => alive && setCount(d.openRequests ?? 0))
         .catch(() => {});
     void load();
-    const id = window.setInterval(load, 60_000);
+    const id = window.setInterval(() => {
+      if (!document.hidden) load();
+    }, 60_000);
     return () => {
       alive = false;
       window.clearInterval(id);

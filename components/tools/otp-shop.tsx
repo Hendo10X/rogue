@@ -62,11 +62,13 @@ export function OtpShop() {
     void load();
   }, [load]);
 
-  // Check for codes every 8 seconds while any number is waiting.
+  // Check for codes every 10 seconds while a number is waiting and the tab is open.
   const waiting = state?.orders.some((o) => o.status === "waiting");
   useEffect(() => {
     if (!waiting) return;
-    const id = window.setInterval(load, 8_000);
+    const id = window.setInterval(() => {
+      if (!document.hidden) void load();
+    }, 10_000);
     return () => window.clearInterval(id);
   }, [waiting, load]);
 
@@ -79,10 +81,12 @@ export function OtpShop() {
     setApps(null);
   }, [country]);
 
-  // Reload the list every 30 seconds so apps that sell out drop off by themselves.
+  // Reload the list every 45 seconds (while the tab is open) so apps that sell out drop off by themselves.
   useEffect(() => {
     if (!country) return;
-    const id = window.setInterval(() => setAppsVersion((v) => v + 1), 30_000);
+    const id = window.setInterval(() => {
+      if (!document.hidden) setAppsVersion((v) => v + 1);
+    }, 45_000);
     return () => window.clearInterval(id);
   }, [country]);
 
