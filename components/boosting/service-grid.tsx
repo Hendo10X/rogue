@@ -141,7 +141,6 @@ export function ServiceGrid({
     queryKey: ["wallet-balance"],
     queryFn: fetchWalletBalance,
     initialData: walletBalance,
-    refetchInterval: 15000,
   });
 
   const items = data?.items ?? [];
