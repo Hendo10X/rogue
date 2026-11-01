@@ -1,0 +1,4 @@
+# Server files must keep Linux line endings.
+*.sh text eol=lf
+deploy/** text eol=lf
+.github/workflows/*.yml text eol=lf
