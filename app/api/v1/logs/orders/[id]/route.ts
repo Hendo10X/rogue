@@ -4,6 +4,7 @@ import { db } from "@/db/drizzle";
 import { order, listing, accountDelivery } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { authenticateApiRequest, ApiErrors } from "@/lib/api-auth";
+import { publicSupplierError } from "@/lib/supplier-codename";
 
 export const dynamic = "force-dynamic";
 
@@ -58,10 +59,10 @@ export async function GET(
       currency: row.currency,
       status: row.status,
       delivery_status: delivery?.deliveryStatus ?? "pending",
-      // Why a failed order failed (supplier's message), else null.
+      // Why a failed order failed, in plain words (never the supplier's own message).
       error:
-        row.status === "failed"
-          ? ((row.metadata as { error?: string } | null)?.error ?? null)
+        row.status === "failed" && (row.metadata as { error?: string } | null)?.error
+          ? publicSupplierError(String((row.metadata as { error?: string }).error))
           : null,
       credentials,
       created_at: row.createdAt,

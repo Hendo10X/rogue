@@ -18,6 +18,7 @@ import {
 } from "@/lib/wallet";
 import * as boosting from "@/lib/boosting/provider";
 import { getHiddenServiceIds } from "@/lib/boosting/hidden";
+import { publicSupplierError } from "@/lib/supplier-codename";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -127,7 +128,10 @@ export async function POST(req: NextRequest) {
     } catch {
       /* swallow */
     }
-    const msg = e instanceof Error ? e.message : "Failed to place order with supplier";
+    const raw = e instanceof Error ? e.message : "";
+    console.error("[API order] supplier failed", raw);
+    // The raw supplier message can name the supplier; resellers get plain wording.
+    const msg = `Order failed and your wallet was refunded. ${publicSupplierError(raw)}`;
     return new NextResponse(JSON.stringify({ error: msg }), {
       status: 502,
       headers: { "Content-Type": "application/json" },

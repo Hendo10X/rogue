@@ -5,6 +5,7 @@ import { getSetting, setSetting } from "@/lib/admin-auth";
 import { getUSDtoNGNRate } from "@/lib/currency";
 import { getMarketplacePricing } from "@/lib/pricing";
 import { getLogProfits, priceListingNgn } from "@/lib/log-profit";
+import { supplierCodename } from "@/lib/supplier-codename";
 
 /** Logs an admin pins to the top of the marketplace (any log, manual or supplier). */
 export const MAX_FEATURED = 2;
@@ -87,6 +88,7 @@ export async function getPopularListings() {
     void supplierPrice;
     return {
       ...r,
+      supplierName: supplierCodename(r.supplierName),
       price: String(priceListingNgn({ ...r, supplierPrice, metadata }, rate, pricing, profits)),
       currency: "NGN",
     };

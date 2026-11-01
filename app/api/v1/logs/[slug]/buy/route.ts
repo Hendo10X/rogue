@@ -24,6 +24,7 @@ import {
   logTransaction,
 } from "@/lib/wallet";
 import { purchaseFromSupplier } from "@/lib/suppliers/adapter";
+import { publicSupplierError } from "@/lib/supplier-codename";
 import {
   alertSupplierInsufficientBalance,
   isInsufficientBalanceError,
@@ -272,6 +273,7 @@ export async function POST(
         detail: msg,
       });
     }
-    return err502(`Order failed and your wallet was refunded. (${msg})`);
+    // The raw supplier message can name the supplier; resellers get plain wording.
+    return err502(`Order failed and your wallet was refunded. ${publicSupplierError(msg)}`);
   }
 }

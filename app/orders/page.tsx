@@ -14,6 +14,7 @@ import { DashboardShell } from "@/components/dashboard/shell";
 import { isAdminEmail } from "@/lib/admin-emails";
 import { PageHeader } from "@/components/page-header";
 import { OrderList } from "@/components/orders/order-list";
+import { supplierCodename } from "@/lib/supplier-codename";
 
 async function getOrders(userId: string) {
   const [marketplaceOrders, boostOrders, proxyOrders, otpOrders] = await Promise.all([
@@ -71,7 +72,7 @@ async function getOrders(userId: string) {
       title: o.title,
       platform: o.platform,
       slug: o.slug,
-      supplierName: o.supplierName,
+      supplierName: supplierCodename(o.supplierName),
       deliveryStatus: (o.deliveryStatus ?? "pending") as string,
       credentials: o.notes ? o.notes.split("\n").filter(Boolean) : [],
     })),
