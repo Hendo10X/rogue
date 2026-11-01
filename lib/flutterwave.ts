@@ -90,6 +90,10 @@ export async function creditFlutterwaveDeposit(
     metadata: { flutterwaveTransactionId: tx.id, txRef, depositId: dep.id, verifiedBy: opts.source },
   });
   console.log(`[Flutterwave] credited ${amountNgn} NGN for ${txRef} via ${opts.source}`);
+  // Telegram bot customers hear about it in the chat (no-op for website users).
+  void import("@/lib/telegram-bot/accounts").then(({ notifyBotUser }) =>
+    notifyBotUser(dep.userId, `✅ <b>₦${amountNgn.toLocaleString("en-NG")}</b> added to your wallet. Send /menu to shop.`),
+  );
 
   try {
     const [usr] = await db.select().from(user).where(eq(user.id, dep.userId)).limit(1);
