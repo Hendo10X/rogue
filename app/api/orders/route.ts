@@ -7,6 +7,7 @@ import { desc, eq } from "drizzle-orm";
 import { getOrderStatus } from "@/lib/boosting/provider";
 import { getProxyOrders, toOrderListItem } from "@/lib/proxies/orders";
 import { getOtpOrders, toOtpOrderListItem } from "@/lib/otp/orders";
+import { supplierCodename } from "@/lib/supplier-codename";
 
 export const dynamic = "force-dynamic";
 
@@ -155,7 +156,7 @@ export async function GET() {
       title: o.title,
       platform: o.platform,
       slug: o.slug,
-      supplierName: o.supplierName,
+      supplierName: supplierCodename(o.supplierName),
       deliveryStatus: (o.deliveryStatus ?? "pending") as string,
       credentials: o.notes ? o.notes.split("\n").filter(Boolean) : [],
     })),

@@ -6,6 +6,7 @@ import { getUSDtoNGNRate } from "@/lib/currency";
 import { getMarketplacePricing, capSupplierUsd } from "@/lib/pricing";
 import { getLogProfits, priceListingNgn } from "@/lib/log-profit";
 import { autoSyncIfStale } from "@/lib/suppliers/auto-sync";
+import { supplierCodename } from "@/lib/supplier-codename";
 
 export async function GET(req: NextRequest) {
   // Fire-and-forget: sync listings in background if stale (>1hr)
@@ -105,6 +106,7 @@ export async function GET(req: NextRequest) {
       const { metadata, ...rest } = item;
       return {
         ...rest,
+        supplierName: supplierCodename(rest.supplierName),
         price: String(finalPrice),
         currency: "NGN",
       };

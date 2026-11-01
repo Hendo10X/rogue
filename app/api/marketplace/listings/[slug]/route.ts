@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getUSDtoNGNRate } from "@/lib/currency";
 import { getMarketplacePricing } from "@/lib/pricing";
 import { getLogProfits, priceListingNgn } from "@/lib/log-profit";
+import { supplierCodename } from "@/lib/supplier-codename";
 
 export async function GET(
   _req: NextRequest,
@@ -47,6 +48,7 @@ export async function GET(
 
   return NextResponse.json({
     ...row,
+    supplierName: supplierCodename(row.supplierName),
     price: String(finalPrice),
     currency: "NGN",
   });
