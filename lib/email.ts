@@ -3,10 +3,23 @@ import { Resend } from "resend";
 import { sendTelegramMessage, escapeHtml } from "./telegram";
 import { formatAmount } from "./currency";
 
+/** Telegram bot customers get a placeholder address that must never be emailed. */
+export const TELEGRAM_EMAIL_DOMAIN = "telegram.roguesocials.com";
+export function isPlaceholderEmail(to: string | string[] | undefined): boolean {
+  return [to ?? []].flat().some((t) => t.endsWith("@" + TELEGRAM_EMAIL_DOMAIN));
+}
+
 let _resend: Resend | null = null;
 export function getResend() {
   if (!_resend) {
-    _resend = new Resend(process.env.RESEND_API_KEY);
+    const client = new Resend(process.env.RESEND_API_KEY);
+    // Skip sends to Telegram placeholder addresses (the bot tells them instead).
+    const send = client.emails.send.bind(client.emails);
+    client.emails.send = ((payload: Parameters<typeof send>[0], ...rest: unknown[]) =>
+      isPlaceholderEmail(payload.to)
+        ? Promise.resolve({ data: null, error: null, headers: null })
+        : (send as (...a: unknown[]) => ReturnType<typeof send>)(payload, ...rest)) as typeof send;
+    _resend = client;
   }
   return _resend;
 }
