@@ -101,8 +101,8 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
     e.preventDefault();
     const num = parseFloat(amount);
     const isNaira = provider === "korapay" || provider === "flutterwave";
-    if (!Number.isFinite(num) || num < 1) {
-      toast.error(isNaira ? "Enter an amount of at least ₦1." : "Enter an amount of at least $1.");
+    if (!Number.isFinite(num) || num < (isNaira ? 500 : 1)) {
+      toast.error(isNaira ? "The minimum deposit is ₦500." : "Enter an amount of at least $1.");
       return;
     }
     setLoading(true);
@@ -295,6 +295,10 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
               </div>
             ))}
           </dl>
+          <p className="mt-4 rounded-2xl bg-amber-400/10 px-4 py-3 text-[0.8125rem] leading-relaxed text-amber-200">
+            A ₦50 charge applies to every manual deposit. It&apos;s taken from the amount
+            you send, e.g. send ₦1,050 to get ₦1,000.
+          </p>
           <p className="py-4 text-[0.8125rem] leading-relaxed text-muted-foreground">
             Pay the exact amount to the account above. Then tap the button
             below to send your payment receipt to us on Telegram — we&apos;ll
@@ -324,7 +328,7 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
               <Input
                 id="amount"
                 type="number"
-                min={1}
+                min={isUsd ? 1 : 500}
                 max={10000000}
                 step={isUsd ? 0.01 : 1}
                 placeholder={isUsd ? "50" : "1000"}
