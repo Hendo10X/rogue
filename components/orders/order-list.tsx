@@ -47,6 +47,8 @@ interface Order {
   deliveryStatus: string;
   deliveredAt?: string | null;
   credentials: string[];
+  /** Boosting only: delivered share, 0–100. */
+  progress?: number;
 }
 
 const STATUS_TONE: Record<string, string> = {
@@ -55,11 +57,19 @@ const STATUS_TONE: Record<string, string> = {
   completed: "text-emerald-300 bg-emerald-400/10",
   failed: "text-red-300 bg-red-400/10",
   manual_review: "text-violet-300 bg-violet-400/10",
+  partial: "text-amber-300 bg-amber-400/10",
   refunded: "text-zinc-300 bg-white/10",
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const label = status === "manual_review" ? "Manual review" : status.charAt(0).toUpperCase() + status.slice(1);
+  const label =
+    status === "manual_review"
+      ? "Manual review"
+      : status === "partial"
+        ? "Partial · rest refunded"
+        : status === "failed"
+          ? "Failed · refunded"
+          : status.charAt(0).toUpperCase() + status.slice(1);
   return (
     <span
       className={cn(
@@ -286,6 +296,17 @@ export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         {o.platform} · qty {o.quantity.toLocaleString()} · {new Date(o.createdAt).toLocaleDateString()}
                       </p>
+                      {o.type === "boosting" && typeof o.progress === "number" && ["pending", "processing", "partial", "completed"].includes(o.status) && (
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <div className="h-1.5 max-w-48 flex-1 overflow-hidden rounded-full bg-white/[0.08]">
+                            <div
+                              className={cn("h-full rounded-full transition-[width] duration-700", o.status === "completed" ? "bg-emerald-400" : "bg-[#ff9a4a]")}
+                              style={{ width: `${o.progress}%` }}
+                            />
+                          </div>
+                          <span className="text-[0.6875rem] text-muted-foreground tabular-nums">{o.progress}%</span>
+                        </div>
+                      )}
                     </div>
                     <div className="hidden items-center gap-2 sm:flex">
                       {busy && <Spinner className="size-3 text-muted-foreground" />}
