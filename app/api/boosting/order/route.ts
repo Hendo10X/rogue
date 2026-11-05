@@ -9,6 +9,7 @@ import { getBoostingPricer } from "@/lib/boosting/profit";
 import { getOrCreateWallet, debitWallet, creditWallet, logTransaction } from "@/lib/wallet";
 import * as boosting from "@/lib/boosting/provider";
 import { getHiddenServiceIds } from "@/lib/boosting/hidden";
+import { boostingMin } from "@/lib/boosting/min";
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const min = parseInt(service.min, 10) || 1;
+  const min = boostingMin(service);
   const max = parseInt(service.max, 10) || 10000;
   const qty = Math.max(min, Math.min(max, quantity));
 

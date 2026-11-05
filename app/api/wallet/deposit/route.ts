@@ -33,9 +33,11 @@ export async function POST(req: NextRequest) {
   const amount = Number(body.amount);
   const maxAmount = provider === "korapay" || provider === "flutterwave" ? 10000000 : 100000;
 
-  if (!Number.isFinite(amount) || amount < 1 || amount > maxAmount) {
+  // Card/transfer deposits start at ₦500 (stops ₦100 top-ups for ₦20 boosts).
+  const minAmount = provider === "korapay" || provider === "flutterwave" ? 500 : 1;
+  if (!Number.isFinite(amount) || amount < minAmount || amount > maxAmount) {
     return NextResponse.json(
-      { error: `Amount must be between 1 and ${maxAmount}` },
+      { error: `Amount must be between ${minAmount} and ${maxAmount}` },
       { status: 400 }
     );
   }

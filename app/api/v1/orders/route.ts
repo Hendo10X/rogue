@@ -19,6 +19,7 @@ import {
 import * as boosting from "@/lib/boosting/provider";
 import { getHiddenServiceIds } from "@/lib/boosting/hidden";
 import { publicSupplierError } from "@/lib/supplier-codename";
+import { boostingMin } from "@/lib/boosting/min";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
   const hiddenServices = await getHiddenServiceIds();
   if (hiddenServices.has(serviceId)) return ApiErrors.notFound("Service not found");
 
-  const min = parseInt(service.min, 10) || 1;
+  const min = boostingMin(service);
   const max = parseInt(service.max, 10) || 10000;
   const qty = Math.max(min, Math.min(max, quantity));
 
