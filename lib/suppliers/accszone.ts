@@ -33,8 +33,44 @@ const FILTERS: { query: string; category: string; platform?: string }[] = [
   { query: "category_id=42", category: "Dating Apps", platform: "dating apps" },
 ];
 
-type AzListing = { id: number; title: string; price: string; available_stock: number; description?: string | null };
+// These two Facebook subcategories get their own platform on the marketplace.
+const FACEBOOK_SUBCATEGORY_PLATFORMS: Record<number, string> = {
+  195: "facebook with page",
+  105: "facebook with followers",
+};
+
+type AzListing = { id: number; title: string; price: string; available_stock: number; description?: string | null; subcategory?: { id?: number } | null };
 type AzPage = { success?: boolean; data?: AzListing[]; meta?: { current_page: number; last_page: number }; error_code?: string; message?: string };
+
+const ENTITIES: Record<string, string> = {
+  nbsp: " ", lt: "<", gt: ">", quot: '"', apos: "'", rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“",
+  ndash: "–", mdash: "—", hellip: "…", bull: "•", check: "✓", copy: "©", reg: "®", trade: "™",
+};
+
+function decodeEntities(text: string): string {
+  return text
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&([a-z]+);/gi, (whole, name) => ENTITIES[name.toLowerCase()] ?? whole)
+    .replace(/&amp;/gi, "&");
+}
+
+/** AccsZone descriptions are HTML: turn them into plain, readable lines. */
+export function htmlToText(html: string): string {
+  const text = html
+    .replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, "")
+    .replace(/<li\b[^>]*>/gi, "• ")
+    .replace(/<br\s*\/?>|<\/(li|tr|div)>/gi, "\n")
+    .replace(/<\/(p|h[1-6]|ul|ol|table)>/gi, "\n\n")
+    .replace(/<\/t[dh]>/gi, "  ")
+    .replace(/<\/?[a-z!][^>]*>/gi, "");
+  return decodeEntities(text)
+    .split("\n")
+    .map((line) => line.replace(/[ \t ]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
 /** Customers must never see where a log comes from. */
 function scrub(text: string): string {
@@ -80,15 +116,15 @@ export async function fetchAccszoneProducts(apiKey: string): Promise<SupplierPro
         }
         out.set(String(l.id), {
           id: String(l.id),
-          name: scrub(l.title),
+          name: scrub(decodeEntities(l.title)),
           price: l.price,
           amount: l.available_stock,
-          description: scrub(l.description ?? ""),
+          description: scrub(htmlToText(l.description ?? "")),
           min: "1",
           max: String(l.available_stock),
           categoryId: f.query,
           categoryName: f.category,
-          platform: f.platform,
+          platform: FACEBOOK_SUBCATEGORY_PLATFORMS[l.subcategory?.id ?? 0] ?? f.platform,
         });
       }
       await sleep(2100);

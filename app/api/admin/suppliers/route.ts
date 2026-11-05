@@ -7,6 +7,7 @@ import { db } from "@/db/drizzle";
 import { supplier } from "@/db/schema";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { getBalance as getBoostingBalance, ACTIVE_SUPPLIER_NAME } from "@/lib/boosting/provider";
+import { fetchAccszoneBalance } from "@/lib/suppliers/accszone";
 import { fetchProviderBalance, proxyProviderConfigured } from "@/lib/proxies/provider";
 import { fetchOtpBalance, otpProviderConfigured } from "@/lib/otp/provider";
 
@@ -72,10 +73,15 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const suppliers = await db.select().from(supplier).orderBy(supplier.name);
+  // StoreSM is retired. Removing a supplier that has past orders only switches
+  // it off (order history needs it), so once it's off it's hidden everywhere.
+  const suppliers = (await db.select().from(supplier).orderBy(supplier.name)).filter(
+    (s: { name: string; status: string }) => !(/store\s*-?sm/i.test(s.name) && s.status !== "active"),
+  );
+  const accszoneKey = suppliers.find((s: { slug: string }) => s.slug === "accszone")?.apiKey;
 
   // Fetch balances in parallel
-  const [boostingBalance, svcBalance, acctShopBalance, proxyBalance, otpBalance] = await Promise.all([
+  const [boostingBalance, svcBalance, acctShopBalance, proxyBalance, otpBalance, accszoneBalance] = await Promise.all([
     (async () => {
       if (!process.env.REALLYSIMPLESOCIAL_API_KEY?.trim()) return null;
       try { return await getBoostingBalance(); } catch { return { balance: "N/A", currency: "NGN" }; }
@@ -85,12 +91,14 @@ export async function GET() {
     // undefined = not set up (no row shown); null = set up but unreachable.
     proxyProviderConfigured() ? fetchProviderBalance().catch(() => null) : undefined,
     otpProviderConfigured() ? fetchOtpBalance().catch(() => null) : undefined,
+    accszoneKey ? fetchAccszoneBalance(accszoneKey) : null,
   ]);
 
   const rows = suppliers.map((s: any) => {
     let num: number | null = null;
     if (s.slug === "shopviaclone") num = svcBalance;
     else if (s.slug === "acctshop") num = acctShopBalance;
+    else if (s.slug === "accszone") num = accszoneBalance;
     return {
       id: s.id,
       name: s.name,
