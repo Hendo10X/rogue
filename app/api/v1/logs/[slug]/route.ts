@@ -39,7 +39,8 @@ export async function GET(
     .where(eq(listing.slug, slug))
     .limit(1);
 
-  if (!row) return ApiErrors.notFound("Log not found");
+  // AccsZone logs are website-only: invisible to the API.
+  if (!row || (row.metadata as { source?: string } | null)?.source === "accszone") return ApiErrors.notFound("Log not found");
 
   const isManual = !!(row.metadata && (row.metadata as any).manual === true);
   const [apiMarkup, rate] = await Promise.all([

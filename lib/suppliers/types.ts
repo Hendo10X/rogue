@@ -8,6 +8,8 @@ export interface SupplierProduct {
   max: string;
   categoryId?: string;
   categoryName?: string;
+  /** Set when the supplier says which platform it belongs to (AccsZone). */
+  platform?: string;
 }
 
 export interface SupplierCategory {
