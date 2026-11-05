@@ -272,7 +272,7 @@ export default function AdminOrdersPage() {
                        Fulfill
                       </Button>
                     )}
-                    {!["refunded", "failed", "cancelled"].includes(o.status) && (
+                    {!(o.type === "boosting" ? ["refunded", "cancelled", "partial"] : ["refunded", "failed", "cancelled", "partial"]).includes(o.status) && (
                       <Button size="sm" variant="outline" className="ml-2" disabled={refunding === o.id} onClick={() => refund(o)}>
                         {refunding === o.id ? "Refunding…" : "Refund"}
                       </Button>
@@ -332,7 +332,7 @@ export default function AdminOrdersPage() {
                     Fulfill
                   </Button>
                 )}
-                {!["refunded", "failed", "cancelled"].includes(o.status) && (
+                {!(o.type === "boosting" ? ["refunded", "cancelled", "partial"] : ["refunded", "failed", "cancelled", "partial"]).includes(o.status) && (
                   <Button size="sm" variant="outline" className="ml-2" disabled={refunding === o.id} onClick={() => refund(o)}>
                     {refunding === o.id ? "Refunding…" : "Refund"}
                   </Button>

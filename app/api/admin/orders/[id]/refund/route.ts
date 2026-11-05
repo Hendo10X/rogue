@@ -7,8 +7,11 @@ import { creditWallet, getOrCreateWallet, logTransaction } from "@/lib/wallet";
 
 export const dynamic = "force-dynamic";
 
-// Orders in these states were already refunded automatically.
-const DONE = ["refunded", "failed", "cancelled"];
+// Orders in these states were already refunded automatically. Boosting
+// "failed" orders from before automatic refunds were never refunded, so they
+// stay refundable; "partial" ones already got the undelivered part back.
+const DONE = ["refunded", "failed", "cancelled", "partial"];
+const BOOSTING_DONE = ["refunded", "cancelled", "partial"];
 
 const TABLES = {
   marketplace: order,
@@ -33,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const [claimed] = await db
     .update(t)
     .set({ status: "refunded", updatedAt: new Date() })
-    .where(and(eq(t.id, id), notInArray(t.status, DONE)))
+    .where(and(eq(t.id, id), notInArray(t.status, kind === "boosting" ? BOOSTING_DONE : DONE)))
     .returning({ userId: t.userId, amount: t.amount });
   if (!claimed) {
     return NextResponse.json({ error: "This order was already refunded, or doesn't exist." }, { status: 409 });
