@@ -36,6 +36,8 @@ export async function GET(req: NextRequest) {
     sql`${listing.stock} > 0`,
     // Exclude manual-delivery logs — the API only sells auto-fulfilled ones.
     sql`((${listing.metadata} ->> 'manual') IS DISTINCT FROM 'true')`,
+    // AccsZone logs are sold on the website only, never through the API.
+    sql`((${listing.metadata} ->> 'source') IS DISTINCT FROM 'accszone')`,
   ];
   if (platform) conds.push(eq(listing.platform, platform));
   if (category) conds.push(eq(listing.categoryName, category));

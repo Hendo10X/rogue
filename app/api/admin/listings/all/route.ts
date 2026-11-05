@@ -134,13 +134,28 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = (await req.json().catch(() => null)) as
-    | { ids?: unknown; hidden?: unknown; profit?: unknown }
+    | { ids?: unknown; hidden?: unknown; profit?: unknown; title?: unknown }
     | null;
   const ids = Array.isArray(body?.ids)
     ? (body!.ids as unknown[]).filter((x): x is string => typeof x === "string" && x.length > 0)
     : [];
   if (ids.length === 0 || ids.length > 500) {
     return NextResponse.json({ error: "Select between 1 and 500 logs." }, { status: 400 });
+  }
+
+  if (typeof body?.title === "string") {
+    // Rename. titleLocked stops the supplier sync from putting its name back.
+    const title = body.title.trim().slice(0, 500);
+    if (!title) return NextResponse.json({ error: "The title can't be empty." }, { status: 400 });
+    await db
+      .update(listing)
+      .set({
+        title,
+        metadata: sql`coalesce(${listing.metadata}, '{}'::jsonb) || '{"titleLocked": true}'::jsonb`,
+        updatedAt: new Date(),
+      })
+      .where(inArray(listing.id, ids));
+    return NextResponse.json({ ok: true, title });
   }
 
   if (typeof body?.hidden === "boolean") {

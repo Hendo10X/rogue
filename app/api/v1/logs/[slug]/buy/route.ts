@@ -73,7 +73,8 @@ export async function POST(
     .where(eq(listing.slug, slug))
     .limit(1);
 
-  if (!list) return ApiErrors.notFound("Log not found");
+  // AccsZone logs are website-only: invisible to the API.
+  if (!list || (list.metadata as { source?: string } | null)?.source === "accszone") return ApiErrors.notFound("Log not found");
 
   const isManual = !!(list.metadata && (list.metadata as any).manual === true);
   if (isManual) {

@@ -49,12 +49,13 @@ export function priceListingNgn(
   pricing: MarketplacePricing,
   profits: Map<string, number>,
 ): number {
-  const meta = (row.metadata ?? null) as { manual?: unknown } | null;
+  const meta = (row.metadata ?? null) as { manual?: unknown; source?: unknown } | null;
   if (meta?.manual === true) return Math.round(parseFloat(row.price));
   const profit = profits.get(row.id);
   if (profit !== undefined) {
     const baseNgn = (parseFloat(row.supplierPrice) || 0) * rate;
     return roundClean(baseNgn + profit);
   }
-  return computeMarketplacePriceNgn(parseFloat(row.supplierPrice), rate, pricing);
+  const rule = meta?.source === "accszone" && pricing.accszone ? { ...pricing, ...pricing.accszone } : pricing;
+  return computeMarketplacePriceNgn(parseFloat(row.supplierPrice), rate, rule);
 }

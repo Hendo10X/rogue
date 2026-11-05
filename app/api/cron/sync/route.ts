@@ -6,7 +6,8 @@ import { checkSupplierBalances } from "@/lib/suppliers/balance-alert";
 
 export const dynamic = "force-dynamic";
 // A full catalogue resync across suppliers can touch a few hundred rows.
-export const maxDuration = 60;
+// AccsZone alone takes a minute or two (rate limited catalogue).
+export const maxDuration = 300;
 
 /**
  * Automated supplier catalogue refresh. Re-pulls every active supplier's

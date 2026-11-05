@@ -2,6 +2,7 @@ import { db } from "@/db/drizzle";
 import { supplier, listing } from "@/db/schema";
 import { eq, and, notInArray } from "drizzle-orm";
 import { fetchSupplierProducts } from "./adapter";
+import { isAccszone } from "./accszone";
 import { getUSDtoNGNRate } from "../currency";
 import { getMarketplacePricing, computeMarketplacePriceNgn } from "../pricing";
 import type { SupplierProduct } from "./types";
@@ -78,18 +79,19 @@ export async function syncListingsForSupplier(supplierId: string) {
   // reports plain USD. Normalise everything to USD before pricing.
   const priceScaleToUsd = sup.slug === "acctshop" ? 0.01 : 1;
 
+  const accszone = isAccszone(sup.apiUrl);
   const products: SupplierProduct[] = data.categories.flatMap((cat: any) =>
     cat.products.map((p: any) => ({
       ...p,
-      categoryId: cat.id,
-      categoryName: cat.name,
+      categoryId: p.categoryId ?? cat.id,
+      categoryName: p.categoryName ?? cat.name,
     }))
   );
 
   let upserted = 0;
   for (const p of products) {
     const [existing] = await db
-      .select({ id: listing.id, metadata: listing.metadata })
+      .select({ id: listing.id, metadata: listing.metadata, title: listing.title })
       .from(listing)
       .where(
         and(
@@ -100,9 +102,10 @@ export async function syncListingsForSupplier(supplierId: string) {
       .limit(1);
 
     const supplierPriceUsd = parseFloat(p.price) * priceScaleToUsd;
-    const ourPriceNgn = computeMarketplacePriceNgn(supplierPriceUsd, rate, pricing);
+    const rule = accszone && pricing.accszone ? { ...pricing, ...pricing.accszone } : pricing;
+    const ourPriceNgn = computeMarketplacePriceNgn(supplierPriceUsd, rate, rule);
 
-    const platform = inferPlatform(p.categoryName || "", p.name);
+    const platform = p.platform ?? inferPlatform(p.categoryName || "", p.name);
 
     const slug = `listing-${supplierId}-${p.id}`;
     const stockVal = Math.max(0, Math.trunc(Number(p.amount) || 0));
@@ -120,12 +123,15 @@ export async function syncListingsForSupplier(supplierId: string) {
       price: String(Math.round(ourPriceNgn)),
       currency: "NGN",
       stock: stockVal,
-      metadata: { min: p.min, max: p.max },
+      // "source" lets AccsZone logs get their own profit and stay off the public API.
+      metadata: { min: p.min, max: p.max, ...(accszone ? { source: "accszone" } : {}) },
     };
 
     if (existing) {
-      const isHidden =
-        (existing.metadata as Record<string, unknown> | null)?.hidden === true;
+      const prevMeta = (existing.metadata as Record<string, unknown> | null) ?? {};
+      const isHidden = prevMeta.hidden === true;
+      // A title the admin renamed is kept; the supplier's name doesn't overwrite it.
+      const titleLocked = prevMeta.titleLocked === true;
       // Reactivate when restocked; if still out of stock, leave the current
       // status alone so a manual "hide out-of-stock" survives the next sync.
       // A log the admin switched off (metadata.hidden) stays hidden regardless
@@ -135,9 +141,12 @@ export async function syncListingsForSupplier(supplierId: string) {
         .update(listing)
         .set({
           ...payload,
-          metadata: isHidden
-            ? { ...payload.metadata, hidden: true }
-            : payload.metadata,
+          ...(titleLocked ? { title: existing.title } : {}),
+          metadata: {
+            ...payload.metadata,
+            ...(isHidden ? { hidden: true } : {}),
+            ...(titleLocked ? { titleLocked: true } : {}),
+          },
           ...(stockVal > 0 && !isHidden ? { status: "active" as const } : {}),
           updatedAt: new Date(),
         })

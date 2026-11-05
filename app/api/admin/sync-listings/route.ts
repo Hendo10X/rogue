@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+// AccsZone alone takes a minute or two (rate limited catalogue).
+export const maxDuration = 300;
 import { cookies } from "next/headers";
 import { db } from "@/db/drizzle";
 import { supplier } from "@/db/schema";

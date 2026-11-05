@@ -1,3 +1,4 @@
+import { fetchAccszoneBalance, fetchAccszoneProducts, isAccszone, purchaseAccszone } from "./accszone";
 import type {
   SupplierProductsResponse,
   SupplierPurchaseResponse,
@@ -11,6 +12,9 @@ export interface SupplierConfig {
 export async function fetchSupplierProducts(
   config: SupplierConfig
 ): Promise<SupplierProductsResponse> {
+  if (isAccszone(config.baseUrl)) {
+    return { status: "success", categories: [{ id: "accszone", name: "AccsZone", products: await fetchAccszoneProducts(config.apiKey) }] };
+  }
   const url = `${config.baseUrl}/api/products.php?api_key=${config.apiKey}`;
   const res = await fetch(url, { next: { revalidate: 60 } });
   if (!res.ok) throw new Error(`Supplier fetch failed: ${res.status}`);
@@ -23,6 +27,7 @@ export async function purchaseFromSupplier(
   quantity: number,
   coupon?: string
 ): Promise<SupplierPurchaseResponse> {
+  if (isAccszone(config.baseUrl)) return purchaseAccszone(config.apiKey, productId, quantity, coupon);
   const formData = new URLSearchParams();
   formData.set("action", "buyProduct");
   formData.set("id", productId);
@@ -85,6 +90,7 @@ const BALANCE_KEYS = [
 export async function fetchSupplierBalance(
   config: SupplierConfig
 ): Promise<SupplierBalanceResult> {
+  if (isAccszone(config.baseUrl)) return { balance: await fetchAccszoneBalance(config.apiKey) };
   const url = `${config.baseUrl}/api/profile.php?api_key=${encodeURIComponent(config.apiKey)}`;
   let status = 0;
   let json: unknown;
