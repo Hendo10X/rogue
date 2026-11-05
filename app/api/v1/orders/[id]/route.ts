@@ -4,7 +4,7 @@ import { db } from "@/db/drizzle";
 import { boostingOrder } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { authenticateApiRequest, ApiErrors } from "@/lib/api-auth";
-import { getOrderStatus } from "@/lib/boosting/provider";
+import { refreshBoostingOrder } from "@/lib/boosting/refresh";
 
 export const dynamic = "force-dynamic";
 
@@ -25,31 +25,13 @@ export async function GET(
 
   if (!row) return ApiErrors.notFound("Order not found");
 
-  // Refresh status from the supplier when we have an external id (best-effort).
-  let status = row.status;
-  let externalStatus = row.externalStatus;
-  let remains = row.remains;
-  let startCount = row.startCount;
-  if (row.externalOrderId) {
-    try {
-      // Ask the supplier that actually fulfilled this order.
-      const live = await getOrderStatus(row.provider, row.externalOrderId);
-      if (live.status) externalStatus = live.status;
-      if (live.remains != null) remains = String(live.remains);
-      if (live.start_count != null) startCount = String(live.start_count);
-      const lowered = live.status?.toLowerCase() ?? "";
-      if (lowered.includes("completed")) status = "completed";
-      else if (lowered.includes("cancel") || lowered.includes("refund")) status = "cancelled";
-      else if (lowered.includes("partial")) status = "partial";
-
-      db.update(boostingOrder)
-        .set({ status, externalStatus, remains, startCount, updatedAt: new Date() })
-        .where(eq(boostingOrder.id, row.id))
-        .catch(() => {});
-    } catch {
-      /* fall back to stored values */
-    }
-  }
+  // Refresh from the supplier (best-effort); refunds failed/partial orders.
+  const fresh = await refreshBoostingOrder(row).catch(() => row);
+  // API contract: a failed order reads "cancelled".
+  const status = fresh.status === "failed" || fresh.status === "refunded" ? "cancelled" : fresh.status;
+  const externalStatus = fresh.externalStatus;
+  const remains = fresh.remains;
+  const startCount = fresh.startCount;
 
   return NextResponse.json({
     data: {
