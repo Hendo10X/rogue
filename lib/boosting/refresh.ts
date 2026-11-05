@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import { db } from "@/db/drizzle";
 import { boostingOrder } from "@/db/schema";
 import { creditWallet, logTransaction } from "@/lib/wallet";
@@ -22,6 +22,33 @@ export function boostingProgress(o: { status: string; quantity: number; remains:
   const remains = Number(o.remains);
   if (!o.remains || !Number.isFinite(remains) || o.quantity <= 0) return 0;
   return Math.max(0, Math.min(100, Math.round(((o.quantity - remains) / o.quantity) * 100)));
+}
+
+/**
+ * The status a customer sees. A supplier-cancelled order that was refunded
+ * reads "failed" (shown as "Failed · refunded"); older failed orders that were
+ * never refunded must not claim a refund, so they get their own status.
+ */
+export function customerBoostingStatus(o: { status: string; externalStatus: string | null }): string {
+  if (o.status === "failed" || o.status === "cancelled") return "failed_unrefunded";
+  if (o.status === "refunded" && /cancel|refund|fail|error/i.test(o.externalStatus ?? "")) return "failed";
+  return o.status;
+}
+
+/**
+ * Checks the open orders that have waited longest for a check, so failures get
+ * refunded and progress stays current even if the customer never opens Orders.
+ * Gives up waiting after `waitMs` so a slow supplier can't hold up the caller.
+ */
+export async function refreshOpenBoostingOrders(limit: number, waitMs = 10_000): Promise<void> {
+  const rows = await db
+    .select()
+    .from(boostingOrder)
+    .where(and(inArray(boostingOrder.status, ["pending", "processing"]), isNotNull(boostingOrder.externalOrderId)))
+    .orderBy(asc(boostingOrder.updatedAt))
+    .limit(limit);
+  const work = Promise.allSettled(rows.map((o: Row) => refreshBoostingOrder(o)));
+  await Promise.race([work, new Promise((r) => setTimeout(r, waitMs))]);
 }
 
 /**

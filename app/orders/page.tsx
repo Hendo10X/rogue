@@ -15,7 +15,7 @@ import { isAdminEmail } from "@/lib/admin-emails";
 import { PageHeader } from "@/components/page-header";
 import { OrderList } from "@/components/orders/order-list";
 import { supplierCodename } from "@/lib/supplier-codename";
-import { boostingProgress } from "@/lib/boosting/refresh";
+import { boostingProgress, customerBoostingStatus } from "@/lib/boosting/refresh";
 
 async function getOrders(userId: string) {
   const [marketplaceOrders, boostOrders, proxyOrders, otpOrders] = await Promise.all([
@@ -53,6 +53,7 @@ async function getOrders(userId: string) {
         category: boostingOrder.category,
         link: boostingOrder.link,
         remains: boostingOrder.remains,
+        externalStatus: boostingOrder.externalStatus,
       })
       .from(boostingOrder)
       .where(eq(boostingOrder.userId, userId))
@@ -81,7 +82,7 @@ async function getOrders(userId: string) {
     ...boostOrders.map((o: typeof boostOrders[number]) => ({
       id: o.id,
       type: "boosting" as const,
-      status: o.status,
+      status: customerBoostingStatus(o),
       amount: o.amount,
       currency: o.currency,
       quantity: o.quantity,

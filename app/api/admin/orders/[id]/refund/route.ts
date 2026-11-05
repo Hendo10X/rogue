@@ -8,10 +8,10 @@ import { creditWallet, getOrCreateWallet, logTransaction } from "@/lib/wallet";
 export const dynamic = "force-dynamic";
 
 // Orders in these states were already refunded automatically. Boosting
-// "failed" orders from before automatic refunds were never refunded, so they
-// stay refundable; "partial" ones already got the undelivered part back.
+// "failed"/"cancelled" orders from before automatic refunds were never refunded,
+// so they stay refundable; "partial" ones already got the undelivered part back.
 const DONE = ["refunded", "failed", "cancelled", "partial"];
-const BOOSTING_DONE = ["refunded", "cancelled", "partial"];
+const BOOSTING_DONE = ["refunded", "partial"];
 
 const TABLES = {
   marketplace: order,
