@@ -13,6 +13,7 @@ import { ManualFundingForm } from "@/components/admin/manual-funding-form";
 import { ProxySettings } from "@/components/admin/proxy-settings";
 import { ProxyOrders } from "@/components/admin/proxy-orders";
 import { OtpSettings } from "@/components/admin/otp-settings";
+import { ShopBotSettings } from "@/components/admin/shop-bot-settings";
 import {
   Select,
   SelectContent,
@@ -172,6 +173,7 @@ export default function AdminSettingsPage() {
         <ProxySettings />
         <ProxyOrders />
         <OtpSettings />
+        <ShopBotSettings />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
