@@ -56,6 +56,7 @@ const STATUS_TONE: Record<string, string> = {
   processing: "text-sky-300 bg-sky-400/10",
   completed: "text-emerald-300 bg-emerald-400/10",
   failed: "text-red-300 bg-red-400/10",
+  failed_unrefunded: "text-red-300 bg-red-400/10",
   manual_review: "text-violet-300 bg-violet-400/10",
   partial: "text-amber-300 bg-amber-400/10",
   refunded: "text-zinc-300 bg-white/10",
@@ -67,6 +68,8 @@ function StatusBadge({ status }: { status: string }) {
       ? "Manual review"
       : status === "partial"
         ? "Partial · rest refunded"
+        : status === "failed_unrefunded"
+          ? "Failed"
         : status === "failed"
           ? "Failed · refunded"
           : status.charAt(0).toUpperCase() + status.slice(1);

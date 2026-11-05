@@ -4,7 +4,7 @@ import { auth } from "@/utils/auth";
 import { db } from "@/db/drizzle";
 import { order, listing, supplier, accountDelivery, boostingOrder } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { boostingProgress, refreshBoostingOrder } from "@/lib/boosting/refresh";
+import { boostingProgress, customerBoostingStatus, refreshBoostingOrder } from "@/lib/boosting/refresh";
 import { getProxyOrders, toOrderListItem } from "@/lib/proxies/orders";
 import { getOtpOrders, toOtpOrderListItem } from "@/lib/otp/orders";
 import { supplierCodename } from "@/lib/supplier-codename";
@@ -82,7 +82,7 @@ export async function GET() {
     ...boostOrders.map((o: (typeof boostOrders)[number]) => ({
       id: o.id,
       type: "boosting" as const,
-      status: o.status,
+      status: customerBoostingStatus(o),
       amount: o.amount,
       currency: o.currency,
       quantity: o.quantity,
