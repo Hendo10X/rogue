@@ -72,6 +72,28 @@ export default function AdminOrdersPage() {
   const [fulfillingOrder, setFulfillingOrder] = useState<OrderRow | null>(null);
   const [credentials, setCredentials] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [refunding, setRefunding] = useState<string | null>(null);
+
+  async function refund(o: OrderRow) {
+    if (!confirm(`Refund ${formatAmount(o.amount)} ${o.currency} to ${o.userEmail ?? "this customer"}? This can't be undone.`)) return;
+    setRefunding(o.id);
+    try {
+      const res = await fetch(`/api/admin/orders/${o.id}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: o.type }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Refund failed");
+      toast.success("Refunded to the customer's wallet.");
+      setOrders((prev) => prev.map((x) => (x.id === o.id && x.type === o.type ? { ...x, status: "refunded" } : x)));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Refund failed");
+    } finally {
+      setRefunding(null);
+    }
+  }
+
 
   function fetchOrders() {
     setLoading(true);
@@ -250,6 +272,11 @@ export default function AdminOrdersPage() {
                        Fulfill
                       </Button>
                     )}
+                    {!["refunded", "failed", "cancelled"].includes(o.status) && (
+                      <Button size="sm" variant="outline" className="ml-2" disabled={refunding === o.id} onClick={() => refund(o)}>
+                        {refunding === o.id ? "Refunding…" : "Refund"}
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -303,6 +330,11 @@ export default function AdminOrdersPage() {
                   >
                     <HugeiconsIcon icon={CheckmarkBadge01Icon} className="mr-1 size-3" />
                     Fulfill
+                  </Button>
+                )}
+                {!["refunded", "failed", "cancelled"].includes(o.status) && (
+                  <Button size="sm" variant="outline" className="ml-2" disabled={refunding === o.id} onClick={() => refund(o)}>
+                    {refunding === o.id ? "Refunding…" : "Refund"}
                   </Button>
                 )}
               </div>

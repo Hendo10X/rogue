@@ -55,6 +55,7 @@ const STATUS_TONE: Record<string, string> = {
   completed: "text-emerald-300 bg-emerald-400/10",
   failed: "text-red-300 bg-red-400/10",
   manual_review: "text-violet-300 bg-violet-400/10",
+  refunded: "text-zinc-300 bg-white/10",
 };
 
 function StatusBadge({ status }: { status: string }) {
