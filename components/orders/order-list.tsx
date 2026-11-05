@@ -58,6 +58,7 @@ const STATUS_TONE: Record<string, string> = {
   failed: "text-red-300 bg-red-400/10",
   manual_review: "text-violet-300 bg-violet-400/10",
   partial: "text-amber-300 bg-amber-400/10",
+  refunded: "text-zinc-300 bg-white/10",
 };
 
 function StatusBadge({ status }: { status: string }) {
