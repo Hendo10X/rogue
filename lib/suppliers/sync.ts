@@ -7,7 +7,7 @@ import { getUSDtoNGNRate } from "../currency";
 import { getMarketplacePricing, computeMarketplacePriceNgn } from "../pricing";
 import type { SupplierProduct } from "./types";
 
-function inferPlatform(categoryName: string, productName: string): string {
+export function inferPlatform(categoryName: string, productName: string): string {
   const combined = `${categoryName} ${productName}`.toLowerCase();
   if (combined.includes("instagram")) return "instagram";
   if (
@@ -15,12 +15,21 @@ function inferPlatform(categoryName: string, productName: string): string {
     combined.includes("faceb00k") ||
     combined.includes("facabook")
   ) {
+    if (
+      /\bsouth america(?:n)?\b/.test(combined) ||
+      /\b(argentina|bolivia|brazil|chile|colombia|ecuador|guyana|paraguay|peru|suriname|uruguay|venezuela)\b/.test(combined)
+    ) {
+      return "south american facebook";
+    }
+    if (/\b(?:usa|us)\b|\bu\.s\.a?\.?\b|\bunited states(?: of america)?\b/.test(combined)) {
+      return "usa facebook";
+    }
     if (combined.includes("dating")) return "dating facebook";
     if (combined.includes("marketplace")) return "marketplace facebook";
     if (combined.includes("ads") || combined.includes("bm")) return "ads facebook";
     if (combined.includes("aged") || combined.includes("old")) return "aged facebook";
 
-    const countryMatch = combined.match(/\b(uk|usa|vietnam|philippines|indonesia|thailand|india|brazil|colombia|mexico|nigeria|germany|france|italy|spain|canada|australia)\b/i);
+    const countryMatch = combined.match(/\b(uk|usa|vietnam|philippines|indonesia|thailand|india|mexico|nigeria|germany|france|italy|spain|canada|australia)\b/i);
     if (countryMatch) {
       return `${countryMatch[0].toLowerCase()} facebook`;
     }
@@ -105,7 +114,10 @@ export async function syncListingsForSupplier(supplierId: string) {
     const rule = accszone && pricing.accszone ? { ...pricing, ...pricing.accszone } : pricing;
     const ourPriceNgn = computeMarketplacePriceNgn(supplierPriceUsd, rate, rule);
 
-    const platform = p.platform ?? inferPlatform(p.categoryName || "", p.name);
+    const inferredPlatform = inferPlatform(p.categoryName || "", p.name);
+    const regionalFacebookPlatform =
+      inferredPlatform === "usa facebook" || inferredPlatform === "south american facebook";
+    const platform = regionalFacebookPlatform ? inferredPlatform : p.platform ?? inferredPlatform;
 
     const slug = `listing-${supplierId}-${p.id}`;
     const stockVal = Math.max(0, Math.trunc(Number(p.amount) || 0));
