@@ -1,0 +1,11 @@
+# Caddy gets and renews the HTTPS certificates by itself.
+
+# The bare domain permanently redirects to www (what Google should index).
+roguesocials.com {
+	redir https://www.roguesocials.com{uri} permanent
+}
+
+www.roguesocials.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000
+}

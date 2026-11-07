@@ -1,0 +1,25 @@
+name: Deploy to server
+
+# Every push to master (i.e. every merged PR) deploys to the Oracle server.
+# Needs repository secrets ORACLE_HOST (server IP) and ORACLE_SSH_KEY (the
+# private key downloaded when the server was created).
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.ORACLE_HOST }}
+          username: ubuntu
+          key: ${{ secrets.ORACLE_SSH_KEY }}
+          command_timeout: 20m
+          script: bash /opt/rogue/deploy/deploy.sh
