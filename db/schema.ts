@@ -765,3 +765,31 @@ export const otpOrder = pgTable(
   },
   (table) => [index("otp_order_user_idx").on(table.userId)],
 );
+
+/**
+ * Customers who use the Telegram shop bot. A bot customer gets a normal Rogue
+ * account (placeholder email) on /start, so wallet, orders and admin all work
+ * the same as for website users.
+ */
+export const telegramAccount = pgTable(
+  "telegram_account",
+  {
+    telegramId: text("telegram_id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    chatId: text("chat_id").notNull(),
+    username: text("username"),
+    // What the bot is waiting for next (e.g. a funding amount), if anything.
+    pending: jsonb("pending"),
+    // One-time code for connecting an existing website account (10 minutes).
+    linkCode: text("link_code"),
+    linkCodeExpiresAt: timestamp("link_code_expires_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("telegram_account_user_idx").on(table.userId),
+    uniqueIndex("telegram_account_link_code_idx").on(table.linkCode),
+  ],
+);

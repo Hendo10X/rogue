@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse, after } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { deliveryColumns, formatForListing } from "@/lib/log-fields";
-import { learnLogFormat } from "@/lib/log-format-ai";
+import { learnLogFormatLater } from "@/lib/log-format-ai";
 import { alertApiOrder } from "@/lib/api-order-alert";
 import { db } from "@/db/drizzle";
 import {
@@ -148,7 +148,7 @@ export async function POST(
     const credentials = result.data ?? [];
     const logFormat = formatForListing(list.metadata, list.description);
     const cols = deliveryColumns(credentials, logFormat);
-    if (credentials.length) after(() => learnLogFormat(list.id, credentials));
+    learnLogFormatLater(list.id, credentials);
 
     await db.insert(supplierOrder).values({
       id: crypto.randomUUID(),

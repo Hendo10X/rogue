@@ -9,6 +9,8 @@ import { PageHeader } from "@/components/page-header";
 import { ReferralCard } from "@/components/referral/referral-card";
 import { getReferralSummary } from "@/lib/referral";
 import { SettingsForm } from "./settings-form";
+import { TelegramLinkCard } from "@/components/settings/telegram-link-card";
+import { botUsername, shopBotConfigured } from "@/lib/telegram-bot/api";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +42,7 @@ export default async function SettingsPage() {
       >
         <PageHeader title="Settings" description="Manage your account, password, referrals and API keys." />
         {referralSummary && <ReferralCard data={referralSummary} className="w-full max-w-2xl" />}
+        {shopBotConfigured() && <TelegramLinkCard botUsername={await botUsername()} className="w-full max-w-2xl" />}
         <div className="w-full max-w-2xl">
         <SettingsForm
           user={{
