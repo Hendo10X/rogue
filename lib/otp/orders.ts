@@ -4,21 +4,20 @@ import { otpOrder } from "@/db/schema";
 import { creditWallet, logTransaction } from "@/lib/wallet";
 import { cancelNumber, checkNumber, finishNumber } from "./provider";
 import { appLabel } from "./labels";
+import { countryLabel } from "./catalog";
 
 export type OtpOrderRow = typeof otpOrder.$inferSelect;
 
 /** How long a number waits for its SMS before we cancel and refund it. */
 export const OTP_WAIT_MINUTES = 20;
 
-/** 5sim states where the number is closed without a code (5sim refunds us). */
-const CLOSED_WITHOUT_CODE = new Set(["CANCELED", "TIMEOUT", "BANNED"]);
 
 /**
- * Cancels a waiting number with 5sim and refunds the wallet. The status
+ * Cancels a waiting number with its provider and refunds the wallet. The status
  * flips from "waiting" in the same statement that claims the row, so a
- * double click or two tabs can never refund twice. Returns false when 5sim
+ * double click or two tabs can never refund twice. Returns false when the provider
  * refuses (e.g. too early, or a code already arrived) or the order isn't
- * waiting any more. `alreadyClosed` skips the cancel call when 5sim has
+ * waiting any more. `alreadyClosed` skips the cancel call when the provider has
  * closed the number itself.
  */
 export async function cancelAndRefund(
@@ -31,9 +30,9 @@ export async function cancelAndRefund(
     try {
       await cancelNumber(row.providerNumberId);
     } catch (err) {
-      // It may have closed on 5sim's side in the meantime; only then refund.
+      // It may have closed on the provider's side in the meantime; only then refund.
       const state = await checkNumber(row.providerNumberId).catch(() => null);
-      if (!state || !CLOSED_WITHOUT_CODE.has(state.status)) {
+      if (!state || state.status !== "CANCELED") {
         return { ok: false, message: err instanceof Error ? err.message : "Couldn't cancel this number yet." };
       }
     }
@@ -63,7 +62,7 @@ export async function cancelAndRefund(
   return { ok: true };
 }
 
-/** Asks 5sim about one waiting order; saves the code when it arrives. */
+/** Asks the provider about one waiting order; saves the code when it arrives. */
 async function refresh(row: OtpOrderRow) {
   if (row.status !== "waiting" || !row.providerNumberId) return;
   const got = await checkNumber(row.providerNumberId);
@@ -76,8 +75,8 @@ async function refresh(row: OtpOrderRow) {
     void finishNumber(row.providerNumberId);
     return;
   }
-  if (CLOSED_WITHOUT_CODE.has(got.status)) {
-    await cancelAndRefund(row, `otp_${got.status.toLowerCase()}`, true);
+  if (got.status === "CANCELED") {
+    await cancelAndRefund(row, "otp_closed_by_provider", true);
     return;
   }
   const ageMinutes = (Date.now() - new Date(row.createdAt).getTime()) / 60_000;
@@ -112,7 +111,7 @@ export function toOtpOrderListItem(o: OtpOrderRow) {
     currency: "NGN",
     quantity: 1,
     createdAt: o.createdAt,
-    title: `OTP number · ${appLabel(o.app)} · ${appLabel(o.country)}`,
+    title: `OTP number · ${appLabel(o.app)} · ${countryLabel(o.country)}`,
     platform: "OTP numbers",
     slug: "",
     supplierName: "OTP numbers",

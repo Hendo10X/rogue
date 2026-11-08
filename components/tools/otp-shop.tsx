@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { formatAmount } from "@/lib/currency";
 import { plainError } from "@/lib/plain-error";
 import { appLabel } from "@/lib/otp/labels";
+import { countryLabel } from "@/lib/otp/catalog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -301,7 +302,7 @@ export function OtpShop() {
             <div key={o.id} className={cn("surface flex flex-col gap-3 rounded-2xl p-4", o.status === "cancelled" && "opacity-70")}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-medium">
-                  {appLabel(o.app)} · {appLabel(o.country)} · ₦{formatAmount(o.amount)}
+                  {appLabel(o.app)} · {countryLabel(o.country)} · ₦{formatAmount(o.amount)}
                 </p>
                 <Badge variant={o.status === "received" ? "default" : "secondary"}>{STATUS[o.status] ?? o.status}</Badge>
               </div>

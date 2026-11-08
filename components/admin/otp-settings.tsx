@@ -8,19 +8,33 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { SectionLabel } from "@/components/page-header";
 
+type Provider = {
+  provider: "grizzly" | "smspool";
+  label: string;
+  configured: boolean;
+  enabled: boolean;
+  balanceUsd: number | null;
+  error: string | null;
+};
+
 type Data = {
   enabled: boolean;
   markupPercent: number;
   configured: boolean;
-  balanceUsd: number | null;
-  providerError: string | null;
+  providers: Provider[];
+  minSuccessRate: number;
   hiddenApps?: number;
 };
 
-/** Turn OTP number sales on or off, set the markup, and see the 5sim balance. */
+type Patch = Partial<{ enabled: boolean; markupPercent: number; grizzly: boolean; smspool: boolean; minSuccessRate: number }>;
+
+const ENV: Record<Provider["provider"], string> = { grizzly: "GRIZZLY_API_KEY", smspool: "SMSPOOL_API_KEY" };
+
+/** OTP numbers: sales on/off, markup, and which providers (GrizzlySMS, SMSPool) numbers are bought from. */
 export function OtpSettings() {
   const [data, setData] = useState<Data | null>(null);
   const [markup, setMarkup] = useState("");
+  const [minSuccess, setMinSuccess] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -29,11 +43,12 @@ export function OtpSettings() {
       .then((d: Data) => {
         setData(d);
         setMarkup(String(d.markupPercent));
+        setMinSuccess(String(d.minSuccessRate));
       })
       .catch(() => toast.error("Failed to load OTP settings"));
   }, []);
 
-  async function save(patch: Partial<Pick<Data, "enabled" | "markupPercent">>) {
+  async function save(patch: Patch) {
     setSaving(true);
     try {
       const res = await fetch("/api/admin/otp", {
@@ -61,16 +76,10 @@ export function OtpSettings() {
   }
 
   if (!data) return null;
+  const anyOn = data.providers.some((p) => p.configured && p.enabled);
   return (
     <section className="surface flex flex-col gap-4 rounded-2xl p-5">
-      <SectionLabel>OTP numbers (5sim)</SectionLabel>
-      <p className="text-sm text-muted-foreground">
-        {!data.configured
-          ? "FIVESIM_API_KEY isn't set in Vercel, so OTP numbers can't be sold."
-          : data.providerError
-            ? `5sim error: ${data.providerError}`
-            : `5sim balance: $${(data.balanceUsd ?? 0).toFixed(2)}. Numbers are paid from this balance, so keep it topped up.`}
-      </p>
+      <SectionLabel>OTP numbers</SectionLabel>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <label className="flex items-center gap-2 text-sm">
           <Switch checked={data.enabled} disabled={saving || !data.configured} onCheckedChange={(v) => save({ enabled: v })} />
@@ -84,6 +93,49 @@ export function OtpSettings() {
           </Button>
         </div>
       </div>
+      {data.enabled && !anyOn && (
+        <p className="text-sm text-amber-300">Sales are on, but no provider is switched on, so customers can&apos;t buy numbers yet.</p>
+      )}
+
+      <div className="flex flex-col gap-2">
+        <p className="text-sm text-muted-foreground">
+          Numbers come from the cheapest switched-on provider that has them. Each provider is paid from its own USD balance, so keep both topped up.
+        </p>
+        {data.providers.map((p) => (
+          <div key={p.provider} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/[0.03] px-4 py-3">
+            <label className="flex items-center gap-2 text-sm">
+              <Switch
+                checked={p.enabled}
+                disabled={saving || !p.configured}
+                onCheckedChange={(v) => save({ [p.provider]: v })}
+                aria-label={`Buy numbers from ${p.label}`}
+              />
+              {p.label}
+            </label>
+            <span className="text-sm text-muted-foreground tabular-nums">
+              {!p.configured
+                ? `${ENV[p.provider]} isn't set in Vercel`
+                : p.error
+                  ? `Error: ${p.error}`
+                  : `Balance $${(p.balanceUsd ?? 0).toFixed(2)}`}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-md text-sm text-muted-foreground">
+          SMSPool sells each app from several pools; cheap ones can fail often (USA WhatsApp was 54%). Pools below this success rate aren&apos;t used.
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Min success %</span>
+          <Input type="number" min={0} max={100} className="h-9 w-20" value={minSuccess} onChange={(e) => setMinSuccess(e.target.value)} />
+          <Button size="sm" variant="outline" disabled={saving} onClick={() => save({ minSuccessRate: Number(minSuccess) })}>
+            Save
+          </Button>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           {data.hiddenApps

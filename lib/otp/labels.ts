@@ -1,4 +1,4 @@
-/** 5sim names apps by lowercase id ("whatsapp"); these read better on screen. */
+/** Apps by Rogue's app id ("whatsapp"); these read better on screen than providers' spellings. */
 const NAMES: Record<string, string> = {
   whatsapp: "WhatsApp",
   telegram: "Telegram",
@@ -24,6 +24,10 @@ const NAMES: Record<string, string> = {
   netflix: "Netflix",
 };
 
-export function appLabel(id: string): string {
-  return NAMES[id.toLowerCase()] ?? id.charAt(0).toUpperCase() + id.slice(1);
+/** Display name for an app id; `providerName` (the provider's own spelling) is the fallback. */
+export function appLabel(id: string, providerName?: string): string {
+  const known = NAMES[id.toLowerCase()];
+  if (known) return known;
+  const name = providerName?.trim() || id.replace(/-/g, " ");
+  return name.charAt(0).toUpperCase() + name.slice(1);
 }

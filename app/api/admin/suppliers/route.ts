@@ -9,7 +9,7 @@ import { verifyAdminSession } from "@/lib/admin-auth";
 import { getBalance as getBoostingBalance, ACTIVE_SUPPLIER_NAME } from "@/lib/boosting/provider";
 import { fetchAccszoneBalance } from "@/lib/suppliers/accszone";
 import { fetchProviderBalance, proxyProviderConfigured } from "@/lib/proxies/provider";
-import { fetchOtpBalance, otpProviderConfigured } from "@/lib/otp/provider";
+import { fetchBalances as fetchOtpBalances } from "@/lib/otp/provider";
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -81,7 +81,7 @@ export async function GET() {
   const accszoneKey = suppliers.find((s: { slug: string }) => s.slug === "accszone")?.apiKey;
 
   // Fetch balances in parallel
-  const [boostingBalance, svcBalance, acctShopBalance, proxyBalance, otpBalance, accszoneBalance] = await Promise.all([
+  const [boostingBalance, svcBalance, acctShopBalance, proxyBalance, otpBalances, accszoneBalance] = await Promise.all([
     (async () => {
       if (!process.env.REALLYSIMPLESOCIAL_API_KEY?.trim()) return null;
       try { return await getBoostingBalance(); } catch { return { balance: "N/A", currency: "NGN" }; }
@@ -90,7 +90,7 @@ export async function GET() {
     getAcctShopBalance(),
     // undefined = not set up (no row shown); null = set up but unreachable.
     proxyProviderConfigured() ? fetchProviderBalance().catch(() => null) : undefined,
-    otpProviderConfigured() ? fetchOtpBalance().catch(() => null) : undefined,
+    fetchOtpBalances().catch(() => []),
     accszoneKey ? fetchAccszoneBalance(accszoneKey) : null,
   ]);
 
@@ -122,10 +122,10 @@ export async function GET() {
   }
 
   // Proxies and OTP numbers are paid from prepaid USD balances too.
-  for (const [id, name, num] of [
-    ["proxy-seller", "Proxy-seller (Proxies)", proxyBalance],
-    ["5sim", "5sim (OTP numbers)", otpBalance],
-  ] as const) {
+  const otpRows = otpBalances
+    .filter((b) => b.configured)
+    .map((b) => [`otp-${b.provider}`, `${b.label} (OTP numbers)`, b.balanceUsd] as const);
+  for (const [id, name, num] of [["proxy-seller", "Proxy-seller (Proxies)", proxyBalance] as const, ...otpRows]) {
     if (num === undefined) continue;
     rows.push({ id, name, slug: id, status: "active", balance: usd(num), low: num != null && num < LOW_USD_THRESHOLD });
   }

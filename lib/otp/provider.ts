@@ -1,147 +1,182 @@
 /**
- * 5sim.net API v1 (https://5sim.net/v1). Lists are public ("guest"); buying
- * and checking need `Authorization: Bearer <FIVESIM_API_KEY>`. Prices are in
- * USD. Product lists carry a stock count (Qty), so empty apps are never offered.
- * Errors come back as short plain-text bodies such as "no free phones".
+ * OTP numbers from GrizzlySMS and SMSPool (5sim before them). Each provider
+ * is switched on separately in Admin → Settings → OTP numbers and needs its
+ * API key in Vercel. For each country + app the customer picks, every
+ * switched-on provider is asked for a live price; the cheapest one that can
+ * sell it wins. SMSPool also has to meet the minimum success rate.
+ * Research and rules: docs/otp-providers.md.
  */
-import { appLabel } from "./labels";
+import { getSetting, setSetting } from "@/lib/admin-auth";
+import { countryLabel } from "./catalog";
+import { fivesimCancel, fivesimCheck, fivesimFinish } from "./fivesim";
+import { grizzly } from "./grizzly";
+import { smspool } from "./smspool";
+import { OtpProviderError, type BoughtNumber, type OtpCheck, type OtpCountry, type OtpProvider, type ProviderName, type Quote } from "./types";
 
-const BASE = "https://5sim.net/v1";
-/** Let 5sim pick whichever operator has a number. */
-const OPERATOR = "any";
+export { OtpProviderError } from "./types";
+export type { OtpCountry, Quote } from "./types";
 
-export class OtpProviderError extends Error {}
+export const PROVIDERS: OtpProvider[] = [grizzly, smspool];
+const byName = new Map<string, OtpProvider>(PROVIDERS.map((p) => [p.name, p]));
 
+export const PROVIDER_LABELS: Record<ProviderName, string> = { grizzly: "GrizzlySMS", smspool: "SMSPool" };
+
+// ── Settings ────────────────────────────────────────────────────────────────
+
+const ON_KEY = (p: ProviderName) => `otp_provider_${p}`;
+const MIN_SUCCESS_KEY = "otp_smspool_min_success";
+const DEFAULT_MIN_SUCCESS = 60;
+
+export type ProviderSettings = { grizzly: boolean; smspool: boolean; minSuccessRate: number };
+
+/** Both providers start switched off, so nothing is bought from one before an admin checks it. */
+export async function getProviderSettings(): Promise<ProviderSettings> {
+  const [g, s, min] = await Promise.all([getSetting(ON_KEY("grizzly")), getSetting(ON_KEY("smspool")), getSetting(MIN_SUCCESS_KEY)]);
+  const m = Number(min);
+  return {
+    grizzly: g === "true",
+    smspool: s === "true",
+    minSuccessRate: min !== null && Number.isFinite(m) && m >= 0 && m <= 100 ? m : DEFAULT_MIN_SUCCESS,
+  };
+}
+
+export async function setProviderSettings(value: Partial<ProviderSettings>) {
+  if (value.grizzly !== undefined) await setSetting(ON_KEY("grizzly"), String(value.grizzly));
+  if (value.smspool !== undefined) await setSetting(ON_KEY("smspool"), String(value.smspool));
+  if (value.minSuccessRate !== undefined) await setSetting(MIN_SUCCESS_KEY, String(value.minSuccessRate));
+}
+
+/** Providers that have a key and are switched on. */
+export async function activeProviders(): Promise<OtpProvider[]> {
+  const s = await getProviderSettings();
+  return PROVIDERS.filter((p) => p.configured() && s[p.name]);
+}
+
+/** True when at least one provider has its API key set. */
 export function otpProviderConfigured(): boolean {
-  return !!process.env.FIVESIM_API_KEY?.trim();
+  return PROVIDERS.some((p) => p.configured());
 }
 
-async function call<T>(path: string, { auth = true, params }: { auth?: boolean; params?: Record<string, string> } = {}): Promise<T> {
-  const key = process.env.FIVESIM_API_KEY?.trim();
-  if (auth && !key) throw new OtpProviderError("OTP numbers aren't configured");
-  const qs = params ? `?${new URLSearchParams(params)}` : "";
-  let res: Response;
-  try {
-    res = await fetch(`${BASE}/${path}${qs}`, {
-      headers: { Accept: "application/json", ...(auth ? { Authorization: `Bearer ${key}` } : {}) },
-      cache: "no-store",
-      signal: AbortSignal.timeout(25_000),
-    });
-  } catch (err) {
-    throw new OtpProviderError(`OTP supplier unreachable (${err instanceof Error ? err.name : "network"})`);
-  }
-  const text = await res.text();
-  let json: unknown = null;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    // 5sim answers errors as plain text.
-  }
-  if (!res.ok || json === null) throw new OtpProviderError(text.trim().slice(0, 200) || `OTP supplier error (HTTP ${res.status})`);
-  return json as T;
-}
+// ── Lists ───────────────────────────────────────────────────────────────────
 
-export type OtpCountry = { id: string; name: string };
-export type OtpApp = { name: string; label: string; priceUsd: number; stock: number };
+export type OtpApp = { name: string; label: string; priceUsd: number; stock: number | null };
 
-/** Countries by 5sim slug (e.g. "usa") with their English name. */
-export async function fetchCountries(): Promise<OtpCountry[]> {
-  const data = await call<Record<string, { text_en?: string }>>("guest/countries", { auth: false });
-  return Object.entries(data ?? {})
-    .map(([id, c]) => ({ id, name: c?.text_en?.trim() || id }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-}
-
-type OperatorPrices = Record<string, { cost?: number; count?: number }>;
-
-/**
- * The cheapest operator that actually has numbers. 5sim's product summary
- * pairs the cheapest price of ANY operator with the stock of all of them, so
- * an app could show $0.97 while only a $3.50 operator had numbers, and every
- * purchase capped at $0.97 failed. Pricing from in-stock operators avoids that.
- */
-function inStock(ops: OperatorPrices | undefined): { priceUsd: number; stock: number } | null {
-  let priceUsd = Infinity;
-  let stock = 0;
-  for (const o of Object.values(ops ?? {})) {
-    const cost = Number(o?.cost);
-    const count = Number(o?.count);
-    if (!(count > 0) || !(cost > 0)) continue;
-    stock += count;
-    priceUsd = Math.min(priceUsd, cost);
-  }
-  return stock > 0 ? { priceUsd, stock } : null;
-}
-
-/** Apps with numbers in stock for one country, priced at the cheapest in-stock operator (USD). */
-export async function fetchApps(country: string): Promise<OtpApp[]> {
-  const [products, prices] = await Promise.all([
-    call<Record<string, { Category?: string }>>(`guest/products/${encodeURIComponent(country)}/${OPERATOR}`, { auth: false }),
-    call<Record<string, Record<string, OperatorPrices>>>("guest/prices", { auth: false, params: { country } }),
-  ]);
-  const byApp = prices?.[country] ?? {};
-  return Object.entries(products ?? {})
-    .filter(([, p]) => p?.Category === "activation")
-    .flatMap(([name]) => {
-      const s = inStock(byApp[name]);
-      return s ? [{ name, label: appLabel(name), ...s }] : [];
-    })
-    .sort((a, b) => a.label.localeCompare(b.label));
-}
-
-/** Live (uncached) stock and price for one app in one country, or null when sold out. */
-export async function fetchAppLive(country: string, app: string): Promise<{ priceUsd: number; stock: number } | null> {
-  const data = await call<Record<string, Record<string, OperatorPrices>>>("guest/prices", {
-    auth: false,
-    params: { country, product: app },
+/** Runs `fn` on every active provider; one failing doesn't hide the others' results. */
+async function fromAll<T>(fn: (p: OtpProvider) => Promise<T>, what: string): Promise<T[]> {
+  const providers = await activeProviders();
+  if (providers.length === 0) return [];
+  const results = await Promise.allSettled(providers.map(fn));
+  const ok = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+  results.forEach((r, i) => {
+    if (r.status === "rejected") console.error(`[OTP] ${providers[i].name} ${what} failed`, r.reason);
   });
-  return inStock(data?.[country]?.[app]);
+  if (ok.length === 0) {
+    const first = results.find((r) => r.status === "rejected") as PromiseRejectedResult | undefined;
+    throw first?.reason ?? new OtpProviderError(`Couldn't load ${what}`);
+  }
+  return ok;
 }
 
-export async function fetchOtpBalance(): Promise<number | null> {
-  const data = await call<{ balance?: unknown }>("user/profile");
-  const n = Number(data?.balance);
-  return Number.isFinite(n) ? n : null;
+/** Countries any active provider sells, each once, by name. */
+export async function fetchCountries(): Promise<OtpCountry[]> {
+  const lists = await fromAll((p) => p.countries(), "countries");
+  const ids = new Set(lists.flat().map((c) => c.id));
+  return [...ids].map((id) => ({ id, name: countryLabel(id) })).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Apps for one country across providers, each at its lowest listed price. */
+export async function fetchApps(country: string): Promise<OtpApp[]> {
+  const lists = await fromAll((p) => p.apps(country), "apps");
+  const merged = new Map<string, OtpApp>();
+  for (const a of lists.flat()) {
+    const prev = merged.get(a.app);
+    if (!prev) {
+      merged.set(a.app, { name: a.app, label: a.label, priceUsd: a.priceUsd, stock: a.stock });
+      continue;
+    }
+    prev.priceUsd = Math.min(prev.priceUsd, a.priceUsd);
+    prev.stock = prev.stock === null || a.stock === null ? (prev.stock ?? a.stock) : prev.stock + a.stock;
+  }
+  return [...merged.values()].sort((a, b) => a.label.localeCompare(b.label));
 }
 
 /**
- * Buys a number (charges the Rogue 5sim balance). `maxPriceUsd` stops 5sim
- * from picking a dearer operator than the price the customer was charged.
+ * The best live quote for one country + app: the cheapest provider that has
+ * numbers right now (SMSPool only from pools meeting the success-rate
+ * minimum). Ties go to Grizzly. Null when nobody can sell it.
  */
-export async function buyNumber(country: string, app: string, maxPriceUsd?: number) {
-  const data = await call<{ id?: unknown; phone?: unknown; price?: unknown }>(
-    `user/buy/activation/${encodeURIComponent(country)}/${OPERATOR}/${encodeURIComponent(app)}`,
-    maxPriceUsd ? { params: { maxPrice: String(maxPriceUsd) } } : {},
-  );
-  if (!data?.id || !data?.phone) {
-    console.error("[OTP] unexpected 5sim buy answer", JSON.stringify(data).slice(0, 300));
-    throw new OtpProviderError("OTP supplier returned no number");
-  }
-  return { numberId: String(data.id), number: String(data.phone), priceUsd: Number(data.price) || null };
+export async function fetchAppLive(country: string, app: string): Promise<Quote | null> {
+  const { minSuccessRate } = await getProviderSettings();
+  const quotes = await fromAll((p) => p.quote(country, app, { minSuccessRate }), "live price");
+  const best = quotes
+    .filter((q): q is Quote => !!q)
+    .sort((a, b) => a.priceUsd - b.priceUsd || (a.provider === "grizzly" ? -1 : 1))[0];
+  return best ?? null;
 }
 
-export type OtpCheck = {
-  /** PENDING | RECEIVED | FINISHED | CANCELED | TIMEOUT | BANNED */
-  status: string;
-  code: string | null;
-  sms: string | null;
+// ── Numbers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Buys from the provider that gave the quote, capped at the quoted price.
+ * The saved id is "grizzly:…" or "smspool:…" so later checks reach the
+ * right provider. Ids without a prefix are 5sim numbers from before the switch.
+ */
+export async function buyNumber(country: string, app: string, quote: Quote): Promise<BoughtNumber> {
+  const p = byName.get(quote.provider);
+  if (!p) throw new OtpProviderError("Unknown OTP provider");
+  const bought = await p.buy(country, app, quote);
+  return { ...bought, numberId: `${p.name}:${bought.numberId}` };
+}
+
+function route(numberId: string): { provider: OtpProvider | null; id: string } {
+  const i = numberId.indexOf(":");
+  const p = i > 0 ? byName.get(numberId.slice(0, i)) : undefined;
+  return p ? { provider: p, id: numberId.slice(i + 1) } : { provider: null, id: numberId };
+}
+
+/** Which provider sold a number, for admin views. */
+export function providerOf(numberId: string | null | undefined): string {
+  if (!numberId) return "—";
+  const { provider } = route(numberId);
+  return provider ? PROVIDER_LABELS[provider.name] : "5sim";
+}
+
+export async function checkNumber(numberId: string): Promise<OtpCheck> {
+  const { provider, id } = route(numberId);
+  return provider ? provider.check(id) : fivesimCheck(id);
+}
+
+/** Cancels a number that hasn't received an SMS (the provider refunds us). */
+export async function cancelNumber(numberId: string): Promise<void> {
+  const { provider, id } = route(numberId);
+  return provider ? provider.cancel(id) : fivesimCancel(id);
+}
+
+/** Closes a number once its code has arrived. Best effort. */
+export async function finishNumber(numberId: string): Promise<void> {
+  const { provider, id } = route(numberId);
+  return provider ? provider.finish(id) : fivesimFinish(id);
+}
+
+export type ProviderBalance = {
+  provider: ProviderName;
+  label: string;
+  configured: boolean;
+  balanceUsd: number | null;
+  error: string | null;
 };
 
-/** The current state of a bought number, with its latest SMS if any. */
-export async function checkNumber(numberId: string): Promise<OtpCheck> {
-  const data = await call<{ status?: string; sms?: { text?: string; code?: string }[] }>(`user/check/${encodeURIComponent(numberId)}`);
-  const last = Array.isArray(data?.sms) && data.sms.length ? data.sms[data.sms.length - 1] : null;
-  const text = last?.text?.trim() || null;
-  const code = last?.code?.trim() || text?.match(/\b\d{4,8}\b/)?.[0] || null;
-  return { status: String(data?.status ?? "PENDING").toUpperCase(), code, sms: text };
-}
-
-/** Cancels a number that hasn't received an SMS (5sim refunds our balance). */
-export async function cancelNumber(numberId: string): Promise<void> {
-  await call<unknown>(`user/cancel/${encodeURIComponent(numberId)}`);
-}
-
-/** Closes a number once its code has arrived. Best effort: 5sim closes it on its own later. */
-export async function finishNumber(numberId: string): Promise<void> {
-  await call<unknown>(`user/finish/${encodeURIComponent(numberId)}`).catch(() => {});
+/** Every provider's balance (USD), for admin. */
+export async function fetchBalances(): Promise<ProviderBalance[]> {
+  return Promise.all(
+    PROVIDERS.map(async (p) => {
+      const base = { provider: p.name, label: PROVIDER_LABELS[p.name], configured: p.configured() };
+      if (!base.configured) return { ...base, balanceUsd: null, error: null };
+      try {
+        return { ...base, balanceUsd: await p.balance(), error: null };
+      } catch (err) {
+        return { ...base, balanceUsd: null, error: err instanceof Error ? err.message : "Couldn't reach it" };
+      }
+    }),
+  );
 }

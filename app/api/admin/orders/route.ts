@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { db } from "@/db/drizzle";
 import { order, listing, supplier, user, boostingOrder, proxyOrder, otpOrder } from "@/db/schema";
 import { appLabel } from "@/lib/otp/labels";
+import { countryLabel } from "@/lib/otp/catalog";
 import { boostingProgress, refreshOpenBoostingOrders } from "@/lib/boosting/refresh";
 import { eq, desc } from "drizzle-orm";
 import { verifyAdminSession } from "@/lib/admin-auth";
@@ -135,7 +136,7 @@ export async function GET() {
     type: "otp" as const,
     currency: "NGN",
     quantity: 1,
-    serviceName: `OTP · ${appLabel(o.app)} · ${appLabel(o.country)}${o.number ? ` · ${o.number}` : ""}`,
+    serviceName: `OTP · ${appLabel(o.app)} · ${countryLabel(o.country)}${o.number ? ` · ${o.number}` : ""}`,
   }));
 
   const allOrders = [
