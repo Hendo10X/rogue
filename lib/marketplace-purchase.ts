@@ -1,6 +1,6 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import { deliveryColumns, formatForListing } from "@/lib/log-fields";
-import { learnLogFormat } from "@/lib/log-format-ai";
+import { learnLogFormatLater } from "@/lib/log-format-ai";
 import { getBulkPricing, unitPriceForQuantity } from "@/lib/bulk-pricing";
 import { claimManualLogItems } from "@/lib/manual-logs";
 import { db } from "@/db/drizzle";
@@ -152,7 +152,7 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
     if (claimed.length === quantity) {
       const deliveryData = claimed.join("\n");
       const cols = deliveryColumns(claimed, logFormat);
-      after(() => learnLogFormat(list.id, claimed));
+      learnLogFormatLater(list.id, claimed);
       await db.insert(accountDelivery).values({
         id: crypto.randomUUID(),
         orderId,
@@ -306,7 +306,7 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
     const credentials = purchaseResult.data ?? [];
     const deliveryData = credentials.join("\n");
     const cols = deliveryColumns(credentials, logFormat);
-    if (credentials.length) after(() => learnLogFormat(list.id, credentials));
+    learnLogFormatLater(list.id, credentials);
 
     await db.insert(accountDelivery).values({
       id: crypto.randomUUID(),

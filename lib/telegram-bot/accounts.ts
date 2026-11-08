@@ -8,8 +8,29 @@ import { send, shopBotConfigured } from "./api";
 export type TgUser = { id: number; first_name?: string; last_name?: string; username?: string };
 export type BotAccount = typeof telegramAccount.$inferSelect;
 
-/** What the bot is waiting for the customer to type next. */
-export type Pending = { kind: "fund_amount" } | { kind: "search" } | { kind: "buying"; at: number } | null;
+/** What the bot is waiting for the customer to type next, or an order being put together. */
+export type Pending =
+  | { kind: "fund_amount" }
+  | { kind: "search" }
+  | { kind: "buying"; at: number }
+  | { kind: "boost_search" }
+  | { kind: "boost_link"; serviceId: number }
+  | { kind: "boost_qty"; serviceId: number; link: string }
+  | { kind: "boost_ready"; serviceId: number; link: string; qty: number }
+  | { kind: "otp_search" }
+  | { kind: "proxy"; spec: ProxyDraft }
+  | null;
+
+/** A proxy order being picked step by step (type → country → period → … → quantity). */
+export type ProxyDraft = {
+  type: "ipv4" | "isp" | "ipv6" | "mobile";
+  country?: string;
+  period?: string;
+  operator?: string;
+  rotation?: number;
+  protocol?: "HTTPS" | "SOCKS5";
+  quantity?: number;
+};
 
 /**
  * The bot customer's Rogue account, created on first contact: a normal user

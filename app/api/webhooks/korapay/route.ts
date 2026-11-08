@@ -104,6 +104,10 @@ export async function POST(req: NextRequest) {
     });
 
     console.log("[Korapay Webhook] Credited wallet", dep.walletId, "with", amountNgn, "NGN");
+    // Tell Telegram bot customers it's in (no-op for website-only users).
+    await import("@/lib/telegram-bot/accounts").then(({ notifyBotUser }) =>
+      notifyBotUser(dep.userId, `✅ <b>₦${Number(amountNgn).toLocaleString("en-NG")}</b> added to your wallet. Send /menu to shop.`),
+    );
 
     try {
       const [usr] = await db.select().from(user).where(eq(user.id, dep.userId)).limit(1);

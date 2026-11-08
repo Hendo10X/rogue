@@ -49,9 +49,14 @@ export async function POST() {
   await tg("setMyCommands", {
     commands: [
       { command: "menu", description: "Main menu" },
+      { command: "logs", description: "Buy logs" },
+      { command: "boost", description: "Boost followers, likes, views" },
+      { command: "otp", description: "OTP numbers" },
+      { command: "proxies", description: "Buy proxies" },
       { command: "fund", description: "Fund your wallet" },
       { command: "balance", description: "Your balance" },
       { command: "orders", description: "Your orders and login details" },
+      { command: "connect", description: "Connect your website account" },
       { command: "help", description: "How it works" },
     ],
   });

@@ -1,5 +1,6 @@
 import { db } from "@/db/drizzle";
 import { listing } from "@/db/schema";
+import { after } from "next/server";
 import { eq, sql } from "drizzle-orm";
 import { describeShape, parseFormatHint, type LogFormat } from "@/lib/log-fields";
 
@@ -67,6 +68,20 @@ async function askClaude(description: string, shapes: string[][]): Promise<strin
   if (!labels || labels.length !== fieldCount) return null;
   if (!labels.every((l) => typeof l === "string" && l.trim().length > 0 && l.length <= 24)) return null;
   return labels.map((l) => (l as string).trim());
+}
+
+/**
+ * Learns the format after the response is sent, so a purchase never waits on
+ * the AI. Never throws: outside a request (scripts, tests) it just runs in the
+ * background, because this is called after the customer has been charged.
+ */
+export function learnLogFormatLater(listingId: string, lines: string[]): void {
+  if (!lines.length || !aiLogFormatEnabled()) return;
+  try {
+    after(() => learnLogFormat(listingId, lines));
+  } catch {
+    void learnLogFormat(listingId, lines);
+  }
 }
 
 /**

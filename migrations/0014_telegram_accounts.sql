@@ -7,9 +7,16 @@ CREATE TABLE IF NOT EXISTS "telegram_account" (
   "chat_id" text NOT NULL,
   "username" text,
   "pending" jsonb,
+  "link_code" text,
+  "link_code_expires_at" timestamp,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "updated_at" timestamp DEFAULT now() NOT NULL
 );
+
+-- For connecting a website account (one-time code from the bot).
+ALTER TABLE "telegram_account" ADD COLUMN IF NOT EXISTS "link_code" text;
+ALTER TABLE "telegram_account" ADD COLUMN IF NOT EXISTS "link_code_expires_at" timestamp;
+CREATE UNIQUE INDEX IF NOT EXISTS "telegram_account_link_code_idx" ON "telegram_account" ("link_code");
 
 DO $$ BEGIN
   ALTER TABLE "telegram_account"

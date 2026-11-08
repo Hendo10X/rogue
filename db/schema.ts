@@ -782,8 +782,14 @@ export const telegramAccount = pgTable(
     username: text("username"),
     // What the bot is waiting for next (e.g. a funding amount), if anything.
     pending: jsonb("pending"),
+    // One-time code for connecting an existing website account (10 minutes).
+    linkCode: text("link_code"),
+    linkCodeExpiresAt: timestamp("link_code_expires_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
-  (table) => [uniqueIndex("telegram_account_user_idx").on(table.userId)],
+  (table) => [
+    uniqueIndex("telegram_account_user_idx").on(table.userId),
+    uniqueIndex("telegram_account_link_code_idx").on(table.linkCode),
+  ],
 );

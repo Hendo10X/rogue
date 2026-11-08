@@ -33,6 +33,17 @@ export async function tg<T = unknown>(method: string, payload: Record<string, un
   }
 }
 
+let username: { at: number; value: string | null } | null = null;
+
+/** The bot's @username (cached for an hour), for t.me links. */
+export async function botUsername(): Promise<string | null> {
+  if (!shopBotConfigured()) return null;
+  if (username && Date.now() - username.at < 60 * 60 * 1000) return username.value;
+  const me = await tg<{ username?: string }>("getMe", {});
+  username = { at: Date.now(), value: me?.username ?? null };
+  return username.value;
+}
+
 export function send(chatId: string | number, text: string, keyboard?: Keyboard) {
   return tg("sendMessage", {
     chat_id: chatId,

@@ -89,7 +89,15 @@ export async function getRecentOrders(userId: string) {
 /** The delivered login details of one of the customer's orders. */
 export async function getOrderDetails(userId: string, orderId: string) {
   const [row] = await db
-    .select({ status: order.status, title: listing.title, notes: accountDelivery.notes, quantity: order.quantity })
+    .select({
+      status: order.status,
+      title: listing.title,
+      notes: accountDelivery.notes,
+      quantity: order.quantity,
+      // For showing the logs as labelled fields (lib/log-fields.ts).
+      metadata: listing.metadata,
+      description: listing.description,
+    })
     .from(order)
     .innerJoin(listing, eq(order.listingId, listing.id))
     .leftJoin(accountDelivery, eq(accountDelivery.orderId, order.id))
