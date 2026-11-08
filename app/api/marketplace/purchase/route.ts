@@ -25,6 +25,7 @@ import { getUSDtoNGNRate } from "@/lib/currency";
 import { getMarketplacePricing } from "@/lib/pricing";
 import { getLogProfits, priceListingNgn } from "@/lib/log-profit";
 import { purchaseFromSupplier } from "@/lib/suppliers/adapter";
+import { getBulkPricing, unitPriceForQuantity } from "@/lib/bulk-pricing";
 import {
   alertSupplierInsufficientBalance,
   isInsufficientBalanceError,
@@ -109,7 +110,8 @@ export async function POST(req: NextRequest) {
   ]);
 
   // Charge exactly the price customers see (same rule as the store).
-  const unitPriceNgn = priceListingNgn(list, rate, pricing, profits);
+  // Buying the bulk quantity or more makes every piece cheaper (Settings → Bulk pricing).
+  const unitPriceNgn = unitPriceForQuantity(priceListingNgn(list, rate, pricing, profits), quantity, await getBulkPricing());
   const totalAmount = (unitPriceNgn * quantity).toFixed(2);
 
   const walletRow = await getOrCreateWallet(session.user.id, "NGN");

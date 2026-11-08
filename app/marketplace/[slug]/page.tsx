@@ -8,6 +8,7 @@ import { DashboardShell } from "@/components/dashboard/shell";
 import { isAdminEmail } from "@/lib/admin-emails";
 import { PageHeader } from "@/components/page-header";
 import { PurchaseButton } from "@/components/marketplace/purchase-button";
+import { BulkPrice } from "@/components/marketplace/bulk-price";
 
 async function getListing(slug: string) {
   const base =
@@ -76,6 +77,7 @@ export default async function ListingPage({
             <p className="mt-2 text-xl font-semibold tracking-[-0.025em] tabular-nums">
               <Price ngn={listing.price} />
             </p>
+            <BulkPrice price={listing.price} stock={listing.stock} className="mt-1 block" />
           </div>
           <div className="surface rounded-2xl px-5 py-4">
             <span className="eyebrow text-muted-foreground">In stock</span>
