@@ -8,6 +8,7 @@ import { boostingProgress, customerBoostingStatus, refreshBoostingOrder } from "
 import { getProxyOrders, toOrderListItem } from "@/lib/proxies/orders";
 import { getOtpOrders, toOtpOrderListItem } from "@/lib/otp/orders";
 import { supplierCodename } from "@/lib/supplier-codename";
+import { formatForListing } from "@/lib/log-fields";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,8 @@ export async function GET() {
         supplierName: supplier.name,
         deliveryStatus: accountDelivery.deliveryStatus,
         notes: accountDelivery.notes,
+        listingMeta: listing.metadata,
+        listingDescription: listing.description,
       })
       .from(order)
       .innerJoin(listing, eq(order.listingId, listing.id))
@@ -78,6 +81,8 @@ export async function GET() {
       supplierName: supplierCodename(o.supplierName),
       deliveryStatus: (o.deliveryStatus ?? "pending") as string,
       credentials: o.notes ? o.notes.split("\n").filter(Boolean) : [],
+      // Labels for the delivered logs (Username, Password…), shown as fields.
+      logFormat: o.notes ? formatForListing(o.listingMeta, o.listingDescription) : null,
     })),
     ...boostOrders.map((o: (typeof boostOrders)[number]) => ({
       id: o.id,

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useCurrency } from "@/components/currency-provider";
 import { PurchaseButton } from "./purchase-button";
+import { BulkPrice } from "@/components/marketplace/bulk-price";
 
 interface ListingDetailModalProps {
   listing: {
@@ -61,6 +62,7 @@ export function ListingDetailModal({
               <p className="mt-2 text-lg font-semibold tracking-[-0.02em] tabular-nums">
                 {format(parseFloat(listing.price))}
               </p>
+              <BulkPrice price={listing.price} stock={listing.stock} className="mt-1 block" />
             </div>
             <div className="rounded-xl bg-white/[0.03] px-4 py-3">
               <p className="eyebrow text-muted-foreground">In stock</p>
