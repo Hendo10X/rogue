@@ -23,7 +23,7 @@ interface SupplierRow {
 }
 
 // Rows that only show a balance: no listings to hide, nothing to remove.
-const BALANCE_ONLY = new Set(["boosting", "proxy-seller", "5sim"]);
+const BALANCE_ONLY = new Set(["boosting", "proxy-seller", "otp-grizzly", "otp-smspool"]);
 
 function fetchSuppliers() {
   return fetch("/api/admin/suppliers")

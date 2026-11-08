@@ -1,7 +1,7 @@
 import { getSetting, setSetting } from "@/lib/admin-auth";
 
 /**
- * Backup for stock: 5sim lists only apps with numbers, but one can still sell
+ * Backup for stock: providers list apps that have numbers, but one can still sell
  * out between listing and buying. A purchase that finds none hides that app for
  * that country until an admin shows it again (Settings → OTP numbers).
  */
@@ -48,10 +48,10 @@ export async function clearOutOfStock() {
 }
 
 /**
- * A buy failure that means "nothing to sell" (5sim says "no free phones"), as
+ * A buy failure that means "nothing to sell" (Grizzly NO_NUMBERS, SMSPool "out of stock", 5sim "no free phones"), as
  * opposed to our balance, key, rate limit or a passing outage, which must
  * never hide an app.
  */
 export function looksOutOfStock(message: string): boolean {
-  return /no free phones|no (numbers|phones) available|out of stock/i.test(message);
+  return /no free phones|no_numbers|no (numbers|phones) available|out of stock|not available for this service|no numbers/i.test(message);
 }
