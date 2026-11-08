@@ -158,6 +158,9 @@ export async function syncListingsForSupplier(supplierId: string) {
             ...payload.metadata,
             ...(isHidden ? { hidden: true } : {}),
             ...(titleLocked ? { titleLocked: true } : {}),
+            // The log format AI learned for this listing (lib/log-format-ai.ts).
+            ...(prevMeta.logFormat ? { logFormat: prevMeta.logFormat } : {}),
+            ...(prevMeta.logFormatTriedAt ? { logFormatTriedAt: prevMeta.logFormatTriedAt } : {}),
           },
           ...(stockVal > 0 && !isHidden ? { status: "active" as const } : {}),
           updatedAt: new Date(),

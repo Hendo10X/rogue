@@ -1,6 +1,7 @@
 "use client";
 
 import { mentions2fa } from "@/lib/totp";
+import { labelLog, logToText, type LogField, type LogFormat } from "@/lib/log-fields";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import { Segmented } from "@/components/ui/segmented";
@@ -47,6 +48,8 @@ interface Order {
   deliveryStatus: string;
   deliveredAt?: string | null;
   credentials: string[];
+  /** How the delivered logs are laid out, so they show as labelled fields. */
+  logFormat?: LogFormat | null;
   /** Boosting only: delivered share, 0–100. */
   progress?: number;
 }
@@ -85,15 +88,42 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function CredentialsBlock({ credentials }: { credentials: string[] }) {
+function FieldRow({ field }: { field: LogField }) {
   const [copied, setCopied] = useState(false);
-  const text = credentials.join("\n");
-
   const copy = async () => {
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(field.value);
     setCopied(true);
-    toast.success("Login details copied.");
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <div className="group grid grid-cols-[6.5rem_1fr_auto] items-start gap-2 py-0.5">
+      <span className="text-[0.6875rem] text-muted-foreground">{field.label}</span>
+      <span className="font-mono text-[0.6875rem] leading-relaxed break-all">{field.value}</span>
+      <button
+        type="button"
+        onClick={copy}
+        aria-label={`Copy ${field.label}`}
+        className="rounded p-0.5 text-muted-foreground opacity-60 hover:text-foreground hover:opacity-100 group-hover:opacity-100"
+      >
+        <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} size={11} className={copied ? "text-emerald-400" : ""} />
+      </button>
+    </div>
+  );
+}
+
+function CredentialsBlock({ credentials, format }: { credentials: string[]; format?: LogFormat | null }) {
+  const [copied, setCopied] = useState<"labelled" | "raw" | null>(null);
+  const raw = credentials.join("\n");
+  // Each delivered log as labelled fields (Username, Password…), or null to show it as-is.
+  const logs = credentials.map((line) => ({ line, fields: labelLog(line, format) }));
+  const labelled = logs.map((l) => (l.fields ? logToText(l.fields) : l.line)).join("\n\n");
+  const anyLabelled = logs.some((l) => l.fields);
+
+  const copy = async (kind: "labelled" | "raw") => {
+    await navigator.clipboard.writeText(kind === "raw" ? raw : labelled);
+    setCopied(kind);
+    toast.success(kind === "raw" ? "Raw log copied." : "Login details copied.");
+    setTimeout(() => setCopied(null), 2000);
   };
 
   if (credentials.length === 0) return null;
@@ -101,15 +131,31 @@ function CredentialsBlock({ credentials }: { credentials: string[] }) {
     <div className="rounded-xl bg-black/25">
       <div className="flex items-center justify-between px-3 py-1.5">
         <span className="text-xs text-muted-foreground">Credentials</span>
-        <Button variant="ghost" size="xs"  onClick={copy}>
-          <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} size={12} className={copied ? "text-emerald-400" : ""} />
-          {copied ? "Copied" : "Copy"}
-        </Button>
+        <div className="flex items-center gap-1">
+          {anyLabelled && (
+            <Button variant="ghost" size="xs" onClick={() => copy("raw")} title="Copy in the original one-line format">
+              {copied === "raw" ? "Copied" : "Copy raw"}
+            </Button>
+          )}
+          <Button variant="ghost" size="xs" onClick={() => copy("labelled")}>
+            <HugeiconsIcon icon={copied === "labelled" ? Tick02Icon : Copy01Icon} size={12} className={copied === "labelled" ? "text-emerald-400" : ""} />
+            {copied === "labelled" ? "Copied" : "Copy"}
+          </Button>
+        </div>
       </div>
-      <pre className="max-h-48 overflow-y-auto px-3 py-2.5 font-mono text-[0.6875rem] leading-relaxed break-all whitespace-pre-wrap">
-        {text}
-      </pre>
-      {mentions2fa(text) && (
+      <div className="max-h-72 overflow-y-auto px-3 pb-2.5">
+        {logs.map((l, i) => (
+          <div key={i} className={cn("py-2", i > 0 && "border-t border-white/5")}>
+            {logs.length > 1 && <p className="mb-1 text-[0.625rem] text-muted-foreground tabular-nums">Log {i + 1}</p>}
+            {l.fields ? (
+              l.fields.map((f) => <FieldRow key={f.label} field={f} />)
+            ) : (
+              <p className="font-mono text-[0.6875rem] leading-relaxed break-all whitespace-pre-wrap">{l.line}</p>
+            )}
+          </div>
+        ))}
+      </div>
+      {mentions2fa(raw) && (
         <a
           href="/tools/2fa"
           className="flex items-center justify-between gap-2 rounded-b-xl bg-primary/10 px-3 py-2 text-xs text-primary hover:bg-primary/15"
@@ -158,7 +204,7 @@ function OrderViewModal({
           </div>
         </div>
         {(order.status === "completed" || order.status === "failed") && (
-          <CredentialsBlock credentials={order.credentials} />
+          <CredentialsBlock credentials={order.credentials} format={order.logFormat} />
         )}
         <AlertDialogFooter>
           <AlertDialogCancel >Close</AlertDialogCancel>
@@ -321,7 +367,7 @@ export function OrderList({ initialOrders }: { initialOrders: Order[] }) {
                   </button>
                   {showCreds && (
                     <div className="px-3 pb-3 sm:pl-[4.25rem]">
-                      <CredentialsBlock credentials={o.credentials} />
+                      <CredentialsBlock credentials={o.credentials} format={o.logFormat} />
                     </div>
                   )}
                 </motion.li>

@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
+import { deliveryColumns, formatForListing } from "@/lib/log-fields";
+import { learnLogFormat } from "@/lib/log-format-ai";
 import { isUserSuspended, SUSPENDED_MESSAGE } from "@/lib/suspension";
 import { claimManualLogItems } from "@/lib/manual-logs";
 import { headers } from "next/headers";
@@ -68,6 +70,7 @@ export async function POST(req: NextRequest) {
       stock: listing.stock,
       platform: listing.platform,
       metadata: listing.metadata,
+      description: listing.description,
     })
     .from(listing)
     .where(eq(listing.slug, body.listingSlug))
@@ -76,6 +79,8 @@ export async function POST(req: NextRequest) {
   if (!list) {
     return NextResponse.json({ error: "Listing not found" }, { status: 404 });
   }
+  // How this listing's logs are laid out, so deliveries show labelled fields.
+  const logFormat = formatForListing(list.metadata, list.description);
 
   if (list.stock < quantity) {
     return NextResponse.json(
@@ -165,15 +170,13 @@ export async function POST(req: NextRequest) {
 
     if (claimed.length === quantity) {
       const deliveryData = claimed.join("\n");
-      const parts = (claimed[0] || "").split(":");
+      const cols = deliveryColumns(claimed, logFormat);
+      after(() => learnLogFormat(list.id, claimed));
       await db.insert(accountDelivery).values({
         id: crypto.randomUUID(),
         orderId,
         platform: list.platform,
-        username: parts[0] || null,
-        password: parts[1] || null,
-        email: parts[2] || null,
-        emailPassword: parts[3] || null,
+        ...cols,
         deliveryStatus: "delivered",
         deliveredAt: new Date(),
         notes: deliveryData,
@@ -202,13 +205,8 @@ export async function POST(req: NextRequest) {
               to: usr.email,
               orderId,
               platform: list.platform,
-              details: {
-                username: parts[0],
-                password: parts[1],
-                email: parts[2],
-                emailPassword: parts[3],
-                notes: deliveryData,
-              },
+              details: { notes: deliveryData },
+              format: logFormat,
             }),
             sendAdminOrderNotification({
               orderId,
@@ -326,16 +324,14 @@ export async function POST(req: NextRequest) {
 
     const credentials = purchaseResult.data ?? [];
     const deliveryData = credentials.join("\n");
-    const parts = (credentials[0] || "").split(":");
+    const cols = deliveryColumns(credentials, logFormat);
+    if (credentials.length) after(() => learnLogFormat(list.id, credentials));
 
     await db.insert(accountDelivery).values({
       id: crypto.randomUUID(),
       orderId,
       platform: list.platform,
-      username: parts[0] || null,
-      password: parts[1] || null,
-      email: parts[2] || null,
-      emailPassword: parts[3] || null,
+      ...cols,
       deliveryStatus: "delivered",
       deliveredAt: new Date(),
       notes: deliveryData,
@@ -369,13 +365,8 @@ export async function POST(req: NextRequest) {
             to: usr.email,
             orderId,
             platform: list.platform,
-            details: {
-              username: parts[0],
-              password: parts[1],
-              email: parts[2],
-              emailPassword: parts[3],
-              notes: deliveryData,
-            },
+            details: { notes: deliveryData },
+            format: logFormat,
           }),
           sendAdminOrderNotification({
             orderId,
