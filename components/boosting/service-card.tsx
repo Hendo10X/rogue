@@ -5,6 +5,7 @@ import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { useCurrency } from "@/components/currency-provider";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import type { ReallySimpleSocialService } from "@/lib/boosting/really-simple-social";
+import { boostingMin } from "@/lib/boosting/min";
 
 interface ExtendedService extends ReallySimpleSocialService {
   provider?: string;
@@ -19,7 +20,7 @@ interface ServiceCardProps {
 /** One row in the boosting list. The whole row opens the order sheet. */
 export function ServiceCard({ service, icon, onViewClick }: ServiceCardProps) {
   const { format } = useCurrency();
-  const min = parseInt(service.min, 10) || 0;
+  const min = boostingMin(service);
   const max = parseInt(service.max, 10) || 0;
   // rate = NGN price for 1000 quantity. Total = rate × (quantity / 1000).
   const ratePer1000 = parseFloat(service.rate) || 0;
@@ -74,7 +75,7 @@ export function ServiceCard({ service, icon, onViewClick }: ServiceCardProps) {
  */
 export function ServiceTile({ service, icon, onViewClick }: ServiceCardProps) {
   const { format } = useCurrency();
-  const min = parseInt(service.min, 10) || 0;
+  const min = boostingMin(service);
   const max = parseInt(service.max, 10) || 0;
   const ratePer1000 = parseFloat(service.rate) || 0;
   const flags = [

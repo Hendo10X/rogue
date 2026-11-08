@@ -20,6 +20,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
 import { useCurrency } from "@/components/currency-provider";
+import { bulkPrice, useBulkPricing } from "@/components/marketplace/bulk-price";
 
 interface PurchaseButtonProps {
   slug: string;
@@ -45,6 +46,11 @@ export function PurchaseButton({
   const [loading, setLoading] = useState(false);
 
   const balance = parseFloat(userBalance);
+  const bulk = useBulkPricing();
+  const unit = parseFloat(price);
+  const isBulk = !!bulk && quantity >= bulk.minQty;
+  // Same rule as checkout: the bulk price once the quantity qualifies.
+  const total = (isBulk ? bulkPrice(unit, bulk) : unit) * quantity;
   const outOfStock = stock < 1;
 
   async function handlePurchase() {
@@ -115,14 +121,15 @@ export function PurchaseButton({
               <div className="rounded-xl bg-white/[0.03] px-4 py-3">
                 <p className="eyebrow text-muted-foreground">Estimated total</p>
                 <p className="mt-2 text-base font-semibold tabular-nums">
-                  {format(parseFloat(price) * quantity)}
+                  {format(total)}
                 </p>
+                {isBulk && <p className="mt-1 text-xs text-emerald-400">Bulk price applied · {bulk.percent}% off</p>}
               </div>
               <div className="rounded-xl bg-white/[0.03] px-4 py-3">
                 <p className="eyebrow text-muted-foreground">Your balance</p>
                 <p
                   className={
-                    balance < parseFloat(price) * quantity
+                    balance < total
                       ? "mt-2 text-base font-semibold text-destructive tabular-nums"
                       : "mt-2 text-base font-semibold tabular-nums"
                   }
@@ -131,6 +138,15 @@ export function PurchaseButton({
                 </p>
               </div>
             </div>
+            {bulk && !isBulk && stock >= bulk.minQty && (
+              <button
+                type="button"
+                onClick={() => setQuantity(bulk.minQty)}
+                className="rounded-xl bg-emerald-400/10 px-4 py-3 text-left text-xs text-emerald-300 hover:bg-emerald-400/15"
+              >
+                Buy {bulk.minQty} or more and pay {format(bulkPrice(unit, bulk))} each ({bulk.percent}% off). Tap to buy {bulk.minQty}.
+              </button>
+            )}
             <p className="subtext text-xs text-muted-foreground">
               Final price is calculated at checkout with the live exchange rate.
             </p>

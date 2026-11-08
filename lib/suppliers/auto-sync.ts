@@ -1,6 +1,7 @@
 import { db } from "@/db/drizzle";
 import { supplier } from "@/db/schema";
 import { syncListingsForSupplier } from "./sync";
+import { isAccszone } from "./accszone";
 
 let lastSyncTime = 0;
 let isSyncing = false;
@@ -18,6 +19,9 @@ export async function autoSyncIfStale() {
       // would put its listings back on the storefront.
       if (sup.status !== "active") continue;
       if (!sup.apiUrl || !sup.apiKey) continue;
+      // AccsZone takes a minute or two (rate limited): only the cron and the
+      // admin sync button refresh it, never a shopper's page load.
+      if (isAccszone(sup.apiUrl)) continue;
       try {
         await syncListingsForSupplier(sup.id);
       } catch (e) {

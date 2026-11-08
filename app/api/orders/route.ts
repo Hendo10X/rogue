@@ -4,30 +4,13 @@ import { auth } from "@/utils/auth";
 import { db } from "@/db/drizzle";
 import { order, listing, supplier, accountDelivery, boostingOrder } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
-import { getOrderStatus } from "@/lib/boosting/provider";
+import { boostingProgress, customerBoostingStatus, refreshBoostingOrder } from "@/lib/boosting/refresh";
 import { getProxyOrders, toOrderListItem } from "@/lib/proxies/orders";
 import { getOtpOrders, toOtpOrderListItem } from "@/lib/otp/orders";
 import { supplierCodename } from "@/lib/supplier-codename";
+import { formatForListing } from "@/lib/log-fields";
 
 export const dynamic = "force-dynamic";
-
-function toInternalBoostingStatus(params: {
-  supplierStatus?: string;
-  remains?: string;
-}) {
-  const status = (params.supplierStatus ?? "").toLowerCase();
-  const remains = params.remains?.trim();
-
-  if (remains === "0" && status.length === 0) return "completed";
-  if (status.includes("completed")) return "completed";
-  if (status.includes("partial")) return "completed";
-  if (status.includes("canceled") || status.includes("cancelled")) return "failed";
-  if (status.includes("fail") || status.includes("error")) return "failed";
-  if (status.includes("in progress") || status.includes("processing") || status.includes("pending"))
-    return "processing";
-
-  return "processing";
-}
 
 export async function GET() {
   const session = await auth.api.getSession({
@@ -53,6 +36,8 @@ export async function GET() {
         supplierName: supplier.name,
         deliveryStatus: accountDelivery.deliveryStatus,
         notes: accountDelivery.notes,
+        listingMeta: listing.metadata,
+        listingDescription: listing.description,
       })
       .from(order)
       .innerJoin(listing, eq(order.listingId, listing.id))
@@ -62,87 +47,24 @@ export async function GET() {
       .orderBy(desc(order.createdAt))
       .limit(100),
     db
-      .select({
-        id: boostingOrder.id,
-        status: boostingOrder.status,
-        amount: boostingOrder.amount,
-        currency: boostingOrder.currency,
-        quantity: boostingOrder.quantity,
-        createdAt: boostingOrder.createdAt,
-        serviceName: boostingOrder.serviceName,
-        category: boostingOrder.category,
-        provider: boostingOrder.provider,
-        externalOrderId: boostingOrder.externalOrderId,
-      })
+      .select()
       .from(boostingOrder)
       .where(eq(boostingOrder.userId, session.user.id))
       .orderBy(desc(boostingOrder.createdAt))
       .limit(100),
   ]);
 
-  // Refresh statuses for recent in-flight boosting orders so "processing" doesn't stick forever.
-  // We keep it small to avoid slowing the page or hitting supplier rate limits.
-  const boostOrders = [...boostOrdersRaw];
-  const toRefresh = boostOrders
-    .filter((o) => (o.status === "processing" || o.status === "pending") && o.externalOrderId != null)
-    .slice(0, 8);
-
-  if (toRefresh.length > 0) {
-    const refreshed: Array<{
-      id: string;
-      status: string;
-      externalStatus?: string;
-      charge?: string;
-      startCount?: string;
-      remains?: string;
-    }> = [];
-
-    for (const o of toRefresh) {
-      try {
-        const orderId = Number(o.externalOrderId);
-        // Route to the supplier that fulfilled it (old Socially.ng orders stay there).
-        const s = await getOrderStatus(o.provider, orderId);
-
-        const nextStatus = toInternalBoostingStatus({
-          supplierStatus: s.status,
-          remains: s.remains,
-        });
-
-        await db
-          .update(boostingOrder)
-          .set({
-            status: nextStatus,
-            externalStatus: s.status ?? null,
-            charge: s.charge != null ? s.charge : null,
-            startCount: s.start_count ?? null,
-            remains: s.remains ?? null,
-            updatedAt: new Date(),
-          })
-          .where(eq(boostingOrder.id, o.id));
-
-        refreshed.push({
-          id: o.id,
-          status: nextStatus,
-          externalStatus: s.status,
-          charge: s.charge,
-          startCount: s.start_count,
-          remains: s.remains,
-        });
-      } catch {
-        // non-critical: leave as-is; next poll will try again
-      }
-    }
-
-    if (refreshed.length > 0) {
-      const byId = new Map(refreshed.map((r) => [r.id, r]));
-      for (const o of boostOrders) {
-        const r = byId.get(o.id);
-        if (r) {
-          o.status = r.status;
-        }
-      }
-    }
-  }
+  // Refresh recent in-flight boosting orders: progress, plus automatic refunds
+  // when the supplier cancels or only partly delivers. Kept small for speed.
+  const open = new Set(
+    boostOrdersRaw
+      .filter((o: (typeof boostOrdersRaw)[number]) => ["pending", "processing"].includes(o.status) && o.externalOrderId != null)
+      .slice(0, 8)
+      .map((o: (typeof boostOrdersRaw)[number]) => o.id),
+  );
+  const boostOrders = await Promise.all(
+    boostOrdersRaw.map((o: (typeof boostOrdersRaw)[number]) => (open.has(o.id) ? refreshBoostingOrder(o).catch(() => o) : o)),
+  );
 
   const mapped = [
     ...marketplaceOrders.map((o: (typeof marketplaceOrders)[number]) => ({
@@ -159,11 +81,13 @@ export async function GET() {
       supplierName: supplierCodename(o.supplierName),
       deliveryStatus: (o.deliveryStatus ?? "pending") as string,
       credentials: o.notes ? o.notes.split("\n").filter(Boolean) : [],
+      // Labels for the delivered logs (Username, Password…), shown as fields.
+      logFormat: o.notes ? formatForListing(o.listingMeta, o.listingDescription) : null,
     })),
     ...boostOrders.map((o: (typeof boostOrders)[number]) => ({
       id: o.id,
       type: "boosting" as const,
-      status: o.status,
+      status: customerBoostingStatus(o),
       amount: o.amount,
       currency: o.currency,
       quantity: o.quantity,
@@ -174,6 +98,7 @@ export async function GET() {
       supplierName: "Boosting Service",
       deliveryStatus: o.status === "completed" ? "delivered" : "pending",
       credentials: [] as string[],
+      progress: boostingProgress(o),
     })),
   ];
 

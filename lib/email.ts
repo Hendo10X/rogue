@@ -2,6 +2,7 @@
 import { Resend } from "resend";
 import { sendTelegramMessage, escapeHtml } from "./telegram";
 import { formatAmount } from "./currency";
+import { labelLog, type LogFormat } from "./log-fields";
 
 /** Telegram bot customers get a placeholder address that must never be emailed. */
 export const TELEGRAM_EMAIL_DOMAIN = "telegram.roguesocials.com";
@@ -35,6 +36,27 @@ interface OrderEmailParams {
     emailPassword?: string;
     notes?: string;
   };
+  /** The listing's log format, so each delivered line is shown as labelled fields. */
+  format?: LogFormat | null;
+}
+
+const mono = "font-family: ui-monospace, Menlo, Consolas, monospace; word-break: break-all;";
+
+/** One block per delivered log: "Username: …" rows, or the raw line when it isn't a delimited log. */
+function deliveredLogsHtml(notes: string, format?: LogFormat | null): string {
+  const lines = notes.split("\n").map((l) => l.trim()).filter(Boolean);
+  return lines
+    .map((line, i) => {
+      const fields = labelLog(line, format);
+      const body = fields
+        ? fields
+            .map((f) => `<div style="margin: 2px 0;"><span style="color: #777;">${escapeHtml(f.label)}:</span> <span style="${mono}">${escapeHtml(f.value)}</span></div>`)
+            .join("")
+        : `<div style="${mono}">${escapeHtml(line)}</div>`;
+      const title = lines.length > 1 ? `<div style="font-size: 0.8em; color: #999; margin-bottom: 4px;">Log ${i + 1}</div>` : "";
+      return `<div style="padding: 10px 0; ${i ? "border-top: 1px solid #e5e5e5;" : ""}">${title}${body}</div>`;
+    })
+    .join("");
 }
 
 export async function sendOrderDeliveryEmail({
@@ -42,25 +64,30 @@ export async function sendOrderDeliveryEmail({
   orderId,
   platform,
   details,
+  format,
 }: OrderEmailParams) {
   const { username, password, email, emailPassword, notes } = details;
+
+  // The delivered logs carry everything; the single fields are only a fallback.
+  const body = notes?.trim()
+    ? deliveredLogsHtml(notes, format)
+    : `<ul style="list-style: none; padding: 0;">
+          ${username ? `<li><strong>Username:</strong> ${escapeHtml(username)}</li>` : ""}
+          ${password ? `<li><strong>Password:</strong> ${escapeHtml(password)}</li>` : ""}
+          ${email ? `<li><strong>Email:</strong> ${escapeHtml(email)}</li>` : ""}
+          ${emailPassword ? `<li><strong>Email Password:</strong> ${escapeHtml(emailPassword)}</li>` : ""}
+        </ul>`;
 
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
       <h2 style="color: #333;">Order Delivered!</h2>
-      <p>Your order for <strong>${platform}</strong> has been successfully processed.</p>
-      
+      <p>Your order for <strong>${escapeHtml(platform)}</strong> has been successfully processed.</p>
+
       <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
         <h3 style="margin-top: 0; color: #555;">Account details:</h3>
-        <ul style="list-style: none; padding: 0;">
-          ${username ? `<li><strong>Username:</strong> ${username}</li>` : ""}
-          ${password ? `<li><strong>Password:</strong> ${password}</li>` : ""}
-          ${email ? `<li><strong>Email:</strong> ${email}</li>` : ""}
-          ${emailPassword ? `<li><strong>Email Password:</strong> ${emailPassword}</li>` : ""}
-        </ul>
-        ${notes ? `<p style="margin-top: 10px; font-size: 0.9em; color: #666; border-top: 1px solid #ddd; pt: 10px;">${notes}</p>` : ""}
+        ${body}
       </div>
-      
+
       <p style="font-size: 0.8em; color: #999;">Order ID: ${orderId}</p>
       <p>Thank you for your purchase!</p>
     </div>

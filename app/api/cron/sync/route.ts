@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
 import { supplier } from "@/db/schema";
 import { syncListingsForSupplier } from "@/lib/suppliers/sync";
+import { refreshOpenBoostingOrders } from "@/lib/boosting/refresh";
 import { checkSupplierBalances } from "@/lib/suppliers/balance-alert";
 
 export const dynamic = "force-dynamic";
 // A full catalogue resync across suppliers can touch a few hundred rows.
-export const maxDuration = 60;
+// AccsZone alone takes a minute or two (rate limited catalogue).
+export const maxDuration = 300;
 
 /**
  * Automated supplier catalogue refresh. Re-pulls every active supplier's
@@ -44,6 +46,9 @@ export async function GET(req: Request) {
     skipped?: string;
     error?: string;
   }[] = [];
+
+  // Failed boosting orders get refunded even if nobody opens Orders.
+  await refreshOpenBoostingOrders(100, 30_000).catch((err) => console.error("[Cron] boosting refresh failed", err));
 
   for (const sup of suppliers) {
     // Deactivated suppliers are skipped, not synced — a re-sync would undo

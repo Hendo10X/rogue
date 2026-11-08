@@ -1,4 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { deliveryColumns, formatForListing } from "@/lib/log-fields";
+import { learnLogFormat } from "@/lib/log-format-ai";
+import { getBulkPricing, unitPriceForQuantity } from "@/lib/bulk-pricing";
 import { claimManualLogItems } from "@/lib/manual-logs";
 import { db } from "@/db/drizzle";
 import {
@@ -48,6 +51,7 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
       stock: listing.stock,
       platform: listing.platform,
       metadata: listing.metadata,
+      description: listing.description,
     })
     .from(listing)
     .where(eq(listing.slug, body.listingSlug))
@@ -56,6 +60,8 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
   if (!list) {
     return NextResponse.json({ error: "Listing not found" }, { status: 404 });
   }
+  // How this listing's logs are laid out, so deliveries show labelled fields.
+  const logFormat = formatForListing(list.metadata, list.description);
 
   if (list.stock < quantity) {
     return NextResponse.json(
@@ -90,7 +96,8 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
   ]);
 
   // Charge exactly the price customers see (same rule as the store).
-  const unitPriceNgn = priceListingNgn(list, rate, pricing, profits);
+  // Buying the bulk quantity or more makes every piece cheaper (Settings → Bulk pricing).
+  const unitPriceNgn = unitPriceForQuantity(priceListingNgn(list, rate, pricing, profits), quantity, await getBulkPricing());
   const totalAmount = (unitPriceNgn * quantity).toFixed(2);
 
   const walletRow = await getOrCreateWallet(userId, "NGN");
@@ -144,15 +151,13 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
 
     if (claimed.length === quantity) {
       const deliveryData = claimed.join("\n");
-      const parts = (claimed[0] || "").split(":");
+      const cols = deliveryColumns(claimed, logFormat);
+      after(() => learnLogFormat(list.id, claimed));
       await db.insert(accountDelivery).values({
         id: crypto.randomUUID(),
         orderId,
         platform: list.platform,
-        username: parts[0] || null,
-        password: parts[1] || null,
-        email: parts[2] || null,
-        emailPassword: parts[3] || null,
+        ...cols,
         deliveryStatus: "delivered",
         deliveredAt: new Date(),
         notes: deliveryData,
@@ -181,13 +186,8 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
               to: usr.email,
               orderId,
               platform: list.platform,
-              details: {
-                username: parts[0],
-                password: parts[1],
-                email: parts[2],
-                emailPassword: parts[3],
-                notes: deliveryData,
-              },
+              details: { notes: deliveryData },
+              format: logFormat,
             }),
             sendAdminOrderNotification({
               orderId,
@@ -305,16 +305,14 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
 
     const credentials = purchaseResult.data ?? [];
     const deliveryData = credentials.join("\n");
-    const parts = (credentials[0] || "").split(":");
+    const cols = deliveryColumns(credentials, logFormat);
+    if (credentials.length) after(() => learnLogFormat(list.id, credentials));
 
     await db.insert(accountDelivery).values({
       id: crypto.randomUUID(),
       orderId,
       platform: list.platform,
-      username: parts[0] || null,
-      password: parts[1] || null,
-      email: parts[2] || null,
-      emailPassword: parts[3] || null,
+      ...cols,
       deliveryStatus: "delivered",
       deliveredAt: new Date(),
       notes: deliveryData,
@@ -348,13 +346,8 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
             to: usr.email,
             orderId,
             platform: list.platform,
-            details: {
-              username: parts[0],
-              password: parts[1],
-              email: parts[2],
-              emailPassword: parts[3],
-              notes: deliveryData,
-            },
+            details: { notes: deliveryData },
+            format: logFormat,
           }),
           sendAdminOrderNotification({
             orderId,

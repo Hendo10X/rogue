@@ -15,7 +15,12 @@ export interface MarketplacePricing {
   thresholdNaira: number; // boundary between flat-fee and percentage tiers
   percent: number; // markup % applied to logs at/above the threshold
   priceCapNaira: number; // logs above this are hidden (0 = no cap)
+  /** AccsZone logs have their own profit (Settings → AccsZone). */
+  accszone?: SupplierProfit;
 }
+
+/** A supplier's own profit rule: same tiers as the marketplace model. */
+export type SupplierProfit = Pick<MarketplacePricing, "flatFeeNaira" | "thresholdNaira" | "percent">;
 
 export const MARKETPLACE_PRICING_DEFAULTS: MarketplacePricing = {
   flatFeeNaira: 1500,
@@ -30,17 +35,29 @@ function toNum(value: string | null, fallback: number): number {
 }
 
 export async function getMarketplacePricing(): Promise<MarketplacePricing> {
-  const [flat, threshold, percent, cap] = await Promise.all([
+  const [flat, threshold, percent, cap, azFlat, azThreshold, azPercent] = await Promise.all([
     getSetting("mp_flat_fee_naira"),
     getSetting("mp_threshold_naira"),
     getSetting("mp_percent"),
     getSetting("mp_price_cap_naira"),
+    getSetting("az_flat_fee_naira"),
+    getSetting("az_threshold_naira"),
+    getSetting("az_percent"),
   ]);
-  return {
+  const base = {
     flatFeeNaira: toNum(flat, MARKETPLACE_PRICING_DEFAULTS.flatFeeNaira),
     thresholdNaira: toNum(threshold, MARKETPLACE_PRICING_DEFAULTS.thresholdNaira),
     percent: toNum(percent, MARKETPLACE_PRICING_DEFAULTS.percent),
     priceCapNaira: toNum(cap, MARKETPLACE_PRICING_DEFAULTS.priceCapNaira),
+  };
+  // Until set, AccsZone uses the same profit as everything else.
+  return {
+    ...base,
+    accszone: {
+      flatFeeNaira: toNum(azFlat, base.flatFeeNaira),
+      thresholdNaira: toNum(azThreshold, base.thresholdNaira),
+      percent: toNum(azPercent, base.percent),
+    },
   };
 }
 

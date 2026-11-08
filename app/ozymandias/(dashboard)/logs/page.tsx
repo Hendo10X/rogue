@@ -59,6 +59,59 @@ type Filter = "all" | "active" | "hidden" | "custom";
 
 const naira = (n: number) => `₦${Math.round(n).toLocaleString("en-NG")}`;
 
+/** Click a log's title to rename it (kept even when the supplier syncs). */
+function TitleCell({ row, onSave }: { row: LogRow; onSave: (title: string) => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(row.title);
+  const [busy, setBusy] = useState(false);
+
+  async function commit() {
+    const next = value.trim();
+    if (!next || next === row.title) return setEditing(false);
+    setBusy(true);
+    await onSave(next);
+    setBusy(false);
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void commit();
+        }}
+        className="flex items-center gap-1"
+      >
+        <Input
+          autoFocus
+          value={value}
+          maxLength={500}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
+          onBlur={() => !busy && void commit()}
+          className="h-8 rounded-lg px-2 text-[0.8125rem]"
+          aria-label="Title"
+        />
+        {busy && <HugeiconsIcon icon={Loading03Icon} className="size-3.5 animate-spin text-muted-foreground" />}
+      </form>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setValue(row.title);
+        setEditing(true);
+      }}
+      title="Click to rename"
+      className="line-clamp-2 rounded-md text-left text-[0.8125rem] leading-snug font-medium hover:bg-white/[0.05] md:line-clamp-1"
+    >
+      {row.title}
+    </button>
+  );
+}
+
 /** Click to set a fixed profit; empty resets to tiered pricing. Manual logs keep their own price. */
 function ProfitCell({ row, onSave }: { row: LogRow; onSave: (profit: number | null) => Promise<void> }) {
   const [editing, setEditing] = useState(false);
@@ -239,6 +292,22 @@ export default function AdminLogsPage() {
       setItems((prev) => prev.map((r) => (r.id === row.id ? { ...r, hidden: data.hidden, status: data.status } : r)));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Update failed");
+    }
+  }
+
+  async function saveTitle(row: LogRow, title: string) {
+    try {
+      const res = await fetch("/api/admin/listings/all", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [row.id], title }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Rename failed");
+      setItems((prev) => prev.map((r) => (r.id === row.id ? { ...r, title: data.title ?? title } : r)));
+      toast.success("Renamed.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Rename failed");
     }
   }
 
@@ -443,7 +512,7 @@ export default function AdminLogsPage() {
                 >
                   <Checkbox checked={on} onCheckedChange={() => toggleRow(r.id)} aria-label={`Select ${r.title}`} />
                   <div className="min-w-0">
-                    <p className="line-clamp-2 text-[0.8125rem] leading-snug font-medium md:line-clamp-1">{r.title}</p>
+                    <TitleCell row={r} onSave={(t) => saveTitle(r, t)} />
                     <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-muted-foreground">
                       <span className="capitalize">{r.platform.toLowerCase()}</span>
                       {r.categoryName && <span>· {r.categoryName}</span>}

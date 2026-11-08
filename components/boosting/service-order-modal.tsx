@@ -19,6 +19,7 @@ import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
 import { useCurrency } from "@/components/currency-provider";
 import type { ReallySimpleSocialService } from "@/lib/boosting/really-simple-social";
+import { boostingMin } from "@/lib/boosting/min";
 
 interface ExtendedService extends ReallySimpleSocialService {
   provider?: string;
@@ -69,14 +70,14 @@ export function ServiceOrderModal({
   // When service changes, pre-fill quantity with min so initial total (rate × min) shows
   useEffect(() => {
     if (service) {
-      const min = parseInt(service.min, 10) || 1;
+      const min = boostingMin(service);
       setQuantity(String(min));
     }
   }, [service?.service, service?.min]);
 
   if (!service) return null;
 
-  const min = parseInt(service.min, 10) || 1;
+  const min = boostingMin(service);
   const max = parseInt(service.max, 10) || 10000;
   const ratePer1000 = Number((parseFloat(service.rate) || 0).toFixed(2));
   const qty = Math.max(min, Math.min(max, parseInt(quantity, 10) || min));

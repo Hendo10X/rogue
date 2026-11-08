@@ -13,6 +13,8 @@ import { ManualFundingForm } from "@/components/admin/manual-funding-form";
 import { ProxySettings } from "@/components/admin/proxy-settings";
 import { ProxyOrders } from "@/components/admin/proxy-orders";
 import { OtpSettings } from "@/components/admin/otp-settings";
+import { BulkPricingSettings } from "@/components/admin/bulk-pricing-settings";
+import { AccszoneSettings } from "@/components/admin/accszone-settings";
 import { ShopBotSettings } from "@/components/admin/shop-bot-settings";
 import {
   Select,
@@ -173,6 +175,8 @@ export default function AdminSettingsPage() {
         <ProxySettings />
         <ProxyOrders />
         <OtpSettings />
+        <BulkPricingSettings />
+        <AccszoneSettings />
         <ShopBotSettings />
       </div>
 

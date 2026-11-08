@@ -29,6 +29,13 @@ const SUPPLIERS = [
     apiUrl: "https://acctshop.com",
     apiKey: process.env.SUPPLIER_ACCTSHOP_API_KEY ?? "",
   },
+  {
+    id: "supplier-accszone",
+    name: "AccsZone",
+    slug: "accszone",
+    apiUrl: "https://accszone.com/api/v1",
+    apiKey: process.env.ACCSZONE_API_KEY ?? "",
+  },
 ];
 
 export async function POST() {

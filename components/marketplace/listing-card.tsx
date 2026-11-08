@@ -4,6 +4,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { useCurrency } from "@/components/currency-provider";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { BulkPrice } from "@/components/marketplace/bulk-price";
 
 interface ListingCardProps {
   id: string;
@@ -71,6 +72,7 @@ export function ListingCard({
       <div className="flex items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <span className="text-lg font-semibold tracking-[-0.03em] tabular-nums">{format(parseFloat(price))}</span>
+          <BulkPrice price={price} stock={inStock} />
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
             <span className={low ? "size-1.5 rounded-full bg-amber-400" : "size-1.5 rounded-full bg-emerald-400"} />
             {inStock.toLocaleString("en-US")} in stock
@@ -123,6 +125,7 @@ export function ListingRow({
       </span>
       <div className="w-24 shrink-0 text-right">
         <p className="text-[0.8125rem] font-semibold tabular-nums">{format(parseFloat(price))}</p>
+        <BulkPrice price={price} stock={inStock} className="block" />
         <p className="text-[0.6875rem] text-muted-foreground tabular-nums sm:hidden">
           {inStock.toLocaleString("en-US")} left
         </p>

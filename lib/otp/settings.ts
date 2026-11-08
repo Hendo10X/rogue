@@ -1,6 +1,6 @@
 import { getSetting, setSetting } from "@/lib/admin-auth";
 import { getUSDtoNGNRate } from "@/lib/currency";
-import { fetchApps, fetchCountries, otpProviderConfigured, type OtpApp, type OtpCountry } from "./provider";
+import { activeProviders, fetchApps, fetchCountries, type OtpApp, type OtpCountry } from "./provider";
 
 const ENABLED_KEY = "otp_enabled";
 const MARKUP_KEY = "otp_markup_percent";
@@ -21,7 +21,9 @@ export async function setOtpSettings(value: Partial<OtpSettings>) {
 }
 
 export async function otpOnSale(): Promise<boolean> {
-  return otpProviderConfigured() && (await getOtpSettings()).enabled;
+  // On when sales are switched on and at least one provider has a key and is switched on.
+  const [{ enabled }, providers] = await Promise.all([getOtpSettings(), activeProviders()]);
+  return enabled && providers.length > 0;
 }
 
 /**

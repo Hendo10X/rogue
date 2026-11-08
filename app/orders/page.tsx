@@ -15,6 +15,8 @@ import { isAdminEmail } from "@/lib/admin-emails";
 import { PageHeader } from "@/components/page-header";
 import { OrderList } from "@/components/orders/order-list";
 import { supplierCodename } from "@/lib/supplier-codename";
+import { formatForListing } from "@/lib/log-fields";
+import { boostingProgress, customerBoostingStatus } from "@/lib/boosting/refresh";
 
 async function getOrders(userId: string) {
   const [marketplaceOrders, boostOrders, proxyOrders, otpOrders] = await Promise.all([
@@ -32,6 +34,8 @@ async function getOrders(userId: string) {
         supplierName: supplier.name,
         deliveryStatus: accountDelivery.deliveryStatus,
         notes: accountDelivery.notes,
+        listingMeta: listing.metadata,
+        listingDescription: listing.description,
       })
       .from(order)
       .innerJoin(listing, eq(order.listingId, listing.id))
@@ -51,6 +55,8 @@ async function getOrders(userId: string) {
         serviceName: boostingOrder.serviceName,
         category: boostingOrder.category,
         link: boostingOrder.link,
+        remains: boostingOrder.remains,
+        externalStatus: boostingOrder.externalStatus,
       })
       .from(boostingOrder)
       .where(eq(boostingOrder.userId, userId))
@@ -75,11 +81,13 @@ async function getOrders(userId: string) {
       supplierName: supplierCodename(o.supplierName),
       deliveryStatus: (o.deliveryStatus ?? "pending") as string,
       credentials: o.notes ? o.notes.split("\n").filter(Boolean) : [],
+      // Labels for the delivered logs (Username, Password…), shown as fields.
+      logFormat: o.notes ? formatForListing(o.listingMeta, o.listingDescription) : null,
     })),
     ...boostOrders.map((o: typeof boostOrders[number]) => ({
       id: o.id,
       type: "boosting" as const,
-      status: o.status,
+      status: customerBoostingStatus(o),
       amount: o.amount,
       currency: o.currency,
       quantity: o.quantity,
@@ -90,6 +98,7 @@ async function getOrders(userId: string) {
       supplierName: "Boosting Service",
       deliveryStatus: o.status === "completed" ? "delivered" : "pending",
       credentials: [] as string[],
+      progress: boostingProgress(o),
     })),
     ...proxyOrders.map(toOrderListItem),
     ...otpOrders.map(toOtpOrderListItem),

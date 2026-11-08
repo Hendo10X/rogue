@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
+import { deliveryColumns, formatForListing } from "@/lib/log-fields";
+import { learnLogFormat } from "@/lib/log-format-ai";
 import { alertApiOrder } from "@/lib/api-order-alert";
 import { db } from "@/db/drizzle";
 import {
@@ -68,12 +70,14 @@ export async function POST(
       stock: listing.stock,
       platform: listing.platform,
       metadata: listing.metadata,
+      description: listing.description,
     })
     .from(listing)
     .where(eq(listing.slug, slug))
     .limit(1);
 
-  if (!list) return ApiErrors.notFound("Log not found");
+  // AccsZone logs are website-only: invisible to the API.
+  if (!list || (list.metadata as { source?: string } | null)?.source === "accszone") return ApiErrors.notFound("Log not found");
 
   const isManual = !!(list.metadata && (list.metadata as any).manual === true);
   if (isManual) {
@@ -142,7 +146,9 @@ export async function POST(
     }
 
     const credentials = result.data ?? [];
-    const parts = (credentials[0] || "").split(":");
+    const logFormat = formatForListing(list.metadata, list.description);
+    const cols = deliveryColumns(credentials, logFormat);
+    if (credentials.length) after(() => learnLogFormat(list.id, credentials));
 
     await db.insert(supplierOrder).values({
       id: crypto.randomUUID(),
@@ -156,10 +162,7 @@ export async function POST(
       id: crypto.randomUUID(),
       orderId,
       platform: list.platform,
-      username: parts[0] || null,
-      password: parts[1] || null,
-      email: parts[2] || null,
-      emailPassword: parts[3] || null,
+      ...cols,
       deliveryStatus: "delivered",
       deliveredAt: new Date(),
       notes: credentials.join("\n"),
@@ -196,13 +199,8 @@ export async function POST(
           to: usr.email,
           orderId,
           platform: list.platform,
-          details: {
-            username: parts[0],
-            password: parts[1],
-            email: parts[2],
-            emailPassword: parts[3],
-            notes: credentials.join("\n"),
-          },
+          details: { notes: credentials.join("\n") },
+          format: logFormat,
         });
       }
     } catch {

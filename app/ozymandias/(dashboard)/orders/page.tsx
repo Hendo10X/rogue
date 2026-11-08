@@ -44,6 +44,31 @@ interface OrderRow {
   serviceName?: string;
   link?: string;
   externalOrderId?: number;
+  externalStatus?: string | null;
+  /** Boosting only: delivered share, 0–100. */
+  progress?: number;
+}
+
+/** Boosting orders that failed and still owe the customer a refund. */
+const isFailing = (o: OrderRow) => o.type === "boosting" && (o.status === "failed" || o.status === "cancelled");
+
+function BoostingProgress({ order }: { order: OrderRow }) {
+  if (order.type !== "boosting") return null;
+  const failing = isFailing(order) || order.status === "refunded";
+  return (
+    <div className="mt-1.5 flex items-center gap-2">
+      <div className="h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-white/[0.08]">
+        <div
+          className={`h-full rounded-full ${failing ? "bg-red-400" : order.status === "completed" ? "bg-emerald-400" : "bg-[#ff9a4a]"}`}
+          style={{ width: `${failing ? 100 : order.progress ?? 0}%` }}
+        />
+      </div>
+      <span className="truncate text-[0.6875rem] text-muted-foreground tabular-nums">
+        {failing ? "" : `${order.progress ?? 0}%`}
+        {order.externalStatus ? `${failing ? "" : " · "}${order.externalStatus}` : ""}
+      </span>
+    </div>
+  );
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -53,6 +78,8 @@ function StatusBadge({ status }: { status: string }) {
     completed: "bg-green-500/15 text-emerald-400",
     failed: "bg-red-500/15 text-red-400",
     manual_review: "bg-purple-500/15 text-violet-300",
+    partial: "bg-amber-500/15 text-amber-300",
+    refunded: "bg-white/10 text-zinc-300",
   };
   const label = status === "manual_review" ? "Manual Review" : status.charAt(0).toUpperCase() + status.slice(1);
   return (
@@ -65,13 +92,35 @@ function StatusBadge({ status }: { status: string }) {
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "queue" | "marketplace" | "boosting" | "proxy" | "otp">("all");
+  const [filter, setFilter] = useState<"all" | "queue" | "failing" | "marketplace" | "boosting" | "proxy" | "otp">("all");
   const [query, setQuery] = useState("");
   
   // Fulfillment Modal State
   const [fulfillingOrder, setFulfillingOrder] = useState<OrderRow | null>(null);
   const [credentials, setCredentials] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [refunding, setRefunding] = useState<string | null>(null);
+
+  async function refund(o: OrderRow) {
+    if (!confirm(`Refund ${formatAmount(o.amount)} ${o.currency} to ${o.userEmail ?? "this customer"}? This can't be undone.`)) return;
+    setRefunding(o.id);
+    try {
+      const res = await fetch(`/api/admin/orders/${o.id}/refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: o.type }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Refund failed");
+      toast.success("Refunded to the customer's wallet.");
+      setOrders((prev) => prev.map((x) => (x.id === o.id && x.type === o.type ? { ...x, status: "refunded" } : x)));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Refund failed");
+    } finally {
+      setRefunding(null);
+    }
+  }
+
 
   function fetchOrders() {
     setLoading(true);
@@ -131,6 +180,7 @@ export default function AdminOrdersPage() {
   const q = query.trim().toLowerCase();
   const shown = orders.filter((o) => {
     if (filter === "queue" && !(o.status === "manual_review" && o.type === "marketplace")) return false;
+    if (filter === "failing" && !isFailing(o)) return false;
     if (filter === "marketplace" && o.type !== "marketplace") return false;
     if (filter === "boosting" && o.type !== "boosting") return false;
     if (filter === "proxy" && o.type !== "proxy") return false;
@@ -143,6 +193,7 @@ export default function AdminOrdersPage() {
   const tabs = [
     { id: "all" as const, label: "All", count: orders.length },
     { id: "queue" as const, label: "Needs action", count: queue.length },
+    { id: "failing" as const, label: "Failed boosting", count: orders.filter(isFailing).length },
     { id: "marketplace" as const, label: "Marketplace", count: orders.filter((o) => o.type === "marketplace").length },
     { id: "boosting" as const, label: "Boosting", count: orders.filter((o) => o.type === "boosting").length },
     { id: "proxy" as const, label: "Proxies", count: orders.filter((o) => o.type === "proxy").length },
@@ -226,6 +277,7 @@ export default function AdminOrdersPage() {
                   <TableCell>{o.userEmail ?? "—"}</TableCell>
                   <TableCell className="max-w-[200px] truncate">
                     {o.type === "marketplace" ? o.title ?? "—" : o.serviceName ?? o.link ?? "—"}
+                    <BoostingProgress order={o} />
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={o.status} />
@@ -248,6 +300,11 @@ export default function AdminOrdersPage() {
                       >
                        <HugeiconsIcon icon={CheckmarkBadge01Icon} className="mr-1 size-3" />
                        Fulfill
+                      </Button>
+                    )}
+                    {!(o.type === "boosting" ? ["refunded", "partial"] : ["refunded", "failed", "cancelled", "partial"]).includes(o.status) && (
+                      <Button size="sm" variant="outline" className="ml-2" disabled={refunding === o.id} onClick={() => refund(o)}>
+                        {refunding === o.id ? "Refunding…" : "Refund"}
                       </Button>
                     )}
                   </TableCell>
@@ -273,6 +330,7 @@ export default function AdminOrdersPage() {
                     {o.type === "marketplace" ? o.title ?? "—" : o.serviceName ?? o.link ?? "—"}
                   </p>
                   <p className="text-sm text-muted-foreground">{o.userEmail ?? "—"}</p>
+                  <BoostingProgress order={o} />
                 </div>
                 <StatusBadge status={o.status} />
               </div>
@@ -303,6 +361,11 @@ export default function AdminOrdersPage() {
                   >
                     <HugeiconsIcon icon={CheckmarkBadge01Icon} className="mr-1 size-3" />
                     Fulfill
+                  </Button>
+                )}
+                {!(o.type === "boosting" ? ["refunded", "partial"] : ["refunded", "failed", "cancelled", "partial"]).includes(o.status) && (
+                  <Button size="sm" variant="outline" className="ml-2" disabled={refunding === o.id} onClick={() => refund(o)}>
+                    {refunding === o.id ? "Refunding…" : "Refund"}
                   </Button>
                 )}
               </div>
