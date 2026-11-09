@@ -113,6 +113,8 @@ interface ListingItem {
   title: string;
   description: string | null;
   price: string;
+  /** ₦ per piece at the bulk quantity (server-computed); null when it doesn't apply. */
+  bulkPrice: number | null;
   currency: string;
   stock: number;
   platform: string;
@@ -359,6 +361,7 @@ export function ListingGrid({ walletBalance = EMPTY_WALLET }: ListingGridProps) 
                     title: String(item.title),
                     description: item.description,
                     price: String(item.price),
+                    bulkPrice: item.bulkPrice == null ? null : Number(item.bulkPrice),
                     currency: String(item.currency),
                     stock: Number(item.stock),
                     platform: String(item.platform),

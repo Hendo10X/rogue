@@ -67,7 +67,7 @@ async function main() {
     description: "Format: login|pass|mail|mailpass",
   } as never);
   await addManualLogItems("L1", "user1|pw1|a@mail.com|mp1\nuser2|pw2|b@mail.com|mp2\nuser3|pw3|c@mail.com|mp3");
-  await setBulkPricing({ enabled: true, minQty: 2, percent: 10 });
+  await setBulkPricing({ enabled: true, minQty: 2, amountOff: 150 });
   await creditWallet((await db.select().from(wallet).where(eq(wallet.userId, botUserId)))[0].id, "5000", "NGN");
 
   const unit = (await import("@/lib/telegram-bot/catalog")).getListing;
@@ -82,7 +82,7 @@ async function main() {
   await tap("b:L1:2");
   if (process.env.DEBUG_BOT) console.log(JSON.stringify(sent.slice(mark), null, 1));
   const charged = before - (await balance(botUserId));
-  check("charged 2 × bulk price", Math.abs(charged - 2 * Math.round(l!.priceNgn * 0.9)) < 0.01, { charged, unit: l!.priceNgn });
+  check("charged 2 × (price − ₦150)", Math.abs(charged - 2 * (l!.priceNgn - 150)) < 0.01, { charged, unit: l!.priceNgn });
   // Which two of the three logs are handed out is up to the pool, so check whichever were sent.
   const delivered = allText();
   const got = [1, 2, 3].filter((n) => delivered.includes(`Username: user${n}`));

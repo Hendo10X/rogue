@@ -5,6 +5,7 @@ import { eq, and, sql, desc } from "drizzle-orm";
 import { getUSDtoNGNRate } from "@/lib/currency";
 import { getMarketplacePricing, capSupplierUsd } from "@/lib/pricing";
 import { getLogProfits, priceListingNgn } from "@/lib/log-profit";
+import { bulkUnitPrice, getBulkPricing, listingCostNgn } from "@/lib/bulk-pricing";
 import { autoSyncIfStale } from "@/lib/suppliers/auto-sync";
 import { supplierCodename } from "@/lib/supplier-codename";
 
@@ -99,7 +100,7 @@ export async function GET(req: NextRequest) {
         .offset(offset),
     ]);
 
-    const profits = await getLogProfits();
+    const [profits, bulk] = await Promise.all([getLogProfits(), getBulkPricing()]);
     const itemsWithDynamicPrice = items.map((item: any) => {
       // Manual price, per-listing profit, or the tiered model — see priceListingNgn.
       const finalPrice = priceListingNgn(item, rate, pricing, profits);
@@ -108,6 +109,8 @@ export async function GET(req: NextRequest) {
         ...rest,
         supplierName: supplierCodename(rest.supplierName),
         price: String(finalPrice),
+        // ₦ per piece when buying the bulk quantity; null when it doesn't apply to this log.
+        bulkPrice: bulkUnitPrice(finalPrice, listingCostNgn(item, rate), bulk),
         currency: "NGN",
       };
     });
