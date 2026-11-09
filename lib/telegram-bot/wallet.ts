@@ -1,19 +1,16 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/drizzle";
 import { user } from "@/db/schema";
-import { isPlaceholderEmail } from "@/lib/email";
-import { SITE_URL } from "@/lib/site";
 import { esc } from "./api";
-import { setPending, type BotAccount } from "./accounts";
+import { setPending, type MemberAccount } from "./accounts";
 import { availableFundMethods, createFundingLink, manualFunding, MAX_FUND, MIN_FUND, type FundMethod } from "./funding";
-import { createLinkCode, prettyCode } from "./link";
 import { balanceOf, MENU_BUTTON, MENU_ROW, naira, pairs, type Ctx, type Out } from "./ui";
 
-/** Balance, funding (every website payment method), and connecting a website account. */
+/** Balance and funding (every website payment method). */
 
 const FUND_AMOUNTS = [2000, 5000, 10000, 20000, 50000, 100000];
 
-export async function showBalance(out: Out, account: BotAccount) {
+export async function showBalance(out: Out, account: MemberAccount) {
   const bal = await balanceOf(account);
   return out(`👛 Your balance is <b>${naira(bal)}</b>.`, [[{ text: "💰 Fund wallet", callback_data: "fund" }], MENU_ROW]);
 }
@@ -92,29 +89,5 @@ export async function showBankTransfer(out: Out) {
       "After paying, send your receipt and your Telegram @username so we can credit you. Transfers are credited by hand, so card or crypto is faster.",
     ].join("\n"),
     [[{ text: "📤 Send receipt", url: b.proofUrl }], [{ text: "💰 Other ways to pay", callback_data: "fund" }], MENU_ROW],
-  );
-}
-
-/** Connect an existing website account: a one-time code, entered on the website. */
-export async function showConnect(ctx: Ctx) {
-  const [u] = await db.select({ email: user.email }).from(user).where(eq(user.id, ctx.account.userId)).limit(1);
-  if (u && !isPlaceholderEmail(u.email)) {
-    return ctx.out("✅ This bot is already connected to your website account. To disconnect, go to Settings on the website.", [
-      [{ text: "🌐 Open Settings", url: `${SITE_URL}/settings` }],
-      MENU_ROW,
-    ]);
-  }
-  const { code, minutes } = await createLinkCode(ctx.account.telegramId);
-  return ctx.out(
-    [
-      "🔗 <b>Connect your website account</b>",
-      "",
-      "Already have a Rogue Socials account? Connect it to use the same wallet and orders here.",
-      "",
-      `Your code: <code>${prettyCode(code)}</code> (valid ${minutes} minutes)`,
-      "",
-      "Tap below, log in, and press Connect. Anything you bought or added here moves to your website account.",
-    ].join("\n"),
-    [[{ text: "🌐 Connect on the website", url: `${SITE_URL}/settings?tg=${code}` }], MENU_ROW],
   );
 }

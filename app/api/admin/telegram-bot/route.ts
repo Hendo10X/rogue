@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql } from "drizzle-orm";
+import { isNotNull, sql } from "drizzle-orm";
 import { db } from "@/db/drizzle";
 import { telegramAccount } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-route";
@@ -20,6 +20,8 @@ export async function GET() {
     db
       .select({ n: sql<number>`count(*)::int` })
       .from(telegramAccount)
+      // Members: Telegram accounts connected to a Rogue Socials account.
+      .where(isNotNull(telegramAccount.userId))
       .then((r: { n: number }[]) => r[0]?.n ?? 0)
       .catch(() => null),
   ]);
@@ -49,14 +51,12 @@ export async function POST() {
   await tg("setMyCommands", {
     commands: [
       { command: "menu", description: "Main menu" },
-      { command: "logs", description: "Buy logs" },
-      { command: "boost", description: "Boost followers, likes, views" },
       { command: "otp", description: "OTP numbers" },
       { command: "proxies", description: "Buy proxies" },
       { command: "fund", description: "Fund your wallet" },
       { command: "balance", description: "Your balance" },
-      { command: "orders", description: "Your orders and login details" },
-      { command: "connect", description: "Connect your website account" },
+      { command: "orders", description: "Your numbers and proxies" },
+      { command: "connect", description: "Connect your Rogue Socials account" },
       { command: "help", description: "How it works" },
     ],
   });

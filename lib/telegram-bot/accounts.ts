@@ -1,22 +1,18 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db/drizzle";
 import { telegramAccount, user } from "@/db/schema";
-import { getOrCreateWallet } from "@/lib/wallet";
-import { TELEGRAM_EMAIL_DOMAIN } from "@/lib/email";
+import { isPlaceholderEmail } from "@/lib/email";
 import { send, shopBotConfigured } from "./api";
 
 export type TgUser = { id: number; first_name?: string; last_name?: string; username?: string };
 export type BotAccount = typeof telegramAccount.$inferSelect;
+/** A Telegram account connected to a Rogue Socials account. */
+export type MemberAccount = BotAccount & { userId: string };
 
 /** What the bot is waiting for the customer to type next, or an order being put together. */
 export type Pending =
   | { kind: "fund_amount" }
-  | { kind: "search" }
   | { kind: "buying"; at: number }
-  | { kind: "boost_search" }
-  | { kind: "boost_link"; serviceId: number }
-  | { kind: "boost_qty"; serviceId: number; link: string }
-  | { kind: "boost_ready"; serviceId: number; link: string; qty: number }
   | { kind: "otp_search" }
   | { kind: "proxy"; spec: ProxyDraft }
   | null;
@@ -33,35 +29,34 @@ export type ProxyDraft = {
 };
 
 /**
- * The bot customer's Rogue account, created on first contact: a normal user
- * with a placeholder email plus an NGN wallet, so everything else (wallet,
- * orders, admin) works unchanged.
+ * The Telegram side of a customer. The bot is members-only: this row exists
+ * from the first message (it holds the connect code), but `userId` stays null
+ * until they connect their Rogue Socials account. No account is ever created
+ * from Telegram. (Bot-made placeholder accounts from before count as not
+ * connected; connecting moves anything on them over.)
  */
 export async function getOrCreateAccount(from: TgUser, chatId: number): Promise<{ account: BotAccount; isNew: boolean }> {
   const telegramId = String(from.id);
-  const [existing] = await db.select().from(telegramAccount).where(eq(telegramAccount.telegramId, telegramId)).limit(1);
-  if (existing) {
+  const [row] = await db
+    .select({ account: telegramAccount, email: user.email })
+    .from(telegramAccount)
+    .leftJoin(user, eq(user.id, telegramAccount.userId))
+    .where(eq(telegramAccount.telegramId, telegramId))
+    .limit(1);
+  if (row) {
+    const existing: BotAccount = row.account;
     if (existing.chatId !== String(chatId) || existing.username !== (from.username ?? null)) {
       await db
         .update(telegramAccount)
         .set({ chatId: String(chatId), username: from.username ?? null, updatedAt: new Date() })
         .where(eq(telegramAccount.telegramId, telegramId));
     }
-    return { account: existing, isNew: false };
+    const placeholder = row.email ? isPlaceholderEmail(row.email) : false;
+    return { account: placeholder ? { ...existing, userId: null } : existing, isNew: false };
   }
-
-  const name = [from.first_name, from.last_name].filter(Boolean).join(" ") || from.username || `Telegram ${telegramId}`;
-  const email = `tg${telegramId}@${TELEGRAM_EMAIL_DOMAIN}`;
-  // A previous half-finished signup may have created the user already.
-  let [u] = await db.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1);
-  if (!u) {
-    u = { id: crypto.randomUUID() };
-    await db.insert(user).values({ id: u.id, name, email, emailVerified: false });
-  }
-  await getOrCreateWallet(u.id, "NGN");
   const [account] = await db
     .insert(telegramAccount)
-    .values({ telegramId, userId: u.id, chatId: String(chatId), username: from.username ?? null })
+    .values({ telegramId, userId: null, chatId: String(chatId), username: from.username ?? null })
     .onConflictDoNothing()
     .returning();
   if (!account) {
@@ -69,6 +64,10 @@ export async function getOrCreateAccount(from: TgUser, chatId: number): Promise<
     return { account: again, isNew: false };
   }
   return { account, isNew: true };
+}
+
+export function isMember(account: BotAccount): account is MemberAccount {
+  return !!account.userId;
 }
 
 export async function setPending(telegramId: string, pending: Pending) {

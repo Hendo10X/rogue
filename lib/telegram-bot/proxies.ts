@@ -115,7 +115,7 @@ async function confirmProxy(ctx: Ctx, draft: ProxyDraft, countryName: string, ca
   if (!spec) return showProxyTypes(ctx.out);
   let total: number;
   try {
-    total = await quoteProxyNgn(spec);
+    total = await quoteProxyNgn(spec, "bot");
   } catch (err) {
     return ctx.out(`❌ ${esc(err instanceof Error ? err.message : "Couldn't get a price")}`, [PROXY_ROW, MENU_ROW]);
   }
@@ -177,7 +177,7 @@ async function buyProxy(ctx: Ctx, draft: ProxyDraft) {
   if (await isUserSuspended(account.userId)) return out(SUSPENDED_MESSAGE, MENU_BUTTON);
   if (!(await claimPurchase(account.telegramId))) return;
   await out("⏳ Ordering your proxies…");
-  const r = await placeProxyOrder(account.userId, spec).finally(() => setPending(account.telegramId, null));
+  const r = await placeProxyOrder(account.userId, spec, { channel: "bot" }).finally(() => setPending(account.telegramId, null));
   if (!r.ok) return send(chatId, `❌ ${esc(r.error)}`, [PROXY_ROW, MENU_ROW]);
   return send(chatId, "✅ <b>Proxies ordered.</b> They're usually ready within a minute or two.", [
     [{ text: "🔄 Check if ready", callback_data: `po:${r.data.id}` }],

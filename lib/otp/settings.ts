@@ -1,5 +1,6 @@
 import { getSetting, setSetting } from "@/lib/admin-auth";
 import { getUSDtoNGNRate } from "@/lib/currency";
+import { markupFor, type Channel } from "@/lib/bot-pricing";
 import { activeProviders, fetchApps, fetchCountries, type OtpApp, type OtpCountry } from "./provider";
 
 const ENABLED_KEY = "otp_enabled";
@@ -30,13 +31,15 @@ export async function otpOnSale(): Promise<boolean> {
  * Prices USD costs in ₦ (rounded up to the next ₦10). Reads the markup and
  * rate once, so a list of thousands of apps costs two lookups, not thousands.
  */
-export async function getOtpPricer(): Promise<(costUsd: number) => number> {
-  const [{ markupPercent }, rate] = await Promise.all([getOtpSettings(), getUSDtoNGNRate()]);
+export async function getOtpPricer(channel: Channel = "web"): Promise<(costUsd: number) => number> {
+  const [{ markupPercent: website }, rate] = await Promise.all([getOtpSettings(), getUSDtoNGNRate()]);
+  // The Telegram bot can have its own markup (Admin → Telegram bot).
+  const markupPercent = await markupFor("otp", channel, website);
   return (costUsd) => Math.ceil((costUsd * rate * (1 + markupPercent / 100)) / 10) * 10;
 }
 
-export async function otpPriceNgn(costUsd: number): Promise<number> {
-  return (await getOtpPricer())(costUsd);
+export async function otpPriceNgn(costUsd: number, channel: Channel = "web"): Promise<number> {
+  return (await getOtpPricer(channel))(costUsd);
 }
 
 // Countries change rarely: cache them for hours.

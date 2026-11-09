@@ -3,12 +3,13 @@ import { proxyOrder } from "@/db/schema";
 import { creditWallet, debitWallet, getOrCreateWallet, logTransaction } from "@/lib/wallet";
 import { formatAmount } from "@/lib/currency";
 import { fail, type OrderResult } from "@/lib/order-result";
+import type { Channel } from "@/lib/bot-pricing";
 import { priceNgn, proxiesOnSale } from "./settings";
 import { placeOrder, quoteUsd, type ProxySpec } from "./provider";
 
 /** The ₦ price of a proxy choice (what the order will charge). */
-export async function quoteProxyNgn(spec: ProxySpec): Promise<number> {
-  return priceNgn(await quoteUsd(spec));
+export async function quoteProxyNgn(spec: ProxySpec, channel: Channel = "web"): Promise<number> {
+  return priceNgn(await quoteUsd(spec), channel);
 }
 
 /**
@@ -16,13 +17,17 @@ export async function quoteProxyNgn(spec: ProxySpec): Promise<number> {
  * then orders from the supplier. Any failure after the charge refunds it.
  * Used by the website (/api/proxies/order) and the Telegram bot.
  */
-export async function placeProxyOrder(userId: string, spec: ProxySpec): Promise<OrderResult<{ ok: true; id: string }>> {
+export async function placeProxyOrder(
+  userId: string,
+  spec: ProxySpec,
+  { channel = "web" }: { channel?: Channel } = {},
+): Promise<OrderResult<{ ok: true; id: string }>> {
   if (!(await proxiesOnSale())) return fail(503, "Proxies aren't available right now.");
   const { country, period, quantity } = spec;
 
   let amount: number;
   try {
-    amount = await quoteProxyNgn(spec);
+    amount = await quoteProxyNgn(spec, channel);
   } catch (err) {
     return fail(502, err instanceof Error ? err.message : "Couldn't get a price");
   }
@@ -84,7 +89,7 @@ export async function placeProxyOrder(userId: string, spec: ProxySpec): Promise<
     amount: `-${total}`,
     currency: "NGN",
     externalReference: placed.orderId,
-    metadata: { kind: "proxy", proxyType: spec.type, proxyOrderId: id, country, period, quantity },
+    metadata: { kind: "proxy", proxyType: spec.type, proxyOrderId: id, country, period, quantity, channel },
   }).catch((err) => console.error("[Proxies] transaction log failed", err));
 
   return { ok: true, data: { ok: true, id } };
