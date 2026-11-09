@@ -15,7 +15,6 @@ import { ProxyOrders } from "@/components/admin/proxy-orders";
 import { OtpSettings } from "@/components/admin/otp-settings";
 import { BulkPricingSettings } from "@/components/admin/bulk-pricing-settings";
 import { AccszoneSettings } from "@/components/admin/accszone-settings";
-import { ShopBotSettings } from "@/components/admin/shop-bot-settings";
 import {
   Select,
   SelectContent,
@@ -177,7 +176,6 @@ export default function AdminSettingsPage() {
         <OtpSettings />
         <BulkPricingSettings />
         <AccszoneSettings />
-        <ShopBotSettings />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

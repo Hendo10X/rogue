@@ -1,20 +1,20 @@
 import { formatAmount } from "@/lib/currency";
 import { getWalletBalance } from "@/lib/wallet";
 import type { Button, Keyboard } from "./api";
-import type { BotAccount } from "./accounts";
+import type { MemberAccount } from "./accounts";
 
 /** Where a reply goes: edit the pressed message, or send a new one. */
 export type Out = (text: string, keyboard?: Keyboard) => Promise<unknown>;
 
-/** Everything a screen needs. `chatId` is for extra messages (long deliveries). */
-export type Ctx = { out: Out; chatId: number; account: BotAccount };
+/** Everything a member screen needs. `chatId` is for extra messages (long deliveries). */
+export type Ctx = { out: Out; chatId: number; account: MemberAccount };
 
 export const naira = (n: number | string) => `₦${formatAmount(n)}`;
 export const MENU_ROW: Button[] = [{ text: "🏠 Menu", callback_data: "m" }];
 export const MENU_BUTTON: Keyboard = [MENU_ROW];
 export const PAGE = 8;
 
-export async function balanceOf(account: BotAccount): Promise<number> {
+export async function balanceOf(account: MemberAccount): Promise<number> {
   const w = await getWalletBalance(account.userId, "NGN").catch(() => null);
   return Number((w as { balance?: string } | null)?.balance ?? 0) || 0;
 }

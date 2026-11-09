@@ -59,7 +59,7 @@ export async function redeemLinkCode(rawCode: string, websiteUserId: string): Pr
     .from(telegramAccount)
     .where(and(eq(telegramAccount.linkCode, code), gt(telegramAccount.linkCodeExpiresAt, new Date())))
     .limit(1);
-  if (!acc) return { ok: false, error: "That code is wrong or has expired. Get a new one in the bot (🔗 Connect website)." };
+  if (!acc) return { ok: false, error: "That code is wrong or has expired. Get a new one in the bot (🔗 Connect my account)." };
 
   const [websiteUser] = await db.select({ email: user.email }).from(user).where(eq(user.id, websiteUserId)).limit(1);
   if (!websiteUser || isPlaceholderEmail(websiteUser.email)) return { ok: false, error: "Log in to your website account first." };
@@ -79,6 +79,17 @@ export async function redeemLinkCode(rawCode: string, websiteUserId: string): Pr
     .limit(1);
   if (other) return { ok: false, error: "This website account is already connected to another Telegram account. Disconnect it first." };
 
+  // The usual case: a Telegram account that was never connected. Just connect it.
+  if (!acc.userId) {
+    await db
+      .update(telegramAccount)
+      .set({ userId: websiteUserId, linkCode: null, linkCodeExpiresAt: null, pending: null, updatedAt: new Date() })
+      .where(eq(telegramAccount.telegramId, acc.telegramId));
+    await tellConnected(acc.chatId, websiteUser.email);
+    return { ok: true, telegramUsername: acc.username };
+  }
+
+  // A bot-made placeholder account from before the bot was members-only: move what's on it over.
   const [oldUser] = await db.select({ email: user.email }).from(user).where(eq(user.id, acc.userId)).limit(1);
   if (oldUser && !isPlaceholderEmail(oldUser.email)) {
     return { ok: false, error: "This Telegram account is already connected to a different website account. Disconnect it there first." };
@@ -116,12 +127,16 @@ export async function redeemLinkCode(rawCode: string, websiteUserId: string): Pr
     });
   }
 
-  await send(
-    acc.chatId,
-    `✅ Connected to your website account <b>${esc(maskEmail(websiteUser.email))}</b>.\n\nThe bot and the website now share one wallet and one order history.`,
-    [[{ text: "🏠 Menu", callback_data: "m" }]],
-  );
+  await tellConnected(acc.chatId, websiteUser.email);
   return { ok: true, telegramUsername: acc.username };
+}
+
+function tellConnected(chatId: string, email: string) {
+  return send(
+    chatId,
+    `✅ Connected to your Rogue Socials account <b>${esc(maskEmail(email))}</b>.\n\nYou can now buy OTP numbers and proxies here with your wallet.`,
+    [[{ text: "🏠 Open the menu", callback_data: "m" }]],
+  );
 }
 
 /** The Telegram account connected to a website user, if any. */
@@ -136,16 +151,16 @@ export async function linkedTelegram(websiteUserId: string): Promise<{ username:
 
 /**
  * Disconnects Telegram from a website account. The wallet and orders stay on
- * the website account; next time the customer uses the bot it starts a fresh,
- * empty bot account.
+ * the website account; the bot goes back to asking them to connect.
  */
 export async function unlinkTelegram(websiteUserId: string): Promise<boolean> {
   const rows = await db
-    .delete(telegramAccount)
+    .update(telegramAccount)
+    .set({ userId: null, pending: null, linkCode: null, linkCodeExpiresAt: null, updatedAt: new Date() })
     .where(eq(telegramAccount.userId, websiteUserId))
     .returning({ chatId: telegramAccount.chatId });
   if (rows[0]) {
-    await send(rows[0].chatId, "Your website account was disconnected from this bot. Send /start to keep shopping with a new bot wallet, or connect again.");
+    await send(rows[0].chatId, "Your Rogue Socials account was disconnected from this bot. Send /start to connect again.");
   }
   return rows.length > 0;
 }

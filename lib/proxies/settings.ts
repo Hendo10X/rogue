@@ -1,6 +1,7 @@
 import { getSetting, setSetting } from "@/lib/admin-auth";
 import { getUSDtoNGNRate } from "@/lib/currency";
 import { roundClean } from "@/lib/pricing";
+import { markupFor, type Channel } from "@/lib/bot-pricing";
 import { fetchCatalog, proxyProviderConfigured, type ProxyCatalog, type ProxyType } from "./provider";
 
 const ENABLED_KEY = "proxies_enabled";
@@ -27,9 +28,10 @@ export async function proxiesOnSale(): Promise<boolean> {
   return proxyProviderConfigured() && (await getProxySettings()).enabled;
 }
 
-/** Customer price in ₦ for a supplier price in USD. */
-export async function priceNgn(costUsd: number): Promise<number> {
-  const [{ markupPercent }, rate] = await Promise.all([getProxySettings(), getUSDtoNGNRate()]);
+/** Customer price in ₦ for a supplier price in USD (the bot can have its own markup). */
+export async function priceNgn(costUsd: number, channel: Channel = "web"): Promise<number> {
+  const [{ markupPercent: website }, rate] = await Promise.all([getProxySettings(), getUSDtoNGNRate()]);
+  const markupPercent = await markupFor("proxy", channel, website);
   return roundClean(costUsd * rate * (1 + markupPercent / 100));
 }
 

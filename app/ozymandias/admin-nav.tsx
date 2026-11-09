@@ -46,6 +46,7 @@ const links = [
   { href: `${ROOT}/boosting`, label: "Boosting" },
   { href: `${ROOT}/suppliers`, label: "Suppliers" },
   { href: `${ROOT}/api-analytics`, label: "API" },
+  { href: `${ROOT}/telegram-bot`, label: "Telegram bot" },
   { href: `${ROOT}/settings`, label: "Settings" },
 ];
 

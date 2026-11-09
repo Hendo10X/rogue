@@ -3,6 +3,7 @@ import { otpOrder } from "@/db/schema";
 import { creditWallet, debitWallet, getOrCreateWallet, logTransaction } from "@/lib/wallet";
 import { formatAmount } from "@/lib/currency";
 import { fail, type OrderResult } from "@/lib/order-result";
+import type { Channel } from "@/lib/bot-pricing";
 import { forgetApps, getApps, otpOnSale, otpPriceNgn } from "./settings";
 import { buyNumber, cancelNumber, fetchAppLive, type Quote } from "./provider";
 import { looksOutOfStock, markOutOfStock } from "./stock";
@@ -15,7 +16,11 @@ export type OtpOrderPlaced = { ok: true; id: string; number: string };
  * from that provider capped at that price. Any failure after the charge
  * refunds it. Used by the website (/api/otp/order) and the Telegram bot.
  */
-export async function placeOtpOrder(userId: string, input: { country: string; app: string }): Promise<OrderResult<OtpOrderPlaced>> {
+export async function placeOtpOrder(
+  userId: string,
+  input: { country: string; app: string },
+  { channel = "web" }: { channel?: Channel } = {},
+): Promise<OrderResult<OtpOrderPlaced>> {
   if (!(await otpOnSale())) return fail(503, "OTP numbers aren't available right now.");
   const country = input.country.trim();
   const appName = input.app.trim();
@@ -40,7 +45,8 @@ export async function placeOtpOrder(userId: string, input: { country: string; ap
     return fail(502, "We couldn't get a price right now. Please try again.");
   }
   const costUsd = quote.priceUsd;
-  const amount = await otpPriceNgn(costUsd);
+  // The bot charges its own price when an admin set one; the website its usual price.
+  const amount = await otpPriceNgn(costUsd, channel);
   const total = amount.toFixed(2);
 
   const wallet = await getOrCreateWallet(userId, "NGN");
@@ -99,7 +105,7 @@ export async function placeOtpOrder(userId: string, input: { country: string; ap
     amount: `-${total}`,
     currency: "NGN",
     externalReference: bought.numberId,
-    metadata: { kind: "otp", otpOrderId: id, country, app: appName, provider: quote.provider, ...(quote.pool ? { pool: quote.pool } : {}) },
+    metadata: { kind: "otp", otpOrderId: id, country, app: appName, channel, provider: quote.provider, ...(quote.pool ? { pool: quote.pool } : {}) },
   }).catch((err) => console.error("[OTP] transaction log failed", err));
 
   return { ok: true, data: { ok: true, id, number: bought.number } };

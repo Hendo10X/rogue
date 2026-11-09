@@ -54,7 +54,8 @@ export async function searchOtpCountries(out: Out, term: string) {
 
 /** Apps on sale for a country, popular first, with the ₦ price per number. */
 async function appsFor(country: string) {
-  const [apps, price, hidden] = await Promise.all([getApps(country), getOtpPricer(), outOfStockApps(country)]);
+  // Bot prices (Admin → Telegram bot can set a bot-only markup); checkout charges the same.
+  const [apps, price, hidden] = await Promise.all([getApps(country), getOtpPricer("bot"), outOfStockApps(country)]);
   const rank = (name: string) => {
     const i = POPULAR_APPS.indexOf(name);
     return i === -1 ? POPULAR_APPS.length : i;
@@ -101,7 +102,7 @@ export async function buyOtp(ctx: Ctx, country: string, app: string) {
   if (await isUserSuspended(account.userId)) return out(SUSPENDED_MESSAGE, MENU_BUTTON);
   if (!(await claimPurchase(account.telegramId))) return;
   await out("⏳ Getting your number…");
-  const r = await placeOtpOrder(account.userId, { country, app }).finally(() => setPending(account.telegramId, null));
+  const r = await placeOtpOrder(account.userId, { country, app }, { channel: "bot" }).finally(() => setPending(account.telegramId, null));
   if (!r.ok) return send(chatId, `❌ ${esc(r.error)}`, [[{ text: "⬅️ Back", callback_data: `oc:${country}:0` }], MENU_ROW]);
   return send(
     chatId,

@@ -1,12 +1,10 @@
-// Run with `npm run test:money`. The Telegram shop bot end to end against a real Postgres (PGlite):
-// account on /start, buying an uploaded log from the bot (bulk price, labelled delivery),
-// and connecting a website account (balance and orders move over, codes are single-use).
+// Run with `npm run test:money`. The Telegram bot end to end against a real Postgres (PGlite):
+// members only (connect a Rogue Socials account first), only OTP numbers and proxies,
+// bot-only prices, admin-editable messages, announcements to members, and disconnecting.
 import { eq } from "drizzle-orm";
 import { db } from "@/db/drizzle";
 import * as schemaModule from "@/db/schema";
-import { listing, order, supplier, telegramAccount, user, wallet } from "@/db/schema";
-import { addManualLogItems } from "@/lib/manual-logs";
-import { setBulkPricing } from "@/lib/bulk-pricing";
+import { otpOrder, telegramAccount, user, wallet } from "@/db/schema";
 
 let passed = 0;
 let failed = 0;
@@ -16,7 +14,7 @@ function check(name: string, cond: boolean, detail?: unknown) {
 }
 
 // Every Telegram API call is recorded instead of sent.
-const sent: { method: string; text?: string; keyboard?: unknown }[] = [];
+const sent: { method: string; chatId?: number | string; text?: string; keyboard?: unknown }[] = [];
 process.env.TELEGRAM_SHOP_BOT_TOKEN = "test-token";
 process.env.RESEND_API_KEY = "re_test"; // emails are attempted and fail quietly (fetch is mocked)
 globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
@@ -24,7 +22,7 @@ globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
   if (url.includes("api.telegram.org")) {
     const method = url.split("/").pop()!;
     const body = JSON.parse(String(init?.body ?? "{}"));
-    sent.push({ method, text: body.text, keyboard: body.reply_markup?.inline_keyboard });
+    sent.push({ method, chatId: body.chat_id, text: body.text, keyboard: body.reply_markup?.inline_keyboard });
     return new Response(JSON.stringify({ ok: true, result: { message_id: 1, username: "roguetestbot" } }));
   }
   if (url.includes("exchangerate")) return new Response(JSON.stringify({ rates: { NGN: 1500 } }));
@@ -32,91 +30,110 @@ globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
 }) as typeof fetch;
 
 const lastText = () => sent.filter((s) => s.text).at(-1)?.text ?? "";
+const lastKeyboard = () => JSON.stringify(sent.filter((s) => s.text).at(-1)?.keyboard ?? []);
 const allText = () => sent.map((s) => s.text ?? "").join("\n---\n");
-async function balance(userId: string) {
-  const [w] = await db.select().from(wallet).where(eq(wallet.userId, userId));
-  return Number(w?.balance ?? 0);
-}
 
 async function main() {
   const { pushSchema } = await import("drizzle-kit/api");
   const { apply } = await pushSchema(schemaModule as Record<string, unknown>, db as never);
   await apply();
   const { handleUpdate } = await import("@/lib/telegram-bot/handler");
-  const { createLinkCode, redeemLinkCode } = await import("@/lib/telegram-bot/link");
-  const { creditWallet } = await import("@/lib/wallet");
+  const { redeemLinkCode, unlinkTelegram } = await import("@/lib/telegram-bot/link");
+  const { creditWallet, getOrCreateWallet } = await import("@/lib/wallet");
+  const { setBotTexts } = await import("@/lib/telegram-bot/settings");
+  const { setBotMarkup } = await import("@/lib/bot-pricing");
+  const { getOtpPricer, setOtpSettings } = await import("@/lib/otp/settings");
+  const { priceNgn, setProxySettings } = await import("@/lib/proxies/settings");
+  const broadcast = await import("@/lib/telegram-bot/broadcast");
 
   const from = { id: 4242, first_name: "Ada", username: "ada" };
   const chat = { id: 4242, type: "private" };
-  const say = (text: string) => handleUpdate({ message: { message_id: 1, chat, from, text } });
-  const tap = (data: string) => handleUpdate({ callback_query: { id: "cb", from, data, message: { message_id: 9, chat } } });
+  const say = (text: string, who = from) => handleUpdate({ message: { message_id: 1, chat: { id: who.id, type: "private" }, from: who, text } });
+  const tap = (data: string, who = from) =>
+    handleUpdate({ callback_query: { id: "cb", from: who, data, message: { message_id: 9, chat: { id: who.id, type: "private" } } } });
+  void chat;
 
-  console.log("\n1. /start makes a Rogue account and wallet");
+  console.log("\n1. Members only: no account is made from Telegram");
+  const usersBefore = (await db.select().from(user)).length;
   await say("/start");
   const [acc] = await db.select().from(telegramAccount).where(eq(telegramAccount.telegramId, "4242"));
-  check("telegram account created", !!acc);
-  const botUserId = acc.userId;
-  check("welcome + menu with every section", /Welcome/.test(lastText()) && JSON.stringify(sent.at(-1)?.keyboard).includes("ot:0"), lastText());
-  check("group chats are ignored", await handleUpdate({ message: { message_id: 1, chat: { id: 1, type: "group" }, from, text: "/start" } }).then(() => sent.at(-1)?.text === lastText()));
+  check("Telegram row saved, not connected", !!acc && acc.userId === null, acc);
+  check("no Rogue account created", (await db.select().from(user)).length === usersBefore);
+  check("join message with sign-up and connect", /for Rogue Socials members/.test(lastText()) && lastKeyboard().includes("/signup") && lastKeyboard().includes('"lk"'), lastText());
+  await tap("ot:0");
+  check("shop buttons don't work before connecting", /for Rogue Socials members/.test(lastText()), lastText());
 
-  console.log("\n2. Buying an uploaded log from the bot: bulk price and labelled delivery");
-  await db.insert(supplier).values({ id: "sup", name: "Manual", slug: "manual", apiUrl: "manual://local", apiKey: "manual", status: "active" });
-  await db.insert(listing).values({
-    id: "L1", supplierId: "sup", externalProductId: "m1", type: "account", slug: "ig-aged", title: "IG aged", platform: "instagram",
-    price: "1000", currency: "NGN", supplierPrice: "1000", stock: 0, status: "active", metadata: { manual: true },
-    description: "Format: login|pass|mail|mailpass",
-  } as never);
-  await addManualLogItems("L1", "user1|pw1|a@mail.com|mp1\nuser2|pw2|b@mail.com|mp2\nuser3|pw3|c@mail.com|mp3");
-  await setBulkPricing({ enabled: true, minQty: 2, amountOff: 150 });
-  await creditWallet((await db.select().from(wallet).where(eq(wallet.userId, botUserId)))[0].id, "5000", "NGN");
-
-  const unit = (await import("@/lib/telegram-bot/catalog")).getListing;
-  const l = await unit("L1");
-  check("listing visible to the bot", !!l && l.stock === 3, l);
-  await tap("l:L1");
-  check("listing shows the bulk price", /when you buy 2\+/.test(lastText()), lastText());
-  await tap("q:L1:2");
-  check("confirm applies the bulk price", /Bulk price applied/.test(lastText()), lastText());
-  const before = await balance(botUserId);
-  const mark = sent.length;
-  await tap("b:L1:2");
-  if (process.env.DEBUG_BOT) console.log(JSON.stringify(sent.slice(mark), null, 1));
-  const charged = before - (await balance(botUserId));
-  check("charged 2 × (price − ₦150)", Math.abs(charged - 2 * (l!.priceNgn - 150)) < 0.01, { charged, unit: l!.priceNgn });
-  // Which two of the three logs are handed out is up to the pool, so check whichever were sent.
-  const delivered = allText();
-  const got = [1, 2, 3].filter((n) => delivered.includes(`Username: user${n}`));
-  const labelled = (n: number) =>
-    delivered.includes(`Username: user${n}\nPassword: pw${n}\nEmail: ${"abc"[n - 1]}@mail.com\nEmail password: mp${n}`);
-  check("delivered as labelled fields", got.length === 2 && got.every(labelled), delivered.slice(-600));
-  const [o] = await db.select().from(order).where(eq(order.userId, botUserId));
-  check("order saved on the bot account", !!o && o.status === "completed", o);
-
-  console.log("\n3. Connecting a website account");
-  const webId = "web-user";
-  await db.insert(user).values({ id: webId, name: "Ada Web", email: "ada@example.com", emailVerified: true });
-  const { getOrCreateWallet } = await import("@/lib/wallet");
-  await creditWallet((await getOrCreateWallet(webId, "NGN")).id, "10000", "NGN");
-  const botLeft = await balance(botUserId);
-
+  console.log("\n2. Connecting a Rogue Socials account");
+  await tap("lk");
+  const code = lastText().match(/<code>([A-Z0-9]{4})-([A-Z0-9]{4})<\/code>/);
+  check("bot gives a one-time code", !!code, lastText());
+  const webId = "web-ada";
+  await db.insert(user).values({ id: webId, name: "Ada", email: "ada@example.com", emailVerified: true });
+  await creditWallet((await getOrCreateWallet(webId, "NGN")).id, "12500", "NGN");
   check("wrong code refused", !(await redeemLinkCode("AAAA-BBBB", webId)).ok);
-  const { code } = await createLinkCode("4242");
-  check("code is 8 characters", code.length === 8, code);
-  const placeholderRefused = await redeemLinkCode(code, botUserId);
-  check("a bot-only account can't redeem", !placeholderRefused.ok, placeholderRefused);
-  const r = await redeemLinkCode(code.toLowerCase().replace(/(.{4})/, "$1-"), webId);
-  check("code accepted (any case, with dash)", r.ok, r);
+  const r = await redeemLinkCode(`${code![1]}${code![2]}`.toLowerCase(), webId);
+  check("code accepted (any case)", r.ok, r);
   const [acc2] = await db.select().from(telegramAccount).where(eq(telegramAccount.telegramId, "4242"));
   check("bot now uses the website account", acc2.userId === webId);
-  check("bot balance moved to the website wallet", Math.abs((await balance(webId)) - (10000 + botLeft)) < 0.01, { web: await balance(webId), botLeft });
-  check("bot wallet emptied", (await balance(botUserId)) === 0);
-  const [moved] = await db.select().from(order).where(eq(order.id, o.id));
-  check("bot orders moved to the website account", moved.userId === webId);
-  check("code is single-use", !(await redeemLinkCode(code, webId)).ok);
-  check("customer told in the chat", /Connected to your website account/.test(allText()));
+  check("customer told in the chat", /Connected to your Rogue Socials account/.test(allText()));
+  check("code is single-use", !(await redeemLinkCode(`${code![1]}${code![2]}`, webId)).ok);
 
+  console.log("\n3. Only OTP numbers and proxies, with editable messages");
   await say("/menu");
-  check("menu shows the website balance", lastText().includes((10000 + botLeft).toLocaleString("en-NG").split(".")[0]) || /Balance/.test(lastText()), lastText());
+  check("menu shows the website balance", /12,500/.test(lastText()), lastText());
+  check("menu has OTP numbers and proxies", lastKeyboard().includes("ot:0") && lastKeyboard().includes('"px"'), lastKeyboard());
+  check("no logs or boosting in the menu", !/shop|bs:0|Logs|Boosting/.test(lastKeyboard()), lastKeyboard());
+  await setBotTexts({ welcome: "Hey {name} — **{balance}** <script>" });
+  await say("/menu");
+  check("admin text used, placeholders filled, ** → bold", lastText().startsWith("Hey Ada — <b>₦12,500</b>"), lastText());
+  check("admin text can't inject HTML", lastText().includes("&lt;script&gt;") && !lastText().includes("<script>"), lastText());
+  await setBotTexts({ welcome: "" });
+  await say("/menu");
+  check("empty text goes back to the default", /Hi Ada/.test(lastText()), lastText());
+  await say("instagram");
+  check("typing a word shows the menu (no log search)", /Hi Ada/.test(lastText()), lastText());
+
+  console.log("\n4. Bot-only prices");
+  await setOtpSettings({ markupPercent: 50 });
+  await setProxySettings({ markupPercent: 40 });
+  const web = (await getOtpPricer("web"))(0.5);
+  check("bot = website price while no bot markup is set", (await getOtpPricer("bot"))(0.5) === web, web);
+  await setBotMarkup("otp", 30);
+  await setBotMarkup("proxy", 10);
+  check("website OTP price unchanged (₦1,130)", (await getOtpPricer("web"))(0.5) === 1130);
+  check("bot OTP price uses the bot markup (₦980)", (await getOtpPricer("bot"))(0.5) === 980);
+  check("bot proxy price uses the bot markup", (await priceNgn(2, "bot")) < (await priceNgn(2, "web")), { bot: await priceNgn(2, "bot"), web: await priceNgn(2, "web") });
+  await setBotMarkup("otp", null);
+  check("clearing the bot markup goes back to the website's", (await getOtpPricer("bot"))(0.5) === 1130);
+
+  console.log("\n5. Announcements reach members only");
+  for (const [i, n] of [["b1", 5001], ["b2", 5002]] as const) {
+    await db.insert(user).values({ id: i, name: i, email: `${i}@example.com`, emailVerified: true });
+    await db.insert(telegramAccount).values({ telegramId: String(n), userId: i, chatId: String(n), username: i });
+  }
+  await db.insert(telegramAccount).values({ telegramId: "6000", userId: null, chatId: "6000", username: "stranger" });
+  check("member count ignores people who haven't connected", (await broadcast.memberCount()) === 3, await broadcast.memberCount());
+  check("test goes to a member by @username", await broadcast.sendTest("Test **drop**", null, "@B1"));
+  check("test refused for a non-member", !(await broadcast.sendTest("x", null, "stranger")));
+  const mark = sent.length;
+  let b = await broadcast.startBroadcast("🔥 **OTP numbers are cheaper!**", { text: "Open", url: "https://roguesocials.com" });
+  let guard = 0;
+  while (b.status === "sending" && guard++ < 10) b = await broadcast.sendNextBatch(b.id);
+  const msgs = sent.slice(mark).filter((s) => s.method === "sendMessage");
+  check("sent to all 3 members", b.status === "done" && b.sent === 3 && msgs.length === 3, b);
+  check("not sent to the non-member", !msgs.some((m) => String(m.chatId) === "6000"));
+  check("announcement formatted with its button", msgs.every((m) => m.text === "🔥 <b>OTP numbers are cheaper!</b>" && JSON.stringify(m.keyboard).includes("roguesocials.com")), msgs[0]);
+  check("kept in history", (await broadcast.broadcastHistory())[0]?.id === b.id);
+  check("only one announcement sends at a time", await broadcast.startBroadcast("a", null).then(() => broadcast.startBroadcast("b", null).then(() => false, () => true)).catch(() => false));
+  check("bad button refused", broadcast.validButton("Open", "http://not-https") === "invalid");
+
+  console.log("\n6. Disconnecting");
+  await unlinkTelegram(webId);
+  const [acc3] = await db.select().from(telegramAccount).where(eq(telegramAccount.telegramId, "4242"));
+  check("link cleared, wallet stays with the website account", acc3.userId === null && Number((await db.select().from(wallet).where(eq(wallet.userId, webId)))[0].balance) === 12500);
+  await say("/menu");
+  check("bot asks to connect again", /for Rogue Socials members/.test(lastText()), lastText());
+  check("no OTP orders were touched", (await db.select().from(otpOrder)).length === 0);
 
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);

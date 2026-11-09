@@ -775,9 +775,8 @@ export const telegramAccount = pgTable(
   "telegram_account",
   {
     telegramId: text("telegram_id").primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    // The member's Rogue Socials account; null until they connect it (members-only bot, migration 0015).
+    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
     chatId: text("chat_id").notNull(),
     username: text("username"),
     // What the bot is waiting for next (e.g. a funding amount), if anything.
