@@ -15,20 +15,18 @@ export function useBulkPricing(): BulkPricing | null {
   return data?.enabled ? data : null;
 }
 
-/** Same rounding as checkout (lib/bulk-pricing.ts). */
-export function bulkPrice(unitNgn: number, cfg: BulkPricing): number {
-  return Math.round(unitNgn * (1 - cfg.percent / 100));
-}
-
-/** "₦900 each for 10+" under a listing's normal price, when bulk pricing is on. */
-export function BulkPrice({ price, stock, className }: { price: string | number; stock?: number; className?: string }) {
+/**
+ * "₦900 each for 10+" under a listing's normal price. `bulkPrice` comes from
+ * the server (it knows the log's cost; a log whose bulk price would reach its
+ * cost gets null and shows nothing).
+ */
+export function BulkPrice({ bulkPrice, stock, className }: { bulkPrice?: number | null; stock?: number; className?: string }) {
   const cfg = useBulkPricing();
   const { format } = useCurrency();
-  const unit = typeof price === "number" ? price : parseFloat(price);
-  if (!cfg || !(unit > 0) || (stock !== undefined && stock < cfg.minQty)) return null;
+  if (!cfg || bulkPrice == null || !(bulkPrice > 0) || (stock !== undefined && stock < cfg.minQty)) return null;
   return (
     <span className={cn("text-[0.6875rem] font-medium text-emerald-400 tabular-nums", className)}>
-      {format(bulkPrice(unit, cfg))} each for {cfg.minQty}+
+      {format(bulkPrice)} each for {cfg.minQty}+
     </span>
   );
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { deliveryColumns, formatForListing } from "@/lib/log-fields";
 import { learnLogFormatLater } from "@/lib/log-format-ai";
-import { getBulkPricing, unitPriceForQuantity } from "@/lib/bulk-pricing";
+import { getBulkPricing, listingCostNgn, unitPriceForQuantity } from "@/lib/bulk-pricing";
 import { claimManualLogItems } from "@/lib/manual-logs";
 import { db } from "@/db/drizzle";
 import {
@@ -97,7 +97,8 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
 
   // Charge exactly the price customers see (same rule as the store).
   // Buying the bulk quantity or more makes every piece cheaper (Settings → Bulk pricing).
-  const unitPriceNgn = unitPriceForQuantity(priceListingNgn(list, rate, pricing, profits), quantity, await getBulkPricing());
+  // Never below what the log costs us (see lib/bulk-pricing.ts).
+  const unitPriceNgn = unitPriceForQuantity(priceListingNgn(list, rate, pricing, profits), listingCostNgn(list, rate), quantity, await getBulkPricing());
   const totalAmount = (unitPriceNgn * quantity).toFixed(2);
 
   const walletRow = await getOrCreateWallet(userId, "NGN");

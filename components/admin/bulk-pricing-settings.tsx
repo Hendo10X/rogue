@@ -8,13 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { SectionLabel } from "@/components/page-header";
 
-type Bulk = { enabled: boolean; minQty: number; percent: number };
+type Bulk = { enabled: boolean; minQty: number; amountOff: number };
 
-/** Bulk discount on all logs: turn it on, set how many pieces count as bulk, and the discount. */
+const naira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
+
+/** Bulk discount on all logs: turn it on, set how many pieces count as bulk, and the flat ₦ off each piece. */
 export function BulkPricingSettings() {
   const [data, setData] = useState<Bulk | null>(null);
   const [minQty, setMinQty] = useState("");
-  const [percent, setPercent] = useState("");
+  const [amountOff, setAmountOff] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -23,7 +25,7 @@ export function BulkPricingSettings() {
       .then((d: Bulk) => {
         setData(d);
         setMinQty(String(d.minQty));
-        setPercent(String(d.percent));
+        setAmountOff(String(d.amountOff));
       })
       .catch(() => toast.error("Failed to load bulk pricing"));
   }, []);
@@ -34,12 +36,12 @@ export function BulkPricingSettings() {
       const res = await fetch("/api/admin/bulk-pricing", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled, minQty: Number(minQty), percent: Number(percent) }),
+        body: JSON.stringify({ enabled, minQty: Number(minQty), amountOff: Number(amountOff.replace(/[₦,\s]/g, "")) }),
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error);
       setData(d);
-      toast.success(d.enabled ? `Bulk pricing on: ${d.percent}% off for ${d.minQty}+ pieces.` : "Bulk pricing is off.");
+      toast.success(d.enabled ? `Bulk pricing on: ${naira(d.amountOff)} off each piece for ${d.minQty}+.` : "Bulk pricing is off.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't save");
     } finally {
@@ -58,7 +60,7 @@ export function BulkPricingSettings() {
       ) : (
         <>
           <p className="text-sm text-muted-foreground">
-            Customers see the normal price and the cheaper bulk price. Buying the bulk quantity or more charges the bulk price for every piece.
+            Buying the bulk quantity or more takes a flat amount off every piece. Customers see the normal price and the bulk price, on the website and in the Telegram bot.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1.5 text-sm">
@@ -66,10 +68,13 @@ export function BulkPricingSettings() {
               <Input inputMode="numeric" value={minQty} onChange={(e) => setMinQty(e.target.value)} />
             </label>
             <label className="flex flex-col gap-1.5 text-sm">
-              <span>Bulk discount (%)</span>
-              <Input inputMode="decimal" value={percent} onChange={(e) => setPercent(e.target.value)} />
+              <span>Discount per piece (₦)</span>
+              <Input inputMode="numeric" value={amountOff} onChange={(e) => setAmountOff(e.target.value)} />
             </label>
           </div>
+          <p className="text-xs text-muted-foreground">
+            A log never goes down to what it costs you: if the discount would get there, that log just keeps its normal price. Keep the discount below your flat fee so cheap logs get it too.
+          </p>
           <Button onClick={() => void save(data.enabled)} disabled={saving} className="self-start">
             {saving ? "Saving…" : "Save"}
           </Button>

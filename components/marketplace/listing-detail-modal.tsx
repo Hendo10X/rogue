@@ -19,6 +19,7 @@ interface ListingDetailModalProps {
     title: string;
     description: string | null;
     price: string;
+    bulkPrice?: number | null;
     currency: string;
     stock: number;
     platform: string;
@@ -62,7 +63,7 @@ export function ListingDetailModal({
               <p className="mt-2 text-lg font-semibold tracking-[-0.02em] tabular-nums">
                 {format(parseFloat(listing.price))}
               </p>
-              <BulkPrice price={listing.price} stock={listing.stock} className="mt-1 block" />
+              <BulkPrice bulkPrice={listing.bulkPrice} stock={listing.stock} className="mt-1 block" />
             </div>
             <div className="rounded-xl bg-white/[0.03] px-4 py-3">
               <p className="eyebrow text-muted-foreground">In stock</p>
@@ -74,6 +75,7 @@ export function ListingDetailModal({
           <PurchaseButton
             slug={listing.slug}
             price={listing.price}
+            bulkPrice={listing.bulkPrice}
             currency={listing.currency}
             stock={listing.stock}
             title={listing.title}

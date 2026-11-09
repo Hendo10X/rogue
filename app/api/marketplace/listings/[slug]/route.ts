@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getUSDtoNGNRate } from "@/lib/currency";
 import { getMarketplacePricing } from "@/lib/pricing";
 import { getLogProfits, priceListingNgn } from "@/lib/log-profit";
+import { bulkUnitPrice, getBulkPricing, listingCostNgn } from "@/lib/bulk-pricing";
 import { supplierCodename } from "@/lib/supplier-codename";
 
 export async function GET(
@@ -38,10 +39,11 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const [pricing, rate, profits] = await Promise.all([
+  const [pricing, rate, profits, bulk] = await Promise.all([
     getMarketplacePricing(),
     getUSDtoNGNRate(),
     getLogProfits(),
+    getBulkPricing(),
   ]);
 
   const finalPrice = priceListingNgn(row, rate, pricing, profits);
@@ -50,6 +52,8 @@ export async function GET(
     ...row,
     supplierName: supplierCodename(row.supplierName),
     price: String(finalPrice),
+    // ₦ per piece when buying the bulk quantity; null when it doesn't apply to this log.
+    bulkPrice: bulkUnitPrice(finalPrice, listingCostNgn(row, rate), bulk),
     currency: "NGN",
   });
 }

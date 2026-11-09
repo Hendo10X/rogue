@@ -4,6 +4,7 @@ import { accountDelivery, listing, order } from "@/db/schema";
 import { getUSDtoNGNRate } from "@/lib/currency";
 import { capSupplierUsd, getMarketplacePricing } from "@/lib/pricing";
 import { getLogProfits, priceListingNgn } from "@/lib/log-profit";
+import { listingCostNgn } from "@/lib/bulk-pricing";
 
 export const PAGE_SIZE = 8;
 
@@ -20,8 +21,11 @@ async function liveWhere() {
 
 async function pricer() {
   const [pricing, rate, profits] = await Promise.all([getMarketplacePricing(), getUSDtoNGNRate(), getLogProfits()]);
-  return (row: { id: string; price: string; supplierPrice: string; metadata?: unknown }) =>
-    priceListingNgn(row, rate, pricing, profits);
+  return (row: { id: string; price: string; supplierPrice: string; metadata?: unknown }) => ({
+    priceNgn: priceListingNgn(row, rate, pricing, profits),
+    // Never shown to customers; only keeps the bulk price above cost.
+    costNgn: listingCostNgn(row, rate),
+  });
 }
 
 const cols = {
@@ -36,7 +40,7 @@ const cols = {
   metadata: listing.metadata,
 };
 
-export type BotListing = { id: string; slug: string; title: string; description: string | null; stock: number; platform: string; priceNgn: number };
+export type BotListing = { id: string; slug: string; title: string; description: string | null; stock: number; platform: string; priceNgn: number; costNgn: number };
 
 /** Platforms that have something in stock, alphabetical. */
 export async function getPlatforms(): Promise<string[]> {
@@ -70,9 +74,9 @@ export async function getListing(id: string): Promise<BotListing | null> {
 
 function toBot(
   r: { id: string; slug: string; title: string; description: string | null; stock: number; platform: string; price: string; supplierPrice: string; metadata: unknown },
-  price: (row: { id: string; price: string; supplierPrice: string; metadata?: unknown }) => number,
+  price: (row: { id: string; price: string; supplierPrice: string; metadata?: unknown }) => { priceNgn: number; costNgn: number },
 ): BotListing {
-  return { id: r.id, slug: r.slug, title: r.title, description: r.description, stock: r.stock, platform: r.platform, priceNgn: price(r) };
+  return { id: r.id, slug: r.slug, title: r.title, description: r.description, stock: r.stock, platform: r.platform, ...price(r) };
 }
 
 /** A customer's latest log orders. */

@@ -41,7 +41,7 @@ export async function showListings(out: Out, opts: { platform?: string; platform
   }
   const rows: Keyboard = items.map((l) => [{ text: `${l.title.slice(0, 40)} · ${naira(l.priceNgn)}`, callback_data: `l:${l.id}` }]);
   const page = (p: number) => (opts.search ? `sr:${p}:${encodeURIComponent(opts.search).slice(0, 40)}` : `pl:${opts.platformIndex}:${p}`);
-  const bulkNote = bulk.enabled ? `\n💸 Buy ${bulk.minQty}+ of a log and pay ${bulk.percent}% less each.` : "";
+  const bulkNote = bulk.enabled ? `\n💸 Buy ${bulk.minQty}+ of a log and pay up to ${naira(bulk.amountOff)} less each.` : "";
   return out(`${title}\nPage ${opts.page + 1}. Tap a log to see details.${bulkNote}`, [
     ...rows,
     ...pager(opts.page, hasMore, page),
@@ -54,8 +54,10 @@ export async function showListing(out: Out, id: string) {
   const [l, bulk] = await Promise.all([getListing(id), getBulkPricing()]);
   if (!l || l.stock <= 0) return out("This log just sold out.", [SHOP_ROW, MENU_ROW]);
   const desc = l.description ? `\n\n${esc(l.description.slice(0, 600))}` : "";
-  const hasBulk = bulk.enabled && l.stock >= bulk.minQty;
-  const bulkLine = hasBulk ? `\n💸 <b>${naira(bulkUnitPrice(l.priceNgn, bulk))}</b> each when you buy ${bulk.minQty}+` : "";
+  // Null when the discount would take this log to its cost: it then keeps its normal price.
+  const bulkPrice = bulkUnitPrice(l.priceNgn, l.costNgn, bulk);
+  const hasBulk = bulkPrice !== null && l.stock >= bulk.minQty;
+  const bulkLine = hasBulk ? `\n💸 <b>${naira(bulkPrice)}</b> each when you buy ${bulk.minQty}+` : "";
   const qtys = [...new Set([1, 2, 5, 10, ...(hasBulk ? [bulk.minQty] : [])])].filter((q) => q <= l.stock).sort((a, b) => a - b);
   return out(
     `<b>${esc(l.title)}</b>\n${esc(l.platform)} · ${l.stock.toLocaleString()} in stock\n💵 <b>${naira(l.priceNgn)}</b> each${bulkLine}${desc}\n\nHow many?`,
@@ -71,10 +73,10 @@ export async function confirmBuy(ctx: Ctx, id: string, qty: number) {
   const [l, bal, bulk] = await Promise.all([getListing(id), balanceOf(ctx.account), getBulkPricing()]);
   if (!l || l.stock < qty) return ctx.out("Not enough in stock any more.", [SHOP_ROW, MENU_ROW]);
   // Same rule as checkout: the bulk price for every piece once the quantity qualifies.
-  const unit = unitPriceForQuantity(l.priceNgn, qty, bulk);
+  const unit = unitPriceForQuantity(l.priceNgn, l.costNgn, qty, bulk);
   const total = unit * qty;
   if (bal + 0.01 < total) return shortOf(ctx, `${qty} × <b>${esc(l.title)}</b>`, total, bal, `l:${l.id}`);
-  const saving = unit < l.priceNgn ? `\n💸 Bulk price applied: ${naira(unit)} each (${bulk.percent}% off)` : "";
+  const saving = unit < l.priceNgn ? `\n💸 Bulk price applied: ${naira(unit)} each (${naira(l.priceNgn - unit)} off)` : "";
   return ctx.out(`Buy ${qty} × <b>${esc(l.title)}</b> for <b>${naira(total)}</b>?${saving}\n\nBalance after: ${naira(bal - total)}`, [
     [{ text: `✅ Confirm · ${naira(total)}`, callback_data: `b:${l.id}:${qty}` }],
     [{ text: "⬅️ Back", callback_data: `l:${l.id}` }],

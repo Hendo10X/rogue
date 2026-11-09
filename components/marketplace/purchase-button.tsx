@@ -20,7 +20,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
 import { useCurrency } from "@/components/currency-provider";
-import { bulkPrice, useBulkPricing } from "@/components/marketplace/bulk-price";
+import { useBulkPricing } from "@/components/marketplace/bulk-price";
 
 interface PurchaseButtonProps {
   slug: string;
@@ -29,6 +29,8 @@ interface PurchaseButtonProps {
   stock: number;
   title: string;
   userBalance: string;
+  /** ₦ per piece at the bulk quantity, from the server; null when this log has no bulk price. */
+  bulkPrice?: number | null;
 }
 
 export function PurchaseButton({
@@ -38,6 +40,7 @@ export function PurchaseButton({
   stock,
   title,
   userBalance,
+  bulkPrice,
 }: PurchaseButtonProps) {
   const router = useRouter();
   const { format } = useCurrency();
@@ -48,9 +51,10 @@ export function PurchaseButton({
   const balance = parseFloat(userBalance);
   const bulk = useBulkPricing();
   const unit = parseFloat(price);
-  const isBulk = !!bulk && quantity >= bulk.minQty;
+  const hasBulk = !!bulk && bulkPrice != null && bulkPrice < unit;
+  const isBulk = hasBulk && quantity >= bulk.minQty;
   // Same rule as checkout: the bulk price once the quantity qualifies.
-  const total = (isBulk ? bulkPrice(unit, bulk) : unit) * quantity;
+  const total = (isBulk ? bulkPrice! : unit) * quantity;
   const outOfStock = stock < 1;
 
   async function handlePurchase() {
@@ -123,7 +127,7 @@ export function PurchaseButton({
                 <p className="mt-2 text-base font-semibold tabular-nums">
                   {format(total)}
                 </p>
-                {isBulk && <p className="mt-1 text-xs text-emerald-400">Bulk price applied · {bulk.percent}% off</p>}
+                {isBulk && <p className="mt-1 text-xs text-emerald-400">Bulk price applied · {format(unit - bulkPrice!)} off each</p>}
               </div>
               <div className="rounded-xl bg-white/[0.03] px-4 py-3">
                 <p className="eyebrow text-muted-foreground">Your balance</p>
@@ -138,13 +142,13 @@ export function PurchaseButton({
                 </p>
               </div>
             </div>
-            {bulk && !isBulk && stock >= bulk.minQty && (
+            {hasBulk && !isBulk && stock >= bulk.minQty && (
               <button
                 type="button"
                 onClick={() => setQuantity(bulk.minQty)}
                 className="rounded-xl bg-emerald-400/10 px-4 py-3 text-left text-xs text-emerald-300 hover:bg-emerald-400/15"
               >
-                Buy {bulk.minQty} or more and pay {format(bulkPrice(unit, bulk))} each ({bulk.percent}% off). Tap to buy {bulk.minQty}.
+                Buy {bulk.minQty} or more and pay {format(bulkPrice!)} each ({format(unit - bulkPrice!)} off). Tap to buy {bulk.minQty}.
               </button>
             )}
             <p className="subtext text-xs text-muted-foreground">

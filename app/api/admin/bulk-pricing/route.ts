@@ -9,19 +9,19 @@ export async function GET() {
   return NextResponse.json(await getBulkPricing());
 }
 
-// PUT { enabled, minQty, percent }
+// PUT { enabled, minQty, amountOff } — amountOff is ₦ off each piece.
 export async function PUT(req: NextRequest) {
   if (!(await requireAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const body = (await req.json().catch(() => null)) as { enabled?: unknown; minQty?: unknown; percent?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { enabled?: unknown; minQty?: unknown; amountOff?: unknown } | null;
   const minQty = Math.round(Number(body?.minQty));
-  const percent = Number(body?.percent);
+  const amountOff = Math.round(Number(body?.amountOff));
   if (!Number.isFinite(minQty) || minQty < 2 || minQty > 100_000) {
     return NextResponse.json({ error: "Bulk must start at 2 pieces or more." }, { status: 400 });
   }
-  if (!Number.isFinite(percent) || percent <= 0 || percent >= 90) {
-    return NextResponse.json({ error: "The discount must be between 0% and 90%." }, { status: 400 });
+  if (!Number.isFinite(amountOff) || amountOff < 1 || amountOff > 1_000_000) {
+    return NextResponse.json({ error: "The discount must be at least ₦1 per piece." }, { status: 400 });
   }
-  const next = { enabled: body?.enabled === true, minQty, percent: Math.round(percent * 100) / 100 };
+  const next = { enabled: body?.enabled === true, minQty, amountOff };
   await setBulkPricing(next);
   return NextResponse.json(next);
 }

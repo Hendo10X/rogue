@@ -77,7 +77,7 @@ export default async function ListingPage({
             <p className="mt-2 text-xl font-semibold tracking-[-0.025em] tabular-nums">
               <Price ngn={listing.price} />
             </p>
-            <BulkPrice price={listing.price} stock={listing.stock} className="mt-1 block" />
+            <BulkPrice bulkPrice={listing.bulkPrice} stock={listing.stock} className="mt-1 block" />
           </div>
           <div className="surface rounded-2xl px-5 py-4">
             <span className="eyebrow text-muted-foreground">In stock</span>
@@ -89,6 +89,7 @@ export default async function ListingPage({
             <PurchaseButton
               slug={listing.slug}
               price={listing.price}
+              bulkPrice={listing.bulkPrice}
               currency={listing.currency}
               stock={listing.stock}
               title={listing.title}
