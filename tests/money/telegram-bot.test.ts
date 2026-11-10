@@ -59,14 +59,15 @@ async function main() {
   const [acc] = await db.select().from(telegramAccount).where(eq(telegramAccount.telegramId, "4242"));
   check("Telegram row saved, not connected", !!acc && acc.userId === null, acc);
   check("no Rogue account created", (await db.select().from(user)).length === usersBefore);
-  check("join message with sign-up and connect", /for Rogue Socials members/.test(lastText()) && lastKeyboard().includes("/signup") && lastKeyboard().includes('"lk"'), lastText());
+  check("join message with one green connect button", /for Rogue Socials members/.test(lastText()) && /connect\/telegram\?code=[A-Z0-9]{8}/.test(lastKeyboard()) && lastKeyboard().includes('"style":"success"'), lastKeyboard());
+  check("support button on the join screen", lastKeyboard().includes("t.me/"), lastKeyboard());
   await tap("ot:0");
   check("shop buttons don't work before connecting", /for Rogue Socials members/.test(lastText()), lastText());
 
   console.log("\n2. Connecting a Rogue Socials account");
-  await tap("lk");
-  const code = lastText().match(/<code>([A-Z0-9]{4})-([A-Z0-9]{4})<\/code>/);
-  check("bot gives a one-time code", !!code, lastText());
+  await say("/start");
+  const code = lastKeyboard().match(/code=([A-Z0-9]{4})([A-Z0-9]{4})/);
+  check("connect button carries a one-time code", !!code, lastKeyboard());
   const webId = "web-ada";
   await db.insert(user).values({ id: webId, name: "Ada", email: "ada@example.com", emailVerified: true });
   await creditWallet((await getOrCreateWallet(webId, "NGN")).id, "12500", "NGN");
@@ -83,6 +84,21 @@ async function main() {
   check("menu shows the website balance", /12,500/.test(lastText()), lastText());
   check("menu has OTP numbers and proxies", lastKeyboard().includes("ot:0") && lastKeyboard().includes('"px"'), lastKeyboard());
   check("no logs or boosting in the menu", !/shop|bs:0|Logs|Boosting/.test(lastKeyboard()), lastKeyboard());
+  check("menu has 2FA and support", lastKeyboard().includes('"tk"') && lastKeyboard().includes("Support"), lastKeyboard());
+  check("menu buttons are coloured", lastKeyboard().includes('"style":"primary"') && lastKeyboard().includes('"style":"success"'), lastKeyboard());
+
+  console.log("\n3b. 2FA codes in the bot");
+  const { totp } = await import("@/lib/totp");
+  await tap("tk");
+  check("asks for the secret", /2FA secret key/.test(lastText()), lastText());
+  await say("not a secret");
+  check("rejects something that isn't a secret", /doesn't look like a 2FA secret/.test(lastText()), lastText());
+  await say("user1|pw1|JBSWY3DPEHPK3PXP");
+  const expected = await totp("JBSWY3DPEHPK3PXP");
+  check("a whole log line gives the right code", lastText().includes(`${expected.slice(0, 3)} ${expected.slice(3)}`) || lastText().includes("next:"), lastText());
+  check("New code button carries the secret", lastKeyboard().includes("tf:JBSWY3DPEHPK3PXP"), lastKeyboard());
+  await tap("tf:JBSWY3DPEHPK3PXP");
+  check("New code works", /Your code/.test(lastText()), lastText());
   await setBotTexts({ welcome: "Hey {name} — **{balance}** <script>" });
   await say("/menu");
   check("admin text used, placeholders filled, ** → bold", lastText().startsWith("Hey Ada — <b>₦12,500</b>"), lastText());

@@ -91,8 +91,8 @@ export function TelegramLinkCard({ botUsername, className }: { botUsername: stri
       ) : (
         <>
           <p className="text-sm text-muted-foreground">
-            Buy OTP numbers and proxies from Telegram with this wallet. Open the bot, tap{" "}
-            <b>🔗 Connect my account</b> and enter the code here.
+            Buy OTP numbers and proxies from Telegram with this wallet. Open the bot and tap the green{" "}
+            <b>Connect</b> button: it connects automatically. Or enter a code from the bot here.
             {botLink && (
               <>
                 {" "}

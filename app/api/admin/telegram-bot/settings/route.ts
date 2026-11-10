@@ -3,17 +3,18 @@ import { requireAdmin } from "@/lib/admin-route";
 import { botMarkup, setBotMarkup } from "@/lib/bot-pricing";
 import { getOtpSettings } from "@/lib/otp/settings";
 import { getProxySettings } from "@/lib/proxies/settings";
-import { DEFAULT_TEXTS, getBotTexts, setBotTexts, TEXT_LIMIT, type BotTexts } from "@/lib/telegram-bot/settings";
+import { DEFAULT_TEXTS, getBotTexts, getSupportUrl, setBotTexts, setSupportUrl, TEXT_LIMIT, type BotTexts } from "@/lib/telegram-bot/settings";
 
 export const dynamic = "force-dynamic";
 
 async function state() {
-  const [otp, proxy, otpWeb, proxyWeb, texts] = await Promise.all([
+  const [otp, proxy, otpWeb, proxyWeb, texts, supportUrl] = await Promise.all([
     botMarkup("otp"),
     botMarkup("proxy"),
     getOtpSettings(),
     getProxySettings(),
     getBotTexts(),
+    getSupportUrl(),
   ]);
   return {
     prices: {
@@ -23,6 +24,7 @@ async function state() {
       websiteProxyMarkup: proxyWeb.markupPercent,
     },
     texts,
+    supportUrl,
     defaults: DEFAULT_TEXTS,
     textLimit: TEXT_LIMIT,
   };
@@ -34,10 +36,10 @@ export async function GET() {
   return NextResponse.json(await state());
 }
 
-// PUT { otpMarkup?, proxyMarkup?, texts? } — null/"" markup = same as the website.
+// PUT { otpMarkup?, proxyMarkup?, texts?, supportUrl? } — null/"" markup = same as the website.
 export async function PUT(req: NextRequest) {
   if (!(await requireAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const body = (await req.json().catch(() => null)) as { otpMarkup?: unknown; proxyMarkup?: unknown; texts?: Partial<BotTexts> } | null;
+  const body = (await req.json().catch(() => null)) as { otpMarkup?: unknown; proxyMarkup?: unknown; texts?: Partial<BotTexts>; supportUrl?: unknown } | null;
 
   const parse = (v: unknown): number | null | "invalid" | undefined => {
     if (v === undefined) return undefined;
@@ -49,6 +51,13 @@ export async function PUT(req: NextRequest) {
   const proxy = parse(body?.proxyMarkup);
   if (otp === "invalid" || proxy === "invalid") {
     return NextResponse.json({ error: "Markup must be between 0% and 1000%, or empty for the website's markup." }, { status: 400 });
+  }
+  if (typeof body?.supportUrl === "string") {
+    try {
+      await setSupportUrl(body.supportUrl);
+    } catch (e) {
+      return NextResponse.json({ error: e instanceof Error ? e.message : "Invalid support link" }, { status: 400 });
+    }
   }
   await Promise.all([
     otp !== undefined ? setBotMarkup("otp", otp) : null,

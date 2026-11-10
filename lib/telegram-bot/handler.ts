@@ -5,8 +5,9 @@ import { buyOtp, cancelOtp, checkOtp, confirmOtp, searchOtpCountries, showOtpApp
 import { onProxyButton, showProxyOrder, showProxyTypes } from "./proxies";
 import { askFundAmount, chooseMethod, gotFundAmount, showBalance, showBankTransfer, showFund, startFunding } from "./wallet";
 import { showOrders } from "./orders";
-import { showAlreadyConnected, showConnectCode, showJoin } from "./members";
-import { getBotTexts, renderText } from "./settings";
+import { showAlreadyConnected, showJoin } from "./members";
+import { getBotTexts, getSupportUrl, renderText } from "./settings";
+import { askTotp, gotTotpSecret, showTotpCode } from "./totp";
 import type { FundMethod } from "./funding";
 
 /**
@@ -32,10 +33,7 @@ export async function handleUpdate(update: Update): Promise<unknown> {
   const text = (msg.text ?? "").trim();
   const cmd = text.split(/[\s@]/)[0].toLowerCase();
 
-  if (!isMember(account)) {
-    if (cmd === "/connect") return showConnectCode(out, account);
-    return showJoin(out, msg.from.first_name);
-  }
+  if (!isMember(account)) return showJoin(out, account, msg.from.first_name);
 
   const ctx: Ctx = { out, chatId: msg.chat.id, account };
   if (cmd === "/start" || cmd === "/menu") {
@@ -48,6 +46,7 @@ export async function handleUpdate(update: Update): Promise<unknown> {
     "/fund": () => showFund(out),
     "/otp": () => showOtpCountries(out, 0),
     "/proxies": () => showProxyTypes(out),
+    "/2fa": () => askTotp(ctx),
     "/connect": () => showAlreadyConnected(out),
     "/help": () => showHelp(out),
   };
@@ -64,6 +63,8 @@ export async function handleUpdate(update: Update): Promise<unknown> {
     case "otp_search":
       await setPending(account.telegramId, null);
       return searchOtpCountries(out, text.slice(0, 40));
+    case "totp":
+      return gotTotpSecret(ctx, text);
   }
   return showMenu(out, account, msg.from.first_name);
 }
@@ -77,10 +78,9 @@ async function onCallback(cb: Callback): Promise<unknown> {
   void answer(cb.id);
 
   if (!isMember(account)) {
-    if (cmd === "lk") return showConnectCode(out, account);
     // "I've connected" lands here while not connected yet.
-    if (cmd === "m") await answer(cb.id, "Not connected yet. Press Connect on the website first.");
-    return showJoin(out, cb.from.first_name);
+    if (cmd === "m") await answer(cb.id, "Not connected yet. Tap the green button and log in first.");
+    return showJoin(out, account, cb.from.first_name);
   }
 
   const ctx: Ctx = { out, chatId: msg.chat.id, account };
@@ -108,6 +108,12 @@ async function onCallback(cb: Callback): Promise<unknown> {
       return showOrders(out, account);
     case "help":
       return showHelp(out);
+
+    // ── 2FA codes ──
+    case "tk":
+      return askTotp(ctx);
+    case "tf":
+      return showTotpCode(out, a ?? "");
 
     // ── OTP numbers ──
     case "ot":
@@ -147,17 +153,27 @@ async function onCallback(cb: Callback): Promise<unknown> {
 }
 
 async function showMenu(out: Out, account: MemberAccount, firstName?: string) {
-  const [bal, texts] = await Promise.all([balanceOf(account), getBotTexts()]);
+  const [bal, texts, support] = await Promise.all([balanceOf(account), getBotTexts(), getSupportUrl()]);
   return out(renderText(texts.welcome, { name: firstName ?? "there", balance: naira(bal) }), [
-    [{ text: "📱 OTP numbers", callback_data: "ot:0" }, { text: "🌐 Proxies", callback_data: "px" }],
-    [{ text: "💰 Fund wallet", callback_data: "fund" }, { text: "📦 My orders", callback_data: "ord" }],
-    [{ text: "❓ Help", callback_data: "help" }],
+    [
+      { text: "📱 OTP numbers", callback_data: "ot:0", style: "primary" },
+      { text: "🌐 Proxies", callback_data: "px", style: "primary" },
+    ],
+    [{ text: "🔐 2FA code", callback_data: "tk", style: "primary" }],
+    [
+      { text: "💰 Fund wallet", callback_data: "fund", style: "success" },
+      { text: "📦 My orders", callback_data: "ord" },
+    ],
+    [
+      { text: "💬 Support", url: support },
+      { text: "❓ Help", callback_data: "help" },
+    ],
   ]);
 }
 
 async function showHelp(out: Out) {
-  const { help } = await getBotTexts();
-  return out(renderText(help), MENU_BUTTON);
+  const [{ help }, support] = await Promise.all([getBotTexts(), getSupportUrl()]);
+  return out(renderText(help), [[{ text: "💬 Text support", url: support }], ...MENU_BUTTON]);
 }
 
 export type { BotAccount };

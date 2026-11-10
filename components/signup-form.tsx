@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { GoogleSignInButton } from "@/components/google-signin-button";
+import { useNextParam } from "@/lib/use-next-param";
+import { withNext } from "@/lib/safe-next";
 import { passwordSchema } from "@/components/inputs/validity";
 import { z } from "zod";
 import { useState } from "react";
@@ -77,6 +79,8 @@ export function SignupForm({
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const router = useRouter();
+  // e.g. back to /connect/telegram after signing up from the Telegram bot.
+  const next = useNextParam();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -105,7 +109,7 @@ export function SignupForm({
       }
 
       toast.success("Your account is ready. Log in to continue.");
-      router.push("/login");
+      router.push(withNext("/login", next));
     } catch (error: unknown) {
       const msg = plainError(error, "We couldn't create your account. Please try again.");
       toast.error(msg);
@@ -285,7 +289,7 @@ export function SignupForm({
                   <FieldDescription className="text-center">
                     Already have an account?{" "}
                     <Link
-                      href="/login"
+                      href={withNext("/login", next)}
                       className="underline-offset-4 hover:underline hover:text-muted-foreground">
                       Login
                     </Link>
@@ -299,7 +303,7 @@ export function SignupForm({
             OR
             <span className="h-px flex-1 bg-border" />
           </div>
-          <GoogleSignInButton callbackURL="/dashboard" label="Sign up with Google" />
+          <GoogleSignInButton callbackURL={next ?? "/dashboard"} label="Sign up with Google" />
         </CardContent>
       </Card>
     </div>

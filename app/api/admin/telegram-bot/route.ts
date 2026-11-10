@@ -53,6 +53,7 @@ export async function POST() {
       { command: "menu", description: "Main menu" },
       { command: "otp", description: "OTP numbers" },
       { command: "proxies", description: "Buy proxies" },
+      { command: "2fa", description: "Get a 2FA login code" },
       { command: "fund", description: "Fund your wallet" },
       { command: "balance", description: "Your balance" },
       { command: "orders", description: "Your numbers and proxies" },

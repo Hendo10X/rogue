@@ -26,6 +26,8 @@ import { Input } from "@/components/ui/input";
 import { GoogleSignInButton } from "@/components/google-signin-button";
 import { z } from "zod";
 import { useState } from "react";
+import { useNextParam } from "@/lib/use-next-param";
+import { withNext } from "@/lib/safe-next";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loading03Icon } from "@hugeicons/core-free-icons";
 
@@ -40,6 +42,8 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  // e.g. back to /connect/telegram after logging in from the Telegram bot.
+  const next = useNextParam();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -63,7 +67,7 @@ export function LoginForm({
       }
       
       toast.success("Welcome back!");
-      router.push("/dashboard");
+      router.push(next ?? "/dashboard");
       router.refresh();
     } catch (error: any) {
       toast.error(plainError(error?.message, "We couldn't log you in. Please try again."));
@@ -130,7 +134,7 @@ export function LoginForm({
                   <FieldDescription className="text-center">
                     Don&apos;t have an account?{" "}
                     <Link
-                      href="/signup"
+                      href={withNext("/signup", next)}
                       className="underline-offset-4 hover:underline hover:text-muted-foreground">
                       Sign up
                     </Link>
@@ -144,7 +148,7 @@ export function LoginForm({
             OR
             <span className="h-px flex-1 bg-border" />
           </div>
-          <GoogleSignInButton callbackURL="/dashboard" />
+          <GoogleSignInButton callbackURL={next ?? "/dashboard"} />
         </CardContent>
       </Card>
     </div>
