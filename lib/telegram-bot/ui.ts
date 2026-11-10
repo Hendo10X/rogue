@@ -42,7 +42,7 @@ export const fits = (data: string) => new TextEncoder().encode(data).length <= 6
 export function shortOf(ctx: Ctx, what: string, total: number, balance: number, back: string) {
   return ctx.out(
     `${what} costs <b>${naira(total)}</b>, but your balance is ${naira(balance)}.\n\nAdd <b>${naira(Math.ceil(total - balance))}</b> or more first.`,
-    [[{ text: "💰 Fund wallet", callback_data: "fund" }], [{ text: "⬅️ Back", callback_data: back }], MENU_ROW],
+    [[{ text: "💰 Fund wallet", callback_data: "fund", style: "success" }], [{ text: "⬅️ Back", callback_data: back }], MENU_ROW],
   );
 }
 

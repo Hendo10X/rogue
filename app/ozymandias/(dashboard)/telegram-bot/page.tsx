@@ -14,6 +14,7 @@ type Texts = { welcome: string; join: string; help: string };
 type Settings = {
   prices: { otpMarkup: number | null; proxyMarkup: number | null; websiteOtpMarkup: number; websiteProxyMarkup: number };
   texts: Texts;
+  supportUrl: string;
   defaults: Texts;
   textLimit: number;
 };
@@ -135,6 +136,7 @@ function Prices() {
 function Messages() {
   const [s, setS] = useState<Settings | null>(null);
   const [texts, setTexts] = useState<Texts | null>(null);
+  const [support, setSupport] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -142,6 +144,7 @@ function Messages() {
       .then((d) => {
         setS(d);
         setTexts(d.texts);
+        setSupport(d.supportUrl);
       })
       .catch(() => toast.error("Failed to load bot messages"));
   }, []);
@@ -153,10 +156,11 @@ function Messages() {
       const d = await api<Settings>("/api/admin/telegram-bot/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texts }),
+        body: JSON.stringify({ texts, supportUrl: support }),
       });
       setS(d);
       setTexts(d.texts);
+      setSupport(d.supportUrl);
       toast.success("Bot messages saved.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't save");
@@ -173,6 +177,11 @@ function Messages() {
       ) : (
         <>
           <p className="text-sm text-muted-foreground">Plain text. Line breaks are kept and **double stars** make text bold.</p>
+          <label className="flex max-w-md flex-col gap-1.5 text-sm">
+            <span>💬 Support button opens</span>
+            <Input value={support} placeholder="@your_telegram or https://t.me/…" onChange={(e) => setSupport(e.target.value)} />
+            <span className="text-xs text-muted-foreground">Your Telegram @username (or any https link). Shown on the menu, help and the not-a-member screen.</span>
+          </label>
           {TEXT_FIELDS.map((f) => (
             <div key={f.key} className="grid gap-3 lg:grid-cols-2">
               <label className="flex flex-col gap-1.5 text-sm">

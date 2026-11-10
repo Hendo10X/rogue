@@ -124,7 +124,7 @@ async function confirmProxy(ctx: Ctx, draft: ProxyDraft, countryName: string, ca
   const bal = await balanceOf(ctx.account);
   if (bal + 0.01 < total) return shortOf(ctx, what, total, bal, "px");
   return ctx.out(`${what}\n💵 <b>${naira(total)}</b>\n\nBalance after: ${naira(bal - total)}`, [
-    [{ text: `✅ Buy · ${naira(total)}`, callback_data: "pb" }],
+    [{ text: `✅ Buy · ${naira(total)}`, callback_data: "pb", style: "success" }],
     PROXY_ROW,
     MENU_ROW,
   ]);
@@ -180,7 +180,7 @@ async function buyProxy(ctx: Ctx, draft: ProxyDraft) {
   const r = await placeProxyOrder(account.userId, spec, { channel: "bot" }).finally(() => setPending(account.telegramId, null));
   if (!r.ok) return send(chatId, `❌ ${esc(r.error)}`, [PROXY_ROW, MENU_ROW]);
   return send(chatId, "✅ <b>Proxies ordered.</b> They're usually ready within a minute or two.", [
-    [{ text: "🔄 Check if ready", callback_data: `po:${r.data.id}` }],
+    [{ text: "🔄 Check if ready", callback_data: `po:${r.data.id}`, style: "primary" }],
     MENU_ROW,
   ]);
 }

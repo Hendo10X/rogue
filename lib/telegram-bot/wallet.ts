@@ -66,7 +66,7 @@ export async function startFunding(ctx: Ctx, method: FundMethod, amount: number)
     const cryptoNote = method === "crypto" ? "\nCrypto is priced in USD at today's rate; you'll get the ₦ value when it confirms." : "";
     return ctx.out(
       `Tap below to pay <b>${naira(amount)}</b> by ${m.note}. Your wallet is credited automatically and I'll message you here once it's in.${cryptoNote}`,
-      [[{ text: `Pay ${naira(amount)}`, url: link }], MENU_ROW],
+      [[{ text: `Pay ${naira(amount)}`, url: link, style: "success" }], MENU_ROW],
     );
   } catch {
     return ctx.out("We couldn't start the payment right now. Please try another method or try again in a minute.", [

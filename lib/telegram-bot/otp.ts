@@ -8,7 +8,7 @@ import { placeOtpOrder } from "@/lib/otp/place-order";
 import { cancelAndRefund, getOtpOrders, OTP_WAIT_MINUTES } from "@/lib/otp/orders";
 import { appLabel } from "@/lib/otp/labels";
 import { countryLabel } from "@/lib/otp/catalog";
-import { esc, send } from "./api";
+import { esc, send, type Keyboard } from "./api";
 import { claimPurchase, setPending } from "./accounts";
 import { balanceOf, fits, MENU_BUTTON, MENU_ROW, naira, pager, pairs, shortOf, type Ctx, type Out } from "./ui";
 
@@ -93,7 +93,7 @@ export async function confirmOtp(ctx: Ctx, country: string, app: string) {
   if (bal + 0.01 < a.priceNgn) return shortOf(ctx, what, a.priceNgn, bal, `oc:${country}:0`);
   return ctx.out(
     `${what} for <b>${naira(a.priceNgn)}</b>?\n\nUse it within ${OTP_WAIT_MINUTES} minutes. If no code arrives, cancel for a full refund (or it's refunded automatically).\n\nBalance after: about ${naira(bal - a.priceNgn)}`,
-    [[{ text: `✅ Buy · ${naira(a.priceNgn)}`, callback_data: `ob:${country}:${app}` }], [{ text: "⬅️ Back", callback_data: `oc:${country}:0` }]],
+    [[{ text: `✅ Buy · ${naira(a.priceNgn)}`, callback_data: `ob:${country}:${app}`, style: "success" }], [{ text: "⬅️ Back", callback_data: `oc:${country}:0` }]],
   );
 }
 
@@ -111,10 +111,10 @@ export async function buyOtp(ctx: Ctx, country: string, app: string) {
   );
 }
 
-function otpButtons(id: string) {
+function otpButtons(id: string): Keyboard {
   return [
-    [{ text: "🔄 Check for code", callback_data: `on:${id}` }],
-    [{ text: "❌ Cancel & refund", callback_data: `ox:${id}` }],
+    [{ text: "🔄 Check for code", callback_data: `on:${id}`, style: "primary" }],
+    [{ text: "❌ Cancel & refund", callback_data: `ox:${id}`, style: "danger" }],
     MENU_ROW,
   ];
 }

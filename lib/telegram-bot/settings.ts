@@ -29,9 +29,11 @@ export const DEFAULT_TEXTS: BotTexts = {
     "2. 📱 Buy OTP numbers or 🌐 proxies from your balance.",
     "3. Numbers, codes and proxies arrive right here, and stay under 📦 My orders.",
     "",
+    "🔐 2FA code: send a 2FA secret (or a whole log line) and get the login code.",
     "Failed orders are refunded to your wallet automatically.",
+    "Need help? Tap 💬 Text support.",
     "",
-    "Commands: /menu /otp /proxies /fund /balance /orders",
+    "Commands: /menu /otp /proxies /2fa /fund /balance /orders",
   ].join("\n"),
 };
 
@@ -70,4 +72,36 @@ export function renderText(template: string, vars: Record<string, string> = {}):
   let out = esc(template);
   for (const [k, v] of Object.entries(vars)) out = out.split(`{${k}}`).join(esc(v));
   return out.replace(/\*\*([\s\S]+?)\*\*/g, "<b>$1</b>");
+}
+
+// ── Support link ────────────────────────────────────────────────────────────
+
+const SUPPORT_KEY = "bot_support_url";
+
+/**
+ * Where the bot's 💬 Support button goes: the owner's Telegram (e.g.
+ * https://t.me/rogue4l). Set in Admin → Telegram bot; until then, the same
+ * contact customers send bank-transfer receipts to.
+ */
+export async function getSupportUrl(): Promise<string> {
+  const saved = (await getSetting(SUPPORT_KEY))?.trim();
+  if (saved) return saved;
+  const { getManualFunding } = await import("@/lib/manual-funding");
+  return (await getManualFunding()).proofUrl;
+}
+
+/** "@rogue4l", "rogue4l" or a full https link → a link Telegram can open. Null if it's not usable. */
+export function normaliseSupportUrl(input: string): string | null {
+  const v = input.trim();
+  if (!v) return null;
+  const handle = v.replace(/^@/, "").replace(/^(https?:\/\/)?(t\.me|telegram\.me)\//i, "");
+  if (/^[A-Za-z0-9_]{4,32}$/.test(handle)) return `https://t.me/${handle}`;
+  return /^https:\/\/\S+$/i.test(v) ? v : null;
+}
+
+export async function setSupportUrl(input: string): Promise<string> {
+  const url = input.trim() ? normaliseSupportUrl(input) : "";
+  if (url === null) throw new Error("Use a Telegram @username or a link starting with https://");
+  await setSetting(SUPPORT_KEY, url);
+  return getSupportUrl();
 }

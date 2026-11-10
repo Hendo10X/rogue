@@ -4,7 +4,11 @@
  */
 const API = "https://api.telegram.org";
 
-export type Button = { text: string; callback_data?: string; url?: string };
+/**
+ * `style` colours the button: primary = blue, success = green, danger = red
+ * (Telegram apps from Feb 2026; older apps show it plain).
+ */
+export type Button = { text: string; callback_data?: string; url?: string; style?: "primary" | "success" | "danger" };
 export type Keyboard = Button[][];
 
 export function shopBotConfigured(): boolean {

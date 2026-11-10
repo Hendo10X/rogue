@@ -14,6 +14,7 @@ export type Pending =
   | { kind: "fund_amount" }
   | { kind: "buying"; at: number }
   | { kind: "otp_search" }
+  | { kind: "totp" }
   | { kind: "proxy"; spec: ProxyDraft }
   | null;
 
