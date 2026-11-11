@@ -4,6 +4,7 @@ import "./globals.css";
 import Toaster from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
 import { CurrencyProvider } from "@/components/currency-provider";
+import { TelegramFloat } from "@/components/telegram-float";
 import { resolveCurrency } from "@/lib/detect-currency";
 import {
   SITE_URL,
@@ -133,6 +134,7 @@ export default async function RootLayout({
         <Providers>
           <CurrencyProvider initialCurrency={currency} rates={rates}>
             {children}
+            <TelegramFloat />
             <Toaster />
           </CurrencyProvider>
         </Providers>

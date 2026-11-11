@@ -293,9 +293,10 @@ export default function AdminSettingsPage() {
           <h2 className="text-sm font-semibold tracking-[-0.01em]">Marketplace Log Pricing</h2>
           <p className="text-sm text-muted-foreground">
             Cheap logs (below the threshold) get a flat Naira fee added. Logs at
-            or above the threshold get a percentage markup instead. Any
-            auto-synced log that would still price above the cap is hidden from
-            the marketplace, so customers never see scary prices.
+            or above the threshold get a percentage markup instead. AcctShop
+            logs that would still price above the cap are hidden from the
+            marketplace; AccsZone, other suppliers and your own uploaded logs
+            always show, whatever their price.
           </p>
         </CardHeader>
         <CardContent>
@@ -337,7 +338,7 @@ export default function AdminSettingsPage() {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="priceCap">Hide logs above this price (₦, 0 = no cap)</FieldLabel>
+                <FieldLabel htmlFor="priceCap">Hide AcctShop logs above this price (₦, 0 = no cap)</FieldLabel>
                 <Input
                   id="priceCap"
                   type="number"
