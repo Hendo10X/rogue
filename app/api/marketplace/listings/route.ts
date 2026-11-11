@@ -49,12 +49,14 @@ export async function GET(req: NextRequest) {
     sql`(${isManualSql} OR ${listing.supplierPrice} <= ${maxUsd})`,
   );
 
-  // Hard price cap: hide auto-synced logs that would still price above the cap
-  // ("no log of 500k"). Manual logs are admin-priced, so they're exempt.
+  // Hard price cap, AcctShop only: hide AcctShop logs that would still price
+  // above the cap ("no log of 500k"). AccsZone and every other supplier, and
+  // manual (admin-priced) logs, are never hidden by it, so e.g. an ₦80k
+  // AccsZone TikTok account stays buyable.
   const capUsd = capSupplierUsd(rate, pricing);
   if (capUsd != null) {
     baseConditions.push(
-      sql`(${isManualSql} OR ${listing.supplierPrice} <= ${capUsd})`,
+      sql`(${isManualSql} OR ${supplier.slug} <> 'acctshop' OR ${listing.supplierPrice} <= ${capUsd})`,
     );
   }
 
