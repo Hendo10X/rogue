@@ -109,15 +109,25 @@ export async function sendOrderDeliveryEmail({
 
 interface AdminOrderNotifyParams {
   orderId: string;
-  orderType: "marketplace" | "boosting";
+  orderType: "marketplace" | "boosting" | "otp" | "proxy";
   userEmail: string;
   userName: string;
   amount: string;
   currency: string;
   platform?: string;
+  /** Boosting service, or the OTP/proxy description (e.g. "WhatsApp · United States"). */
   serviceName?: string;
   status: string;
+  /** Where it was bought, when not the website (e.g. "Telegram bot"). */
+  via?: string;
 }
+
+const ORDER_TYPE_LABEL: Record<AdminOrderNotifyParams["orderType"], string> = {
+  marketplace: "Marketplace",
+  boosting: "Boosting",
+  otp: "OTP number",
+  proxy: "Proxies",
+};
 
 export async function sendAdminOrderNotification({
   orderId,
@@ -129,14 +139,13 @@ export async function sendAdminOrderNotification({
   platform,
   serviceName,
   status,
+  via,
 }: AdminOrderNotifyParams) {
   const amountFormatted = currency === "NGN"
     ? `₦${formatAmount(amount)}`
     : `${parseFloat(amount).toFixed(2)} ${currency}`;
 
-  const productLabel = orderType === "marketplace"
-    ? `Marketplace — ${platform ?? "N/A"}`
-    : `Boosting — ${serviceName ?? "N/A"}`;
+  const productLabel = `${ORDER_TYPE_LABEL[orderType]} — ${(orderType === "marketplace" ? platform : serviceName) ?? "N/A"}`;
 
   const text = [
     `🛒 <b>New Order Received</b>`,
@@ -146,6 +155,7 @@ export async function sendAdminOrderNotification({
     `<b>Amount:</b> ${escapeHtml(amountFormatted)}`,
     `<b>Customer:</b> ${escapeHtml(userName)} (${escapeHtml(userEmail)})`,
     `<b>Status:</b> ${escapeHtml(status)}`,
+    ...(via ? [`<b>Via:</b> ${escapeHtml(via)}`] : []),
   ].join("\n");
 
   await sendTelegramMessage(text);

@@ -6,6 +6,8 @@ import { fail, type OrderResult } from "@/lib/order-result";
 import type { Channel } from "@/lib/bot-pricing";
 import { priceNgn, proxiesOnSale } from "./settings";
 import { placeOrder, quoteUsd, type ProxySpec } from "./provider";
+import { alertAdminOfOrder } from "@/lib/order-alert";
+import { PROXY_TYPE_LABEL } from "./orders";
 
 /** The ₦ price of a proxy choice (what the order will charge). */
 export async function quoteProxyNgn(spec: ProxySpec, channel: Channel = "web"): Promise<number> {
@@ -91,6 +93,16 @@ export async function placeProxyOrder(
     externalReference: placed.orderId,
     metadata: { kind: "proxy", proxyType: spec.type, proxyOrderId: id, country, period, quantity, channel },
   }).catch((err) => console.error("[Proxies] transaction log failed", err));
+
+  // Admin Telegram alert, like logs and boosting (never blocks or fails the order).
+  await alertAdminOfOrder({
+    userId,
+    orderId: id,
+    orderType: "proxy",
+    amountNgn: total,
+    description: `${quantity} × ${PROXY_TYPE_LABEL[spec.type]} · ${country} · ${period}`,
+    channel,
+  });
 
   return { ok: true, data: { ok: true, id } };
 }
