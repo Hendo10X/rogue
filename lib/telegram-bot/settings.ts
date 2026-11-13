@@ -25,7 +25,7 @@ export const DEFAULT_TEXTS: BotTexts = {
   ].join("\n"),
   help: [
     "**How it works**",
-    "1. 💰 Fund your wallet: card, transfer, USSD, crypto or bank transfer.",
+    "1. 💰 Fund your wallet: card, transfer, USSD or bank transfer.",
     "2. 📱 Buy OTP numbers or 🌐 proxies from your balance.",
     "3. Numbers, codes and proxies arrive right here, and stay under 📦 My orders.",
     "",

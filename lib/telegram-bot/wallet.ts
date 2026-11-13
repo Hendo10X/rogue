@@ -63,9 +63,8 @@ export async function startFunding(ctx: Ctx, method: FundMethod, amount: number)
   const [u] = await db.select({ email: user.email, name: user.name }).from(user).where(eq(user.id, ctx.account.userId)).limit(1);
   try {
     const link = await createFundingLink(method, { userId: ctx.account.userId, email: u?.email ?? "", name: u?.name ?? "Customer" }, amount);
-    const cryptoNote = method === "crypto" ? "\nCrypto is priced in USD at today's rate; you'll get the ₦ value when it confirms." : "";
     return ctx.out(
-      `Tap below to pay <b>${naira(amount)}</b> by ${m.note}. Your wallet is credited automatically and I'll message you here once it's in.${cryptoNote}`,
+      `Tap below to pay <b>${naira(amount)}</b> by ${m.note}. Your wallet is credited automatically and I'll message you here once it's in.`,
       [[{ text: `Pay ${naira(amount)}`, url: link, style: "success" }], MENU_ROW],
     );
   } catch {
@@ -86,7 +85,7 @@ export async function showBankTransfer(out: Out) {
       `Account name: <b>${esc(b.accountName)}</b>`,
       `Account number: <code>${esc(b.accountNumber)}</code>`,
       "",
-      "After paying, send your receipt and your Telegram @username so we can credit you. Transfers are credited by hand, so card or crypto is faster.",
+      "After paying, send your receipt and your Telegram @username so we can credit you. Transfers are credited by hand, so card is faster.",
     ].join("\n"),
     [[{ text: "📤 Send receipt", url: b.proofUrl }], [{ text: "💰 Other ways to pay", callback_data: "fund" }], MENU_ROW],
   );

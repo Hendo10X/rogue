@@ -3,7 +3,6 @@ import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowRight01Icon,
-  Bitcoin01Icon,
   CreditCardIcon,
   CodeIcon,
   PackageIcon,
@@ -193,7 +192,7 @@ export default async function Home() {
                   Fund once, pay from balance. No card declines halfway through checkout.
                 </p>
                 <div className="mt-8 flex gap-2">
-                  {[CreditCardIcon, BankIcon, Bitcoin01Icon].map((ic, i) => (
+                  {[CreditCardIcon, BankIcon].map((ic, i) => (
                     <span key={i} className="flex size-10 items-center justify-center rounded-xl bg-white/[0.05] text-[#ffb27a]">
                       <HugeiconsIcon icon={ic} strokeWidth={1.75} className="size-4.5" />
                     </span>
@@ -232,10 +231,9 @@ export default async function Home() {
 
         {/* Payments */}
         <Section>
-          <SectionHead title="Fund it the way that works for you." sub="Naira, crypto, or a plain bank transfer." />
-          <Stagger inView className="mt-14 grid gap-3 md:grid-cols-3">
+          <SectionHead title="Fund it the way that works for you." sub="Card, transfer or USSD in Naira, or a plain bank transfer." />
+          <Stagger inView className="mt-14 grid gap-3 md:grid-cols-2">
             <PaymentCard icon={CreditCardIcon} title="Card & bank" body="Pay in NGN through Korapay or Flutterwave — card, transfer or USSD." tag="Korapay · Flutterwave" />
-            <PaymentCard icon={Bitcoin01Icon} title="Crypto" body="USDT, BTC or ETH through Plisio, credited automatically on confirmation." tag="Plisio" />
             <PaymentCard icon={BankIcon} title="Manual transfer" body="Pay into the Rogue account, send the receipt on Telegram, and you're credited." tag="Moniepoint" />
           </Stagger>
         </Section>

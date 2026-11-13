@@ -35,7 +35,7 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: "item-5",
     question: "What payment methods do you accept?",
     answer:
-      "We accept crypto (Bitcoin, Ethereum, USDT) via Plisio and card/bank transfers via Korapay. All transactions are secure and encrypted. Your payment info is never stored.",
+      "We accept card, bank transfer and USSD in Naira via Korapay and Flutterwave, plus manual bank transfer. All transactions are secure and encrypted. Your payment info is never stored.",
   },
   {
     id: "item-6",

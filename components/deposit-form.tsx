@@ -14,7 +14,7 @@ import { formatMoney } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import type { ManualFunding } from "@/lib/manual-funding";
 
-type PaymentProvider = "korapay" | "flutterwave" | "plisio" | "manual";
+type PaymentProvider = "korapay" | "flutterwave" | "manual";
 
 const KORAPAY_SCRIPT_URL =
   "https://korablobstorage.blob.core.windows.net/modal-bucket/korapay-collections.min.js";
@@ -52,14 +52,12 @@ declare global {
 const PAYMENT_OPTIONS: { value: PaymentProvider; label: string }[] = [
   { value: "korapay", label: "Card & Bank Transfer (Korapay)" },
   { value: "flutterwave", label: "Card & Bank Transfer (Flutterwave)" },
-  { value: "plisio", label: "Crypto — USDT, BTC, ETH (Plisio)" },
   { value: "manual", label: "Manual Bank Transfer" },
 ];
 
 const METHOD_COPY: Record<PaymentProvider, [string, string]> = {
   korapay: ["Korapay", "Card, bank transfer or USSD · NGN"],
   flutterwave: ["Flutterwave", "Card or bank transfer · NGN"],
-  plisio: ["Plisio", "Crypto — USDT, BTC, ETH · USD"],
   manual: ["Manual transfer", "Pay into our account, send the receipt"],
 };
 
@@ -69,7 +67,6 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
   const [amount, setAmount] = useState("");
   const [provider, setProvider] = useState<PaymentProvider>("korapay");
   const [loading, setLoading] = useState(false);
-  const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
 
   // Naira providers settle in NGN; show the equivalent in the visitor's
   // currency so international customers know what they're paying.
@@ -100,9 +97,8 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const num = parseFloat(amount);
-    const isNaira = provider === "korapay" || provider === "flutterwave";
-    if (!Number.isFinite(num) || num < (isNaira ? 500 : 1)) {
-      toast.error(isNaira ? "The minimum deposit is ₦500." : "Enter an amount of at least $1.");
+    if (!Number.isFinite(num) || num < 500) {
+      toast.error("The minimum deposit is ₦500.");
       return;
     }
     setLoading(true);
@@ -112,7 +108,7 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: num,
-          currency: isNaira ? "NGN" : "USDT",
+          currency: "NGN",
           provider,
         }),
       });
@@ -207,9 +203,7 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
         return;
       }
 
-      setInvoiceUrl(data.invoiceUrl);
-      toast.success("Taking you to the payment page…");
-      window.location.href = data.invoiceUrl;
+      toast.error("We couldn't start your payment. Please try again.");
     } catch {
       toast.error("We couldn't start your payment. Please try again.");
     } finally {
@@ -217,24 +211,7 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
     }
   }
 
-  if (invoiceUrl) {
-    return (
-      <div className="surface rounded-2xl px-5 py-6">
-        <p className="mt-2 text-sm text-muted-foreground">
-          Taking you to the payment page…
-        </p>
-        <Button
-          className="mt-5 w-full"
-          variant="outline"
-          onClick={() => (window.location.href = invoiceUrl)}>
-          Open payment page
-        </Button>
-      </div>
-    );
-  }
-
-  const isUsd = provider === "plisio";
-  const presets = isUsd ? [10, 25, 50, 100] : [2000, 5000, 10000, 25000];
+  const presets = [2000, 5000, 10000, 25000];
 
   return (
     <form onSubmit={handleSubmit} className="surface flex flex-col gap-5 rounded-3xl p-5 sm:p-6">
@@ -319,19 +296,19 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
         <div className="flex flex-col">
           <div className="flex flex-col gap-3">
             <label htmlFor="amount" className="text-sm font-medium">
-              Amount ({isUsd ? "USD" : "NGN"})
+              Amount (NGN)
             </label>
             <div className="relative">
               <span className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-lg text-muted-foreground">
-                {isUsd ? "$" : "₦"}
+                ₦
               </span>
               <Input
                 id="amount"
                 type="number"
-                min={isUsd ? 1 : 500}
+                min={500}
                 max={10000000}
-                step={isUsd ? 0.01 : 1}
-                placeholder={isUsd ? "50" : "1000"}
+                step={1}
+                placeholder="1000"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 disabled={loading}
@@ -351,12 +328,12 @@ export function DepositForm({ manualFunding }: { manualFunding: ManualFunding })
                       : "bg-white/[0.04] text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
                   )}
                 >
-                  {isUsd ? `$${v}` : `₦${v.toLocaleString()}`}
+                  {`₦${v.toLocaleString()}`}
                 </button>
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              {isUsd ? "Pay with USDT, BTC, ETH, etc." : "Pay with card or bank transfer (Naira)"}
+              Pay with card or bank transfer (Naira)
               {showEquivalent && (
                 <> · ≈ {formatMoney(convert(enteredNgn), currency)} at today&apos;s rate</>
               )}
