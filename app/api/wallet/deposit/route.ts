@@ -3,7 +3,6 @@ import { isUserSuspended, SUSPENDED_MESSAGE } from "@/lib/suspension";
 import { auth } from "@/utils/auth";
 import { headers } from "next/headers";
 import { getOrCreateWallet } from "@/lib/wallet";
-import { createPlisioInvoice } from "@/lib/plisio";
 import { db } from "@/db/drizzle";
 import { deposit } from "@/db/schema";
 
@@ -19,7 +18,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: SUSPENDED_MESSAGE }, { status: 403 });
   }
 
-  let body: { amount: number; currency?: string; provider?: "plisio" | "korapay" | "flutterwave" };
+  let body: { amount: number; currency?: string; provider?: string };
   try {
     body = await req.json();
   } catch {
@@ -29,12 +28,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const provider = body.provider ?? "plisio";
+  // Crypto (Plisio) was removed after Plisio's security incident (Nov 2026).
+  const provider = body.provider;
+  if (provider !== "korapay" && provider !== "flutterwave") {
+    return NextResponse.json(
+      { error: "That payment method isn't available. Please pay by card or bank transfer." },
+      { status: 400 }
+    );
+  }
   const amount = Number(body.amount);
-  const maxAmount = provider === "korapay" || provider === "flutterwave" ? 10000000 : 100000;
+  const maxAmount = 10000000;
 
   // Card/transfer deposits start at ₦500 (stops ₦100 top-ups for ₦20 boosts).
-  const minAmount = provider === "korapay" || provider === "flutterwave" ? 500 : 1;
+  const minAmount = 500;
   if (!Number.isFinite(amount) || amount < minAmount || amount > maxAmount) {
     return NextResponse.json(
       { error: `Amount must be between ${minAmount} and ${maxAmount}` },
@@ -130,57 +136,5 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Plisio
-  const apiKey = process.env.PLISIO_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "Plisio payment provider not configured" },
-      { status: 500 }
-    );
-  }
-
-  const callbackUrl = `${baseUrl}/api/webhooks/plisio?json=true`;
-  const successUrl = `${baseUrl}/wallet/deposit/success`;
-
-  const result = await createPlisioInvoice(apiKey, {
-    orderNumber,
-    orderName: "Wallet deposit",
-    sourceCurrency: "USD",
-    sourceAmount: amount,
-    callbackUrl,
-    successCallbackUrl: `${successUrl}?order=${orderNumber}&status=ok`,
-    email: session.user.email ?? undefined,
-  });
-
-  if (result.status !== "success" || !result.data) {
-    console.error("[Plisio] Invoice creation failed:", JSON.stringify(result));
-    return NextResponse.json(
-      {
-        error: result.error?.message ?? "Failed to create payment invoice",
-      },
-      { status: 400 }
-    );
-  }
-
-  await db.insert(deposit).values({
-    id: depositId,
-    userId: session.user.id,
-    walletId: wallet.id,
-    amount: amount.toString(),
-    currency: "NGN",
-    provider: "plisio",
-    plisioTxnId: result.data.txn_id,
-    plisioOrderNumber: orderNumber,
-    status: "pending",
-    invoiceUrl: result.data.invoice_url,
-  });
-
-  return NextResponse.json({
-    provider: "plisio",
-    depositId,
-    invoiceUrl: result.data.invoice_url,
-    orderNumber,
-    amount,
-    currency: "NGN",
-  });
+  return NextResponse.json({ error: "That payment method isn't available." }, { status: 400 });
 }

@@ -44,7 +44,7 @@ export default async function DepositPage() {
       >
         <PageHeader
           title="Fund your wallet"
-          description="Top up by card or bank transfer (Korapay, Flutterwave), crypto (Plisio), or a manual bank transfer. Your balance pays for every order."
+          description="Top up by card or bank transfer (Korapay, Flutterwave) or a manual bank transfer. Your balance pays for every order."
         />
         <div className="w-full max-w-xl">
           <DepositForm manualFunding={manualFunding} />
