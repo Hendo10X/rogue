@@ -20,6 +20,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { getSetting } from "@/lib/admin-auth";
+import { SUPPORT_EMAIL } from "@/lib/site";
 import { FAQ_ITEMS } from "@/lib/faq";
 import { Button } from "@/components/ui/button";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
@@ -287,6 +288,13 @@ export default async function Home() {
                   className="text-foreground underline decoration-white/20 underline-offset-4 transition-colors hover:decoration-[#ff8a1a]"
                 >
                   Message support on Telegram
+                </a>{" "}
+                or email{" "}
+                <a
+                  href={`mailto:${SUPPORT_EMAIL}`}
+                  className="text-foreground underline decoration-white/20 underline-offset-4 transition-colors hover:decoration-[#ff8a1a]"
+                >
+                  {SUPPORT_EMAIL}
                 </a>
                 .
               </p>

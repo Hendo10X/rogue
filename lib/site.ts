@@ -8,7 +8,7 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? "https://www.rogueso
 export const SITE_NAME = "Rogue Socials";
 
 export const SITE_DESCRIPTION =
-  "Rogue Socials is a trusted marketplace to buy aged & fresh social media accounts (Instagram, Facebook, TikTok, Twitter, Snapchat) and affordable SMM boosting — with instant delivery and secure crypto & card payments.";
+  "Rogue Socials is a trusted marketplace to buy aged & fresh social media accounts (Instagram, Facebook, TikTok, Twitter, Snapchat) and affordable SMM boosting — with instant delivery and secure card & bank payments.";
 
 export const SITE_KEYWORDS = [
   "buy social media accounts",
@@ -25,6 +25,9 @@ export const SITE_KEYWORDS = [
   "aged social media accounts",
   "Rogue Socials",
 ];
+
+/** Customer support email (forwarded to the owner's inbox: lib/support-forward.ts). */
+export const SUPPORT_EMAIL = "support@roguesocials.com";
 
 // Public social profiles for structured data / verification.
 export const SITE_SOCIALS = [

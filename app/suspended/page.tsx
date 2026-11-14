@@ -8,6 +8,7 @@ import { auth } from "@/utils/auth";
 import { isUserSuspended } from "@/lib/suspension";
 import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/logo";
+import { SUPPORT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Account suspended", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -36,8 +37,11 @@ export default async function SuspendedPage() {
         <div className="flex w-full flex-col gap-2">
           <Button asChild size="lg">
             <a href="https://t.me/rogue4l" target="_blank" rel="noopener noreferrer">
-              Contact support
+              Contact support on Telegram
             </a>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <a href={`mailto:${SUPPORT_EMAIL}`}>Email {SUPPORT_EMAIL}</a>
           </Button>
           <Button asChild size="lg" variant="ghost">
             <Link href="/">Back to site</Link>
