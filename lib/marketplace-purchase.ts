@@ -198,6 +198,8 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
               amount: totalAmount,
               currency: "NGN",
               platform: list.platform,
+              product: list.title,
+              quantity,
               status: "completed — delivered from uploaded logs",
             }),
           ]);
@@ -251,7 +253,11 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
           amount: totalAmount,
           currency: "NGN",
           platform: list.platform,
+          product: list.title,
+          quantity,
           status: "manual_review — manual listing",
+          // Paid, but the admin has to hand over the logs.
+          needsDelivery: true,
         });
       }
     } catch {
@@ -358,6 +364,8 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
             amount: totalAmount,
             currency: "NGN",
             platform: list.platform,
+            product: list.title,
+            quantity,
             status: "completed",
           }),
         ]);
@@ -441,24 +449,19 @@ export async function purchaseListing(userId: string, body: PurchaseBody): Promi
       });
     }
 
-    try {
-      const [usr] = await db.select().from(user).where(eq(user.id, userId)).limit(1);
-      if (usr?.email) {
-        const { sendAdminOrderNotification } = await import("@/lib/email");
-        await sendAdminOrderNotification({
-          orderId,
-          orderType: "marketplace",
-          userEmail: usr.email,
-          userName: usr.name,
-          amount: totalAmount,
-          currency: "NGN",
-          platform: list.platform,
-          status: refunded
-            ? "failed — customer refunded automatically"
-            : "manual_review — REFUND FAILED, customer still charged",
-        });
-      }
-    } catch { /* non-critical */ }
+    // Admin chat is for successful orders: a failed order that was refunded
+    // needs nothing from anyone, so it isn't announced. Only a failed refund
+    // (customer charged, nothing delivered) is, because someone must act.
+    if (!refunded) {
+      try {
+        const [usr] = await db.select().from(user).where(eq(user.id, userId)).limit(1);
+        const { sendAdminActionNeeded } = await import("@/lib/email");
+        await sendAdminActionNeeded(
+          "refund failed",
+          `${usr?.email ?? userId} was charged ₦${totalAmount} for ${quantity} × ${list.title} but got nothing. Deliver or refund it on Ozymandias → Orders.`,
+        );
+      } catch { /* non-critical */ }
+    }
 
     return NextResponse.json(
       {

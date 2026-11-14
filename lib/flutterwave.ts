@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, ne } from "drizzle-orm";
 import { db } from "@/db/drizzle";
-import { deposit, user } from "@/db/schema";
+import { deposit } from "@/db/schema";
 import { creditWallet, logTransaction } from "@/lib/wallet";
 import { rewardReferralForDeposit } from "@/lib/referral";
 
@@ -95,22 +95,7 @@ export async function creditFlutterwaveDeposit(
     notifyBotUser(dep.userId, `✅ <b>₦${amountNgn.toLocaleString("en-NG")}</b> added to your wallet. Send /menu to shop.`),
   );
 
-  try {
-    const [usr] = await db.select().from(user).where(eq(user.id, dep.userId)).limit(1);
-    if (usr?.email) {
-      const { sendAdminDepositNotification } = await import("@/lib/email");
-      await sendAdminDepositNotification({
-        depositId: dep.id,
-        provider: "flutterwave",
-        userEmail: usr.email,
-        userName: usr.name,
-        amount: String(amountNgn),
-        currency: "NGN",
-      });
-    }
-  } catch {
-    /* non-critical */
-  }
+  // No admin Telegram alert for top-ups: the admin chat is for successful orders only.
   return { ok: true, credited: true, amountNgn };
 }
 

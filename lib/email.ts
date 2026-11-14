@@ -107,8 +107,15 @@ export async function sendOrderDeliveryEmail({
   }
 }
 
+// ─── Admin Telegram alerts ──────────────────────────────────────────────────
+// Only successful orders reach the admin chat, in three short lines, plus the
+// rare "a customer is owed money" case. Signups, wallet top-ups, refunded
+// failures and log requests no longer do: they buried the orders. (Supplier
+// low-balance alerts live in lib/suppliers/balance-alert.ts.)
+
 interface AdminOrderNotifyParams {
-  orderId: string;
+  /** Kept for callers; not shown (the admin finds orders by customer). */
+  orderId?: string;
   orderType: "marketplace" | "boosting" | "otp" | "proxy";
   userEmail: string;
   userName: string;
@@ -117,116 +124,44 @@ interface AdminOrderNotifyParams {
   platform?: string;
   /** Boosting service, or the OTP/proxy description (e.g. "WhatsApp · United States"). */
   serviceName?: string;
-  status: string;
-  /** Where it was bought, when not the website (e.g. "Telegram bot"). */
+  /** What was bought, e.g. the log's title (falls back to platform / serviceName). */
+  product?: string;
+  quantity?: number;
+  /** Kept for callers; not shown (every alert is a successful order). */
+  status?: string;
+  /** Where it was bought, when not the website (e.g. "Telegram bot", "API · Key name"). */
   via?: string;
+  /** A manual listing the admin has to deliver by hand. */
+  needsDelivery?: boolean;
 }
 
 const ORDER_TYPE_LABEL: Record<AdminOrderNotifyParams["orderType"], string> = {
-  marketplace: "Marketplace",
+  marketplace: "Logs",
   boosting: "Boosting",
   otp: "OTP number",
   proxy: "Proxies",
 };
 
-export async function sendAdminOrderNotification({
-  orderId,
-  orderType,
-  userEmail,
-  userName,
-  amount,
-  currency,
-  platform,
-  serviceName,
-  status,
-  via,
-}: AdminOrderNotifyParams) {
-  const amountFormatted = currency === "NGN"
-    ? `₦${formatAmount(amount)}`
-    : `${parseFloat(amount).toFixed(2)} ${currency}`;
-
-  const productLabel = `${ORDER_TYPE_LABEL[orderType]} — ${(orderType === "marketplace" ? platform : serviceName) ?? "N/A"}`;
-
-  const text = [
-    `🛒 <b>New Order Received</b>`,
-    ``,
-    `<b>Order ID:</b> ${escapeHtml(orderId.slice(0, 8))}...`,
-    `<b>Type:</b> ${escapeHtml(productLabel)}`,
-    `<b>Amount:</b> ${escapeHtml(amountFormatted)}`,
-    `<b>Customer:</b> ${escapeHtml(userName)} (${escapeHtml(userEmail)})`,
-    `<b>Status:</b> ${escapeHtml(status)}`,
-    ...(via ? [`<b>Via:</b> ${escapeHtml(via)}`] : []),
+/** The alert text, e.g. "✅ ₦9,000 · Logs × 2 / POLAND FB (0-50 friend) / Ada · ada@x.com · Telegram bot". */
+export function adminOrderText(p: AdminOrderNotifyParams): string {
+  const amount = p.currency === "NGN" ? `₦${formatAmount(p.amount)}` : `${parseFloat(p.amount).toFixed(2)} ${p.currency}`;
+  const what = (p.product ?? (p.orderType === "marketplace" ? p.platform : p.serviceName) ?? "").trim();
+  const qty = p.quantity && p.quantity > 1 ? ` × ${p.quantity.toLocaleString("en-NG")}` : "";
+  return [
+    `✅ <b>${escapeHtml(amount)}</b> · ${ORDER_TYPE_LABEL[p.orderType]}${qty}`,
+    ...(what ? [escapeHtml(what.length > 120 ? `${what.slice(0, 117)}…` : what)] : []),
+    `${escapeHtml(p.userName)} · ${escapeHtml(p.userEmail)}${p.via ? ` · ${escapeHtml(p.via)}` : ""}`,
+    ...(p.needsDelivery ? ["📦 Deliver it on Ozymandias → Orders"] : []),
   ].join("\n");
-
-  await sendTelegramMessage(text);
 }
 
-// ─── New user signup notification ────────────────────────────────────────────
-
-export async function sendAdminSignupNotification({
-  userId,
-  userName,
-  userEmail,
-  phoneNumber,
-}: {
-  userId: string;
-  userName: string;
-  userEmail: string;
-  phoneNumber?: string;
-}) {
-  const text = [
-    `🎉 <b>New User Sign-Up</b>`,
-    ``,
-    `<b>Name:</b> ${escapeHtml(userName)}`,
-    `<b>Email:</b> ${escapeHtml(userEmail)}`,
-    ...(phoneNumber ? [`<b>Phone:</b> ${escapeHtml(phoneNumber)}`] : []),
-    `<b>User ID:</b> <code>${escapeHtml(userId)}</code>`,
-    `<b>Signed up:</b> ${new Date().toLocaleString("en-NG", { timeZone: "Africa/Lagos" })} (WAT)`,
-  ].join("\n");
-
-  await sendTelegramMessage(text);
+export async function sendAdminOrderNotification(p: AdminOrderNotifyParams) {
+  await sendTelegramMessage(adminOrderText(p));
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface AdminDepositNotifyParams {
-  depositId: string;
-  provider: string;
-  userEmail: string;
-  userName: string;
-  amount: string;
-  currency: string;
-}
-
-export async function sendAdminDepositNotification({
-  depositId,
-  provider,
-  userEmail,
-  userName,
-  amount,
-  currency,
-}: AdminDepositNotifyParams) {
-  const amountFormatted = currency === "NGN"
-    ? `₦${formatAmount(amount)}`
-    : `${parseFloat(amount).toFixed(2)} ${currency}`;
-
-  const providerLabels: Record<string, string> = {
-    korapay: "Korapay (Card/Bank)",
-    flutterwave: "Flutterwave (Card/Bank)",
-    plisio: "Plisio (Crypto)",
-  };
-  const providerLabel = providerLabels[provider] ?? provider;
-
-  const text = [
-    `💰 <b>Wallet Funded</b>`,
-    ``,
-    `<b>Customer:</b> ${escapeHtml(userName)} (${escapeHtml(userEmail)})`,
-    `<b>Amount:</b> ${escapeHtml(amountFormatted)}`,
-    `<b>Provider:</b> ${escapeHtml(providerLabel)}`,
-    `<b>Deposit ID:</b> ${escapeHtml(depositId.slice(0, 8))}...`,
-  ].join("\n");
-
-  await sendTelegramMessage(text);
+/** The one non-order alert kept: something an admin must fix by hand (e.g. a refund that failed). */
+export async function sendAdminActionNeeded(title: string, detail: string) {
+  await sendTelegramMessage(`⚠️ <b>Action needed</b> · ${escapeHtml(title)}\n${escapeHtml(detail)}`);
 }
 
 interface BoostingOrderPlacedEmailParams {

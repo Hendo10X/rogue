@@ -6,7 +6,6 @@ import { auth } from "@/utils/auth";
 import { db } from "@/db/drizzle";
 import { logRequest } from "@/db/schema";
 import { isUserSuspended, SUSPENDED_MESSAGE } from "@/lib/suspension";
-import { escapeHtml, sendTelegramMessage } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
@@ -85,14 +84,6 @@ export async function POST(req: NextRequest) {
       INSERT INTO "log_request" ("id", "user_id", "platform", "details", "quantity", "budget_ngn")
       VALUES (${id}, ${user.id}, ${platform}, ${details}, ${quantity}, ${budget})`);
   }
-  void sendTelegramMessage(
-    [
-      "📝 <b>New log request</b>",
-      `<b>From:</b> ${escapeHtml(user.email)}`,
-      `<b>Platform:</b> ${escapeHtml(platform)} × ${quantity}${budgetNgn ? ` · up to ₦${budgetNgn}` : ""}`,
-      escapeHtml(details),
-      "Answer it on Ozymandias → Requests.",
-    ].join("\n"),
-  ).catch(() => {});
+  // No admin Telegram ping: open requests show as a red count on Ozymandias → Requests.
   return NextResponse.json({ ok: true, id });
 }

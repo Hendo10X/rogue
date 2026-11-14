@@ -154,6 +154,7 @@ export async function placeBoostingOrder(userId: string, input: BoostingOrderInp
           amount: totalAmountNgn.toFixed(2),
           currency: "NGN",
           serviceName: service.name,
+          quantity: qty,
           status: "processing",
         }),
         sendBoostingOrderPlacedEmail({
