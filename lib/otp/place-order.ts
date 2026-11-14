@@ -7,9 +7,6 @@ import type { Channel } from "@/lib/bot-pricing";
 import { forgetApps, getApps, otpOnSale, otpPriceNgn } from "./settings";
 import { buyNumber, cancelNumber, fetchAppLive, type Quote } from "./provider";
 import { looksOutOfStock, markOutOfStock } from "./stock";
-import { alertAdminOfOrder } from "@/lib/order-alert";
-import { appLabel } from "./labels";
-import { countryLabel } from "./catalog";
 
 export type OtpOrderPlaced = { ok: true; id: string; number: string };
 
@@ -111,15 +108,7 @@ export async function placeOtpOrder(
     metadata: { kind: "otp", otpOrderId: id, country, app: appName, channel, provider: quote.provider, ...(quote.pool ? { pool: quote.pool } : {}) },
   }).catch((err) => console.error("[OTP] transaction log failed", err));
 
-  // Admin Telegram alert, like logs and boosting (never blocks or fails the order).
-  await alertAdminOfOrder({
-    userId,
-    orderId: id,
-    orderType: "otp",
-    amountNgn: total,
-    description: `${appLabel(appName)} · ${countryLabel(country)}`,
-    channel,
-  });
-
+  // No admin alert yet: the order is only complete once the code arrives
+  // (lib/otp/orders.ts alerts then, with the number and code).
   return { ok: true, data: { ok: true, id, number: bought.number } };
 }

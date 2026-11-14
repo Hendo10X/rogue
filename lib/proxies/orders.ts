@@ -1,6 +1,7 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db/drizzle";
 import { proxyOrder } from "@/db/schema";
+import { alertAdminOfOrder } from "@/lib/order-alert";
 import { fetchOrderProxies, isProxyType, type ProxyType } from "./provider";
 
 export const PROXY_TYPE_LABEL: Record<ProxyType, string> = { ipv4: "IPv4", isp: "ISP", ipv6: "IPv6", mobile: "Mobile" };
@@ -30,8 +31,22 @@ export async function getProxyOrders(userId: string): Promise<ProxyOrderRow[]> {
         try {
           const { proxies, expiresAt } = await fetchOrderProxies(o.providerOrderId!, asType(o.proxyType));
           if (proxies.length === 0) return;
-          await db.update(proxyOrder).set({ status: "active", proxies, expiresAt, updatedAt: new Date() }).where(eq(proxyOrder.id, o.id));
+          const updated = await db
+            .update(proxyOrder)
+            .set({ status: "active", proxies, expiresAt, updatedAt: new Date() })
+            .where(and(eq(proxyOrder.id, o.id), eq(proxyOrder.status, "processing")))
+            .returning({ id: proxyOrder.id });
           Object.assign(o, { status: "active", proxies, expiresAt });
+          // Complete now (the customer has their proxies): tell the admin once.
+          if (updated.length > 0) {
+            await alertAdminOfOrder({
+              userId: o.userId,
+              orderId: o.id,
+              orderType: "proxy",
+              amountNgn: o.amount,
+              description: `${o.quantity} × ${PROXY_TYPE_LABEL[asType(o.proxyType)]} · ${o.country} · ${o.period}`,
+            });
+          }
         } catch (err) {
           console.error("[Proxies] refresh failed", o.id, err);
         }
