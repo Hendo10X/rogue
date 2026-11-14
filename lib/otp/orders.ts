@@ -5,6 +5,7 @@ import { creditWallet, logTransaction } from "@/lib/wallet";
 import { cancelNumber, checkNumber, finishNumber } from "./provider";
 import { appLabel } from "./labels";
 import { countryLabel } from "./catalog";
+import { alertAdminOfOrder } from "@/lib/order-alert";
 
 export type OtpOrderRow = typeof otpOrder.$inferSelect;
 
@@ -67,12 +68,26 @@ async function refresh(row: OtpOrderRow) {
   if (row.status !== "waiting" || !row.providerNumberId) return;
   const got = await checkNumber(row.providerNumberId);
   if (got.sms || got.code) {
-    await db
+    const updated = await db
       .update(otpOrder)
       .set({ status: "received", code: got.code, sms: got.sms, updatedAt: new Date() })
-      .where(and(eq(otpOrder.id, row.id), eq(otpOrder.status, "waiting")));
+      .where(and(eq(otpOrder.id, row.id), eq(otpOrder.status, "waiting")))
+      .returning({ id: otpOrder.id });
     Object.assign(row, { status: "received", code: got.code, sms: got.sms });
     void finishNumber(row.providerNumberId);
+    // The order is complete now (the customer has their code): tell the admin
+    // once, with the number and code. Only the request that flipped it alerts.
+    if (updated.length > 0) {
+      await alertAdminOfOrder({
+        userId: row.userId,
+        orderId: row.id,
+        orderType: "otp",
+        amountNgn: row.amount,
+        description: [appLabel(row.app), countryLabel(row.country), row.number ? `+${row.number.replace(/^\+/, "")}` : null, `code ${got.code ?? got.sms ?? "?"}`]
+          .filter(Boolean)
+          .join(" · "),
+      });
+    }
     return;
   }
   if (got.status === "CANCELED") {
