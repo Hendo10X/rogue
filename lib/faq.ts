@@ -47,6 +47,12 @@ export const FAQ_ITEMS: FaqItem[] = [
     id: "item-7",
     question: "Can I get a refund?",
     answer:
-      "Yes. If delivery fails or doesn't match the listing, we offer a full refund or replacement. Contact support within 7 days of delivery with your order ID.",
+      "Yes. If delivery fails or doesn't match the listing, we offer a full refund or replacement. Contact support within 7 days of delivery with your order ID: message us on Telegram (@rogue4l) or email support@roguesocials.com.",
+  },
+  {
+    id: "item-8",
+    question: "How do I contact support?",
+    answer:
+      "Email support@roguesocials.com or message @rogue4l on Telegram. Include your order ID if it's about an order, and we'll get back to you as soon as we can.",
   },
 ];

@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { sendTelegramMessage, escapeHtml } from "./telegram";
 import { formatAmount } from "./currency";
 import { labelLog, type LogFormat } from "./log-fields";
+import { SUPPORT_EMAIL } from "./site";
 
 /** Telegram bot customers get a placeholder address that must never be emailed. */
 export const TELEGRAM_EMAIL_DOMAIN = "telegram.roguesocials.com";
@@ -90,12 +91,14 @@ export async function sendOrderDeliveryEmail({
 
       <p style="font-size: 0.8em; color: #999;">Order ID: ${orderId}</p>
       <p>Thank you for your purchase!</p>
+      <p style="font-size: 0.8em; color: #999;">Need help with this order? Just reply to this email, or write to ${SUPPORT_EMAIL}.</p>
     </div>
   `;
 
   try {
     const data = await getResend().emails.send({
       from: "Rogue <noreply@roguesocials.com>",
+      replyTo: SUPPORT_EMAIL,
       to,
       subject: `Order Delivered: ${platform} (#${orderId.slice(0, 8)})`,
       html,
@@ -229,13 +232,14 @@ export async function sendBoostingOrderPlacedEmail({
       </div>
 
       <p style="margin: 18px 0 0; font-size: 12px; color: #999;">Order ID: ${orderId.slice(0, 8)}...</p>
-      <p style="margin: 8px 0 0; font-size: 12px; color: #999;">If you need help, reply to this email.</p>
+      <p style="margin: 8px 0 0; font-size: 12px; color: #999;">Need help? Just reply to this email, or write to ${SUPPORT_EMAIL}.</p>
     </div>
   `;
 
   try {
     const data = await getResend().emails.send({
       from: "Rogue <noreply@roguesocials.com>",
+      replyTo: SUPPORT_EMAIL,
       to,
       subject: `Boosting order placed (#${orderId.slice(0, 8)})`,
       html,

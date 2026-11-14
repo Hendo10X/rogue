@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { TelegramIcon } from "@hugeicons/core-free-icons";
+import { Mail01Icon, TelegramIcon } from "@hugeicons/core-free-icons";
 
 import { Wordmark } from "@/components/logo";
+import { SUPPORT_EMAIL } from "@/lib/site";
 import { LANDING_PAGES } from "@/lib/landing";
 
 const COLUMNS = [
@@ -21,7 +22,8 @@ const COLUMNS = [
       { label: "Game coins", href: "https://www.roguearena.gg" },
       { label: "Foreign numbers", href: "https://www.roguearena.gg" },
       { label: "Telegram channel", href: "https://t.me/roguesocials" },
-      { label: "Support", href: "https://t.me/rogue4l" },
+      { label: "Support on Telegram", href: "https://t.me/rogue4l" },
+      { label: "Email support", href: `mailto:${SUPPORT_EMAIL}` },
     ],
   },
   {
@@ -31,6 +33,13 @@ const COLUMNS = [
 ];
 
 function FooterLink({ href, label }: { href: string; label: string }) {
+  if (href.startsWith("mailto:")) {
+    return (
+      <a href={href} className="w-fit text-sm text-muted-foreground transition-colors hover:text-foreground">
+        {label}
+      </a>
+    );
+  }
   const external = href.startsWith("http");
   return (
     <Link
@@ -62,6 +71,13 @@ export default function Footer() {
             >
               <HugeiconsIcon icon={TelegramIcon} strokeWidth={1.75} className="size-4 text-[#ff9a4a]" />
               Join the channel
+            </a>
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="-mt-2 inline-flex w-fit items-center gap-2 rounded-full bg-white/[0.05] px-3.5 py-2 text-[0.8125rem] text-foreground/90 transition-colors hover:bg-white/[0.09]"
+            >
+              <HugeiconsIcon icon={Mail01Icon} strokeWidth={1.75} className="size-4 text-[#ff9a4a]" />
+              {SUPPORT_EMAIL}
             </a>
           </div>
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-7">

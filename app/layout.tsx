@@ -12,6 +12,7 @@ import {
   SITE_DESCRIPTION,
   SITE_KEYWORDS,
   SITE_SOCIALS,
+  SUPPORT_EMAIL,
 } from "@/lib/site";
 
 const geistMono = Geist_Mono({
@@ -96,6 +97,8 @@ const structuredData = [
     logo: `${SITE_URL}/Roguesocialsyellow.svg`,
     description: SITE_DESCRIPTION,
     sameAs: SITE_SOCIALS,
+    email: SUPPORT_EMAIL,
+    contactPoint: { "@type": "ContactPoint", contactType: "customer support", email: SUPPORT_EMAIL },
   },
   {
     "@context": "https://schema.org",
