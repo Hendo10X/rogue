@@ -3,6 +3,7 @@ import { db } from "@/db/drizzle";
 import { deposit } from "@/db/schema";
 import { creditWallet, logTransaction } from "@/lib/wallet";
 import { rewardReferralForDeposit } from "@/lib/referral";
+import { alertAdminOfDeposit } from "@/lib/deposit-alert";
 
 /**
  * One way to credit a Flutterwave deposit, shared by the webhook, the
@@ -95,7 +96,8 @@ export async function creditFlutterwaveDeposit(
     notifyBotUser(dep.userId, `✅ <b>₦${amountNgn.toLocaleString("en-NG")}</b> added to your wallet. Send /menu to shop.`),
   );
 
-  // No admin Telegram alert for top-ups: the admin chat is for successful orders only.
+  // One short admin line per completed top-up (the claim above makes this run once).
+  await alertAdminOfDeposit({ userId: dep.userId, amountNgn, provider: "Flutterwave" });
   return { ok: true, credited: true, amountNgn };
 }
 
