@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/drizzle";
 import { deposit } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { verifyKorapayWebhook } from "@/lib/korapay";
 import { creditWallet, logTransaction } from "@/lib/wallet";
 import { rewardReferralForDeposit } from "@/lib/referral";
+import { alertAdminOfDeposit } from "@/lib/deposit-alert";
 
 export async function POST(req: NextRequest) {
   const secretKey = process.env.KORAPAY_SECRET_KEY;
@@ -76,14 +77,17 @@ export async function POST(req: NextRequest) {
   try {
     const amountNgn = payload.data?.amount ?? parseFloat(dep.amount);
 
-    await db
+    // Claim it in one conditional update: a retried or duplicate webhook can never credit twice.
+    const [claimed] = await db
       .update(deposit)
       .set({
         status: "completed",
         completedAt: new Date(),
         plisioTxnId: payload.data?.reference ?? undefined,
       })
-      .where(eq(deposit.id, dep.id));
+      .where(and(eq(deposit.id, dep.id), ne(deposit.status, "completed")))
+      .returning({ id: deposit.id });
+    if (!claimed) return NextResponse.json({ ok: true, message: "Already processed" });
 
     await creditWallet(dep.walletId, String(amountNgn), "NGN");
     // Pays the referrer on a first deposit; never throws.
@@ -109,7 +113,7 @@ export async function POST(req: NextRequest) {
       notifyBotUser(dep.userId, `✅ <b>₦${Number(amountNgn).toLocaleString("en-NG")}</b> added to your wallet. Send /menu to shop.`),
     );
 
-    // No admin Telegram alert for top-ups: the admin chat is for successful orders only.
+    await alertAdminOfDeposit({ userId: dep.userId, amountNgn, provider: "Korapay" });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
