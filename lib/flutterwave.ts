@@ -3,7 +3,7 @@ import { db } from "@/db/drizzle";
 import { deposit } from "@/db/schema";
 import { creditWallet, logTransaction } from "@/lib/wallet";
 import { rewardReferralForDeposit } from "@/lib/referral";
-import { alertAdminOfDeposit } from "@/lib/deposit-alert";
+import { alertAdminOfDeposit } from "@/lib/admin-alerts";
 
 /**
  * One way to credit a Flutterwave deposit, shared by the webhook, the

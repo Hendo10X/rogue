@@ -63,7 +63,14 @@ export const auth = betterAuth({
       create: {
         after: async (user) => {
           await createWallet(user.id);
-          // No admin Telegram alert for sign-ups: the admin chat is for successful orders only.
+          // One short admin line per real sign-up (Telegram-bot placeholder accounts skipped).
+          const { adminSignupText, sendAdminAlert } = await import("@/lib/admin-alerts");
+          const { isPlaceholderEmail } = await import("@/lib/email");
+          if (!isPlaceholderEmail(user.email)) {
+            await sendAdminAlert(
+              adminSignupText({ name: user.name ?? "", email: user.email ?? "", phone: (user as { phoneNumber?: string | null }).phoneNumber }),
+            );
+          }
         },
       },
     },

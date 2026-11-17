@@ -6,6 +6,7 @@ import { auth } from "@/utils/auth";
 import { db } from "@/db/drizzle";
 import { logRequest } from "@/db/schema";
 import { isUserSuspended, SUSPENDED_MESSAGE } from "@/lib/suspension";
+import { adminLogRequestText, sendAdminAlert } from "@/lib/admin-alerts";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,7 @@ export async function POST(req: NextRequest) {
       INSERT INTO "log_request" ("id", "user_id", "platform", "details", "quantity", "budget_ngn")
       VALUES (${id}, ${user.id}, ${platform}, ${details}, ${quantity}, ${budget})`);
   }
-  // No admin Telegram ping: open requests show as a red count on Ozymandias → Requests.
+  // Short admin ping; the request is also counted on Ozymandias → Requests.
+  await sendAdminAlert(adminLogRequestText({ platform, quantity, budgetNgn, details, email: user.email }));
   return NextResponse.json({ ok: true, id });
 }
