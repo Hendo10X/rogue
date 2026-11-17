@@ -1,4 +1,4 @@
-// Run with `npm run test:money`. The admin gets one short line per completed deposit — never for unpaid ones, never twice.
+// Run with `npm run test:money`. Admin alerts besides orders: one short line per completed deposit (never unpaid, never twice), per sign-up and per log request.
 import { db } from "@/db/drizzle";
 import * as schemaModule from "@/db/schema";
 import { deposit, user, wallet } from "@/db/schema";
@@ -36,7 +36,7 @@ async function main() {
   await db.insert(user).values({ id: "u1", name: "Ada <b>", email: "ada@example.com", emailVerified: true });
   await db.insert(wallet).values({ id: "w1", userId: "u1", currency: "NGN", balance: "0" });
   await db.insert(deposit).values({ id: "d1", userId: "u1", walletId: "w1", amount: "5000", currency: "NGN", provider: "flutterwave", plisioOrderNumber: "flw-ref-1" });
-  const { adminDepositText } = await import("@/lib/deposit-alert");
+  const { adminDepositText } = await import("@/lib/admin-alerts");
   const { creditFlutterwaveDeposit } = await import("@/lib/flutterwave");
 
   console.log("\n1. One short line");
@@ -53,6 +53,17 @@ async function main() {
   await creditFlutterwaveDeposit("flw-ref-1", { source: "sweep" });
   check("exactly one admin alert", admin.length === 1, admin);
   check("it's the deposit line", admin[0] === "💰 <b>₦5,000</b> deposit · Flutterwave · Ada &lt;b&gt; · ada@example.com", admin[0]);
+
+  console.log("\n4. Sign-ups and log requests");
+  const { adminSignupText, adminLogRequestText } = await import("@/lib/admin-alerts");
+  const su = adminSignupText({ name: "Ada <b>", email: "ada@example.com", phone: "+2348012345678" });
+  check("sign-up line with phone", su === "👤 New sign-up · Ada &lt;b&gt; · ada@example.com · +2348012345678", su);
+  const su2 = adminSignupText({ name: "Ada", email: "ada@example.com", phone: "" });
+  check("no empty phone", su2 === "👤 New sign-up · Ada · ada@example.com", su2);
+  const lr = adminLogRequestText({ platform: "Instagram", quantity: 20, budgetNgn: 3000, details: "Aged  US\naccounts <2fa>", email: "ada@example.com" });
+  check("log request: two lines, budget, escaped", lr === "📝 <b>Log request</b> · Instagram × 20 · up to ₦3,000\nada@example.com · Aged US accounts &lt;2fa&gt;", lr);
+  const long = adminLogRequestText({ platform: "X", quantity: 1, details: "y".repeat(400), email: "a@x.com" });
+  check("long details cut short", long.split("\n")[1].length < 140 && !long.includes("up to"), long.length);
 
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);

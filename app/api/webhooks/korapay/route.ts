@@ -5,7 +5,7 @@ import { and, eq, ne } from "drizzle-orm";
 import { verifyKorapayWebhook } from "@/lib/korapay";
 import { creditWallet, logTransaction } from "@/lib/wallet";
 import { rewardReferralForDeposit } from "@/lib/referral";
-import { alertAdminOfDeposit } from "@/lib/deposit-alert";
+import { alertAdminOfDeposit } from "@/lib/admin-alerts";
 
 export async function POST(req: NextRequest) {
   const secretKey = process.env.KORAPAY_SECRET_KEY;
