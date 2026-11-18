@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // deploy/deploy.sh builds into a side folder, then swaps it in.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   images: {
     remotePatterns: [
       {

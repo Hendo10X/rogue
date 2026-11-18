@@ -1,0 +1,3 @@
+# Refreshes supplier stock and prices every 30 minutes (replaces Vercel Cron).
+# Reads CRON_SECRET from the app's .env.
+*/30 * * * * ubuntu S=$(grep '^CRON_SECRET=' /opt/rogue/.env | cut -d= -f2- | tr -d '"'"'"); curl -fsS -m 90 -H "Authorization: Bearer $S" http://127.0.0.1:3000/api/cron/sync >/dev/null 2>&1
