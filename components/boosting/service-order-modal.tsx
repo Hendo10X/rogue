@@ -193,7 +193,7 @@ export function ServiceOrderModal({
               className="h-10 tabular-nums"
             />
           </div>
-          <div className="grid grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-white/[0.03] px-4 py-3">
               <p className="eyebrow text-muted-foreground">Total</p>
               <p className="mt-2 text-lg font-semibold tracking-[-0.02em] tabular-nums">
