@@ -23,6 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { GoogleSignInButton } from "@/components/google-signin-button";
 import { z } from "zod";
 import { useState } from "react";
@@ -106,9 +107,8 @@ export function LoginForm({
                       <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
-                          <Input
+                          <PasswordInput
                             placeholder="password"
-                            type="password"
                             {...field}
                           />
                         </FormControl>
