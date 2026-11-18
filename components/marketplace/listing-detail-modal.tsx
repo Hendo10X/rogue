@@ -57,7 +57,7 @@ export function ListingDetailModal({
           <p className="subtext max-h-56 overflow-y-auto rounded-xl bg-black/25 p-4 text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
             {hasDescription ? listing.description : "No description"}
           </p>
-          <div className="grid grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-white/[0.03] px-4 py-3">
               <p className="eyebrow text-muted-foreground">Price</p>
               <p className="mt-2 text-lg font-semibold tracking-[-0.02em] tabular-nums">

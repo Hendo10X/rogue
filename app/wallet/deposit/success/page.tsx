@@ -60,7 +60,7 @@ export default async function DepositSuccessPage() {
               automatically the moment it clears.
             </p>
           </div>
-          <div className="grid grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <Button asChild variant="ghost" className="eyebrow h-11">
               <Link href="/wallet/deposit">Deposit more</Link>
             </Button>

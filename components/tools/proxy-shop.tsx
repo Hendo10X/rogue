@@ -232,8 +232,10 @@ export function ProxyShop() {
                 aria-checked={type === t.id}
                 onClick={() => chooseType(t.id)}
                 className={cn(
-                  "surface flex flex-col gap-0.5 rounded-2xl px-4 py-3 text-left transition-colors",
-                  type === t.id ? "bg-primary/15 text-foreground" : "text-muted-foreground hover:text-foreground",
+                  "surface flex flex-col gap-0.5 rounded-2xl px-4 py-3 text-left transition-[color,background-color,outline-color]",
+                  type === t.id
+                    ? "bg-primary/15 text-foreground outline-2 -outline-offset-2 outline-primary"
+                    : "text-muted-foreground outline-2 -outline-offset-2 outline-transparent hover:text-foreground",
                 )}
               >
                 <span className="text-sm font-medium text-foreground">{t.name}</span>
