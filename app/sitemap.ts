@@ -18,7 +18,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
     { path: "/signup", priority: 0.8, changeFrequency: "monthly" },
     { path: "/login", priority: 0.5, changeFrequency: "monthly" },
-    { path: "/docs/api", priority: 0.6, changeFrequency: "weekly" },
     { path: "/terms", priority: 0.3, changeFrequency: "yearly" },
   ];
 
