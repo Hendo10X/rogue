@@ -98,7 +98,7 @@ export default async function Home() {
                   href="/signup"
                   className="group inline-flex h-12 items-center gap-2 rounded-full bg-[linear-gradient(100deg,#ff4d1a_0%,#ff7a1a_60%,#ffa51a_100%)] px-7 text-sm font-medium text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.3),0_10px_40px_-10px_rgb(255_100_30/0.8)] transition-shadow hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.35),0_14px_50px_-8px_rgb(255_110_30/0.9)]"
                 >
-                  Start growing
+                  Buy now
                   <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="size-4 transition-transform group-hover:translate-x-0.5" />
                 </MagneticLink>
                 <Button asChild variant="outline" size="lg" className="h-12 px-7">

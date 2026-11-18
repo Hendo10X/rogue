@@ -8,6 +8,7 @@ import { authClient } from "@/utils/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Card,
   CardContent,
@@ -220,9 +221,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
               <label htmlFor="current-pw" className="eyebrow text-muted-foreground">
                 Current Password
               </label>
-              <Input
+              <PasswordInput
                 id="current-pw"
-                type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Enter current password"
@@ -234,9 +234,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
               <label htmlFor="new-pw" className="eyebrow text-muted-foreground">
                 New Password
               </label>
-              <Input
+              <PasswordInput
                 id="new-pw"
-                type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="At least 8 characters"
@@ -248,9 +247,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
               <label htmlFor="confirm-pw" className="eyebrow text-muted-foreground">
                 Confirm New Password
               </label>
-              <Input
+              <PasswordInput
                 id="confirm-pw"
-                type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-enter new password"
