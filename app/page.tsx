@@ -245,14 +245,12 @@ export default async function Home() {
             <div className="min-w-0 lg:col-span-5">
               <SectionHead title="Plug the whole catalog into your panel." sub="One API key, four endpoints. List services at reseller rates, order against your wallet, poll status." />
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                {/* /docs/api is in the dashboard: signed-out visitors are sent to sign in, then land on it. */}
                 <Button asChild size="lg">
                   <Link href="/docs/api">
-                    Read the docs
+                    Sign in to get the API
                     <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
                   </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg">
-                  <Link href="/settings">Get a key</Link>
                 </Button>
               </div>
             </div>

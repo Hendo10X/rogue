@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
-import { Navbar } from "@/components/navbar";
-import Footer from "@/components/Footer";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { auth } from "@/utils/auth";
+import { redirectIfSuspended } from "@/lib/suspension";
+import { getOrCreateWallet, getWalletBalance } from "@/lib/wallet";
+import { isAdminEmail } from "@/lib/admin-emails";
+import { DashboardShell } from "@/components/dashboard/shell";
+import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "API Documentation — Rogue Socials",
+  robots: { index: false },
   description:
     "Integrate the Rogue Socials API: list services, place boosting orders, and check balances programmatically with your API key.",
 };
@@ -70,43 +81,32 @@ const NAV = [
   { id: "errors", label: "Errors" },
 ];
 
-export default function ApiDocsPage() {
+/** Signed-in only, inside the dashboard: the docs sit next to the API key they need. */
+export default async function ApiDocsPage() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) redirect("/login?next=%2Fdocs%2Fapi");
+  await redirectIfSuspended(session.user.id);
+  await getOrCreateWallet(session.user.id, "NGN");
+  const balance = await getWalletBalance(session.user.id);
   const base = getBaseUrl();
 
   return (
-    <div className="flex min-h-svh flex-col">
-      <Navbar />
-      <main className="flex-1">
-        {/* Header */}
-        <header >
-          <div className="mx-auto w-full max-w-[88rem] px-4 py-16 sm:px-8 sm:py-20">
-          <h1 className="mt-5 text-4xl leading-[0.98] font-semibold tracking-[-0.04em] sm:text-5xl">
-            Rogue Socials API
-          </h1>
-          <p className="subtext mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground">
-            Resell our social-media boosting services from your own app, bot, or
-            panel. Fetch live services, place orders, and track them
-            programmatically — billed from your Rogue wallet at your reseller
-            rate.
-          </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <a
-              href="/signup"
-              className="eyebrow inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-primary-foreground transition-colors hover:bg-[color-mix(in_oklch,var(--primary),black_14%)]"
-            >
-              Create an account
-            </a>
-            <a
-              href="/settings"
-              className="eyebrow inline-flex h-11 items-center justify-center rounded-full border bg-input/20 px-6 transition-colors hover:bg-input/50"
-            >
-              Get your API key
-            </a>
-          </div>
-          </div>
-        </header>
-
-        <div className="mx-auto grid w-full max-w-[88rem] px-4 sm:px-8 lg:grid-cols-[220px_1fr]">
+    <DashboardShell
+      user={{ id: session.user.id, name: session.user.name ?? "User", email: session.user.email ?? "", image: session.user.image }}
+      walletBalance={Array.isArray(balance) ? balance : [balance]}
+      isAdmin={await isAdminEmail(session.user.email)}
+    >
+      <PageHeader
+        title="API docs"
+        description="Resell our boosting services from your own app, bot or panel — billed from your Rogue wallet at your reseller rate."
+        action={
+          <Button asChild>
+            <Link href="/settings">Get your API key</Link>
+          </Button>
+        }
+      />
+      <div className="w-full">
+        <div className="grid w-full lg:grid-cols-[220px_1fr]">
           {/* Sidebar */}
           <aside className="hidden lg:block">
             <nav className="sticky top-14 flex flex-col py-10">
@@ -355,8 +355,7 @@ website_rate_per_1000 = the public website price (for reference)`}</Code>
             </section>
           </div>
         </div>
-      </main>
-      <Footer />
-    </div>
+      </div>
+    </DashboardShell>
   );
 }
